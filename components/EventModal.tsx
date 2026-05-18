@@ -90,30 +90,30 @@ export function EventModal({
     <Modal title={isNew ? "予定を追加" : "予定を編集"} onClose={onClose}>
       <div className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-700 dark:text-zinc-300">
+          <span className="font-medium text-black">
             タイトル <span className="text-red-500">*</span>
           </span>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-950"
+            className="rounded-lg border border-zinc-300 px-3 py-2"
             autoFocus
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-700 dark:text-zinc-300">
+          <span className="font-medium text-black">
             メモ（任意）
           </span>
           <textarea
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
             rows={3}
-            className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-950"
+            className="rounded-lg border border-zinc-300 px-3 py-2"
           />
         </label>
         <fieldset className="text-sm">
-          <legend className="mb-1 font-medium text-zinc-700 dark:text-zinc-300">
+          <legend className="mb-1 font-medium text-black">
             種類
           </legend>
           <div className="flex gap-4">
@@ -138,25 +138,25 @@ export function EventModal({
         {kind === "timed" ? (
           <div className="grid grid-cols-2 gap-3 text-sm">
             <label className="flex flex-col gap-1">
-              <span className="font-medium text-zinc-700 dark:text-zinc-300">
+              <span className="font-medium text-black">
                 開始
               </span>
               <input
                 type="time"
                 value={startStr}
                 onChange={(e) => setStartStr(e.target.value)}
-                className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-950"
+                className="rounded-lg border border-zinc-300 px-3 py-2"
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="font-medium text-zinc-700 dark:text-zinc-300">
+              <span className="font-medium text-black">
                 終了
               </span>
               <input
                 type="time"
                 value={endStr}
                 onChange={(e) => setEndStr(e.target.value)}
-                className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-950"
+                className="rounded-lg border border-zinc-300 px-3 py-2"
               />
             </label>
           </div>
@@ -166,14 +166,14 @@ export function EventModal({
             type="button"
             onClick={save}
             disabled={!title.trim()}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
           >
             保存
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-600"
+            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm"
           >
             キャンセル
           </button>
@@ -181,7 +181,7 @@ export function EventModal({
             <button
               type="button"
               onClick={remove}
-              className="ml-auto rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 dark:border-red-800 dark:text-red-400"
+              className="ml-auto rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700"
             >
               {confirmDelete ? "本当に削除" : "削除"}
             </button>

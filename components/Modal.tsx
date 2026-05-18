@@ -32,19 +32,19 @@ export function Modal({ title, onClose, children, wide }: ModalProps) {
         onClick={onClose}
       />
       <div
-        className={`relative z-10 flex max-h-[min(90vh,720px)] w-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900 ${wide ? "max-w-2xl" : "max-w-md"}`}
+        className={`relative z-10 flex max-h-[min(90vh,720px)] w-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl ${wide ? "max-w-2xl" : "max-w-md"}`}
       >
-        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3">
           <h2
             id="modal-title"
-            className="text-base font-semibold text-zinc-900 dark:text-zinc-50"
+            className="text-base font-semibold text-black"
           >
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            className="rounded-md px-2 py-1 text-sm text-black/80 hover:bg-zinc-100"
           >
             閉じる
           </button>

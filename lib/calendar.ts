@@ -53,6 +53,32 @@ export function formatWeekRowLabel(d: Date): string {
   return `${formatWeekdayJa(d)} ${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+/** 年ペインの表示開始年（現時点＝2026年から、下へ未来） */
+export const YEAR_PANE_MIN = 2026;
+export const YEAR_PANE_MAX = 2032;
+
+/** 年ペイン用: 古い年 → 新しい年の昇順 */
+export function listYearsChronological(
+  min = YEAR_PANE_MIN,
+  max = YEAR_PANE_MAX,
+): number[] {
+  const ys: number[] = [];
+  for (let y = min; y <= max; y++) ys.push(y);
+  return ys;
+}
+
+/** 年ペインのスクロール内で、指定した年の行が上端に来るよう調整 */
+export function scrollYearRowToTop(
+  scrollContainer: HTMLElement | null,
+  yearRow: HTMLElement | null,
+): void {
+  if (!scrollContainer || !yearRow) return;
+  scrollContainer.scrollTop =
+    yearRow.offsetTop -
+    scrollContainer.offsetTop +
+    scrollContainer.scrollTop;
+}
+
 export type TimedEvent = {
   id: string;
   title: string;

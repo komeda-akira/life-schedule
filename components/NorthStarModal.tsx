@@ -69,24 +69,24 @@ export function NorthStarModal({ category, onClose }: NorthStarModalProps) {
           <button
             type="button"
             onClick={openNew}
-            className="w-fit rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
+            className="w-fit rounded-lg bg-white px-3 py-2 text-sm font-medium text-white"
           >
             新規
           </button>
           {items.length === 0 ? (
-            <p className="text-sm text-zinc-500">まだ項目がありません。</p>
+            <p className="text-sm text-black/60">まだ項目がありません。</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {items.map((item) => (
                 <li
                   key={item.id}
-                  className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700"
+                  className="rounded-lg border border-zinc-200 p-3"
                 >
-                  <div className="font-medium text-zinc-900 dark:text-zinc-50">
+                  <div className="font-medium text-black">
                     {item.title}
                   </div>
                   {item.memo ? (
-                    <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                    <p className="mt-1 text-sm text-black/80">
                       {item.memo}
                     </p>
                   ) : null}
@@ -94,14 +94,14 @@ export function NorthStarModal({ category, onClose }: NorthStarModalProps) {
                     <button
                       type="button"
                       onClick={() => openEdit(item)}
-                      className="text-sm text-zinc-700 underline dark:text-zinc-300"
+                      className="text-sm text-black underline"
                     >
                       編集
                     </button>
                     <button
                       type="button"
                       onClick={() => remove(item.id)}
-                      className="text-sm text-red-600 underline dark:text-red-400"
+                      className="text-sm text-red-600 underline"
                     >
                       {confirmDeleteId === item.id ? "本当に削除" : "削除"}
                     </button>
@@ -121,7 +121,7 @@ export function NorthStarModal({ category, onClose }: NorthStarModalProps) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-950"
+              className="rounded-lg border border-zinc-300 px-3 py-2"
               autoFocus
             />
           </label>
@@ -131,7 +131,7 @@ export function NorthStarModal({ category, onClose }: NorthStarModalProps) {
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               rows={4}
-              className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-950"
+              className="rounded-lg border border-zinc-300 px-3 py-2"
             />
           </label>
           <div className="flex gap-2">
@@ -139,14 +139,14 @@ export function NorthStarModal({ category, onClose }: NorthStarModalProps) {
               type="button"
               onClick={save}
               disabled={!title.trim()}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
+              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
             >
               保存
             </button>
             <button
               type="button"
               onClick={() => setMode("list")}
-              className="rounded-lg border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-600"
+              className="rounded-lg border border-zinc-300 px-4 py-2 text-sm"
             >
               一覧へ
             </button>

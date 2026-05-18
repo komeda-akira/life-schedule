@@ -1,9 +1,9 @@
 import type { AppData, CalendarEvent } from "@/lib/types";
 
-const DEMO_DATE = "2025-05-21";
+const DEMO_DATE = "2026-05-21";
 const now = () => new Date().toISOString();
 
-/** 参照ワイヤー（2025-05-21）相当のサンプル予定 */
+/** 参照ワイヤー相当のサンプル予定（2026-05-21） */
 export function createDemoEvents(): CalendarEvent[] {
   const base = { date: DEMO_DATE, kind: "timed" as const, createdAt: now() };
   return [
@@ -24,7 +24,7 @@ export function withDemoDataIfEmpty(data: AppData): AppData {
     events: createDemoEvents(),
     scopeComments: {
       ...data.scopeComments,
-      "year:2025":
+      "year:2026":
         "この年のスコープや方針、注力テーマなどを記入してください。",
     },
   };

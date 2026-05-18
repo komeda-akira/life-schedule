@@ -23,8 +23,11 @@ import {
   isSameDay,
   isToday,
   layoutDayEvents,
+  listYearsChronological,
   startOfDay,
   toTimedForLayout,
+  YEAR_PANE_MAX,
+  YEAR_PANE_MIN,
   type PlacedEvent,
 } from "@/lib/calendar";
 import {
@@ -33,22 +36,36 @@ import {
   weekKey,
   yearKey,
 } from "@/lib/scope-keys";
+import {
+  LABEL_ADD_ALL_DAY,
+  LABEL_ADD_TIMED,
+  LABEL_ALL_DAY,
+  LABEL_NEXT_DAY,
+  LABEL_NEXT_WEEK,
+  LABEL_NEXT_YEAR,
+  LABEL_PREV_DAY,
+  LABEL_PREV_WEEK,
+  LABEL_PREV_YEAR,
+  MOBILE_TABS,
+  monthLabel,
+  MONTH_PANE_TITLE,
+  PANE_HINTS,
+  SCOPE_COMMENT_MONTH,
+  SCOPE_COMMENT_WEEK,
+  scopeCommentTitle,
+  scopeHeadingYear,
+  scopeHeadingYearMonth,
+  WEEK_PANE_TITLE,
+  DAY_PANE_TITLE,
+  YEAR_PANE_TITLE,
+  YEAR_START_LABEL,
+} from "@/lib/pane-labels";
 import type { CalendarEvent, EventKind } from "@/lib/types";
 
-const YEAR_MIN = 2016;
-const YEAR_MAX = 2032;
 const HOUR_PX = 48;
 const DAY_HEIGHT = 24 * HOUR_PX;
 
-/** ??????????????? */
-const INITIAL_CURSOR = startOfDay(new Date(2025, 4, 21));
-
-const PANE_HINTS = {
-  year: "???????????????",
-  month: "?????????????????",
-  week: "?????????????????",
-  day: "????????????????????",
-} as const;
+const INITIAL_CURSOR = startOfDay(new Date(2026, 4, 21));
 
 function NavChevron({
   dir,
@@ -64,7 +81,7 @@ function NavChevron({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300"
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-zinc-300 bg-white text-black/80 hover:bg-zinc-50"
     >
       <span className="text-base leading-none" aria-hidden>
         {dir === "prev" ? "\u2039" : "\u203A"}
@@ -76,7 +93,7 @@ function NavChevron({
 function selectClass(selected: boolean) {
   return selected
     ? "border border-zinc-400 bg-zinc-200/90 shadow-inner"
-    : "border border-transparent bg-white hover:border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-950 dark:hover:bg-zinc-900";
+    : "border border-transparent bg-white hover:border-zinc-200 hover:bg-zinc-50";
 }
 
 function PaneHeader({
@@ -89,11 +106,11 @@ function PaneHeader({
   children?: ReactNode;
 }) {
   return (
-    <div className="border-b border-zinc-200 bg-zinc-50/80 px-2 py-2 dark:border-zinc-800 dark:bg-zinc-900/50">
-      <div className="text-center text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+    <div className="border-b border-zinc-200 bg-white px-2 py-2">
+      <div className="text-center text-sm font-semibold text-black">
         {title}
       </div>
-      <p className="mt-0.5 text-center text-[10px] leading-snug text-zinc-500 dark:text-zinc-400">
+      <p className="mt-0.5 text-center text-[10px] leading-snug text-black/60">
         {hint}
       </p>
       {children ? <div className="mt-2">{children}</div> : null}
@@ -105,7 +122,7 @@ function ScopeExcerpt({ text }: { text: string }) {
   const ex = excerptComment(text);
   if (!ex) return null;
   return (
-    <p className="mt-0.5 truncate text-[10px] text-zinc-500 dark:text-zinc-400">
+    <p className="mt-0.5 truncate text-[10px] text-black/60">
       {ex}
     </p>
   );
@@ -130,7 +147,7 @@ function ScopeLabelButton({
         onOpenScope();
       }}
       title={title}
-      className={`font-semibold text-zinc-900 underline decoration-zinc-400 underline-offset-2 hover:text-blue-800 dark:text-zinc-100 ${className ?? ""}`}
+      className={`font-semibold text-black underline decoration-zinc-400 underline-offset-2 hover:text-black ${className ?? ""}`}
     >
       {children}
     </button>
@@ -165,22 +182,26 @@ function YearPane({
   onSelectYear: (y: number) => void;
   onOpenYearScope: (y: number) => void;
 }) {
-  const years = useMemo(() => {
-    const ys: number[] = [];
-    for (let y = YEAR_MIN; y <= YEAR_MAX; y++) ys.push(y);
-    return ys;
-  }, []);
+  const years = useMemo(
+    () => listYearsChronological(YEAR_PANE_MIN, YEAR_PANE_MAX),
+    [],
+  );
   const y = cursor.getFullYear();
 
   return (
-    <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px] dark:border-zinc-700">
-      <PaneHeader title="?" hint={PANE_HINTS.year} />
+    <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px]">
+      <PaneHeader title={YEAR_PANE_TITLE} hint={PANE_HINTS.year} />
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         <ul className="flex flex-col gap-1">
-          {[...years].reverse().map((year) => {
+          {years.map((year) => {
             const selected = year === y;
+            const isStart = year === YEAR_PANE_MIN;
             return (
-              <li key={year} className="relative flex items-stretch gap-0.5">
+              <li
+                key={year}
+                data-year={year}
+                className="relative flex items-stretch gap-0.5"
+              >
                 <button
                   type="button"
                   onClick={() => onSelectYear(year)}
@@ -188,10 +209,15 @@ function YearPane({
                 >
                   <ScopeLabelButton
                     onOpenScope={() => onOpenYearScope(year)}
-                    title={`${year}??????????`}
+                    title={scopeCommentTitle(year)}
                     className="text-sm no-underline hover:underline"
                   >
                     {year}
+                    {isStart ? (
+                      <span className="ml-1 text-[10px] font-normal text-black/60">
+                        {YEAR_START_LABEL}
+                      </span>
+                    ) : null}
                   </ScopeLabelButton>
                   {selected && comment ? <ScopeExcerpt text={comment} /> : null}
                 </button>
@@ -221,23 +247,23 @@ function MonthPane({
   const selectedMonth = cursor.getMonth();
 
   return (
-    <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px] dark:border-zinc-700">
-      <PaneHeader title="?" hint={PANE_HINTS.month}>
+    <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px]">
+      <PaneHeader title={MONTH_PANE_TITLE} hint={PANE_HINTS.month}>
         <div className="flex items-center justify-between gap-1">
-          <NavChevron dir="prev" label="??" onClick={() => onAddYear(-1)} />
+          <NavChevron dir="prev" label={LABEL_PREV_YEAR} onClick={() => onAddYear(-1)} />
           <ScopeLabelButton
             onOpenScope={onOpenScope}
-            title="????????????"
+            title={SCOPE_COMMENT_MONTH}
             className="text-xs"
           >
             {formatMonthHeader(cursor)}
           </ScopeLabelButton>
-          <NavChevron dir="next" label="??" onClick={() => onAddYear(1)} />
+          <NavChevron dir="next" label={LABEL_NEXT_YEAR} onClick={() => onAddYear(1)} />
         </div>
       </PaneHeader>
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {comment ? (
-          <div className="mb-2 rounded border border-dashed border-zinc-200 px-2 py-1 dark:border-zinc-700">
+          <div className="mb-2 rounded border border-dashed border-zinc-200 px-2 py-1">
             <ScopeExcerpt text={comment} />
           </div>
         ) : null}
@@ -249,9 +275,9 @@ function MonthPane({
                 <button
                   type="button"
                   onClick={() => onSelectMonth(i)}
-                  className={`w-full rounded-md px-1 py-2.5 text-center text-sm font-medium text-zinc-800 dark:text-zinc-200 ${selectClass(selected)}`}
+                  className={`w-full rounded-md px-1 py-2.5 text-center text-sm font-medium text-black ${selectClass(selected)}`}
                 >
-                  {i + 1}?
+                  {monthLabel(i)}
                 </button>
                 {selected ? <Connector /> : null}
               </li>
@@ -282,23 +308,23 @@ function WeekPane({
   }, [cursor]);
 
   return (
-    <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px] dark:border-zinc-700">
-      <PaneHeader title="?" hint={PANE_HINTS.week}>
+    <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px]">
+      <PaneHeader title={WEEK_PANE_TITLE} hint={PANE_HINTS.week}>
         <div className="flex items-center justify-between gap-1">
-          <NavChevron dir="prev" label="??" onClick={() => onAddWeek(-1)} />
+          <NavChevron dir="prev" label={LABEL_PREV_WEEK} onClick={() => onAddWeek(-1)} />
           <ScopeLabelButton
             onOpenScope={onOpenScope}
-            title="????????????"
+            title={SCOPE_COMMENT_WEEK}
             className="text-xs"
           >
             {formatWeekHeader(cursor)}
           </ScopeLabelButton>
-          <NavChevron dir="next" label="??" onClick={() => onAddWeek(1)} />
+          <NavChevron dir="next" label={LABEL_NEXT_WEEK} onClick={() => onAddWeek(1)} />
         </div>
       </PaneHeader>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         {comment ? (
-          <div className="mb-2 rounded border border-dashed border-zinc-200 px-2 py-1 dark:border-zinc-700">
+          <div className="mb-2 rounded border border-dashed border-zinc-200 px-2 py-1">
             <ScopeExcerpt text={comment} />
           </div>
         ) : null}
@@ -310,7 +336,7 @@ function WeekPane({
                 <button
                   type="button"
                   onClick={() => onSelectDay(startOfDay(d))}
-                  className={`w-full rounded-md px-2.5 py-2 text-left text-sm font-medium text-zinc-800 dark:text-zinc-200 ${selectClass(selected)}`}
+                  className={`w-full rounded-md px-2.5 py-2 text-left text-sm font-medium text-black ${selectClass(selected)}`}
                 >
                   {formatWeekRowLabel(d)}
                 </button>
@@ -348,7 +374,7 @@ function EventBlock({
         e.stopPropagation();
         onEdit(ev.id);
       }}
-      className="absolute z-10 box-border overflow-hidden rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-left shadow-sm hover:ring-2 hover:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-900"
+      className="absolute z-10 box-border overflow-hidden rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-left shadow-sm hover:ring-2 hover:ring-zinc-400"
       style={{
         top,
         height,
@@ -356,10 +382,10 @@ function EventBlock({
         width: `calc(${widthPct}% - 4px)`,
       }}
     >
-      <div className="text-[11px] leading-tight font-semibold text-zinc-900 dark:text-zinc-50">
+      <div className="text-[11px] leading-tight font-semibold text-black">
         {ev.title}
       </div>
-      <div className="text-[10px] leading-tight text-zinc-600 dark:text-zinc-400">
+      <div className="text-[10px] leading-tight text-black/80">
         {range}
       </div>
     </button>
@@ -390,28 +416,28 @@ function TimelineDay({
         <button
           type="button"
           onClick={() => onCreateTimed(-1)}
-          className="border-b border-dashed border-zinc-200 px-3 py-2 text-left text-xs text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          className="border-b border-dashed border-zinc-200 px-3 py-2 text-left text-xs text-black/80 hover:bg-zinc-50"
         >
-          <div className="font-medium text-zinc-700 dark:text-zinc-200">
-            ??
+          <div className="font-medium text-black">
+            {LABEL_ALL_DAY}
           </div>
           {allDay.length === 0 ? (
-            <span className="text-zinc-400">????????????</span>
+            <span className="text-black/50">{LABEL_ADD_ALL_DAY}</span>
           ) : (
-            <span className="mt-0.5 block text-zinc-800 dark:text-zinc-200">
+            <span className="mt-0.5 block text-black">
               {allDay.map((e) => e.title).join(" / ")}
             </span>
           )}
         </button>
         <div className="flex min-h-0 flex-1">
           <div
-            className="flex w-11 shrink-0 flex-col border-r border-zinc-200 dark:border-zinc-700"
+            className="flex w-11 shrink-0 flex-col border-r border-zinc-200"
             style={{ height: DAY_HEIGHT }}
           >
             {Array.from({ length: 25 }, (_, h) => (
               <div
                 key={h}
-                className="shrink-0 pr-1.5 text-right text-[10px] leading-none text-zinc-500"
+                className="shrink-0 pr-1.5 text-right text-[10px] leading-none text-black/60"
                 style={{ height: HOUR_PX }}
               >
                 {h}:00
@@ -419,19 +445,19 @@ function TimelineDay({
             ))}
           </div>
           <div
-            className="relative min-w-0 flex-1 bg-white dark:bg-zinc-950"
+            className="relative min-w-0 flex-1 bg-white"
             style={{ height: DAY_HEIGHT }}
           >
             {Array.from({ length: 24 }, (_, h) => (
               <div
                 key={h}
-                className="pointer-events-none absolute right-0 left-0 border-t border-dashed border-zinc-200 dark:border-zinc-700"
+                className="pointer-events-none absolute right-0 left-0 border-t border-dashed border-zinc-200"
                 style={{ top: h * HOUR_PX, height: HOUR_PX }}
               />
             ))}
             <button
               type="button"
-              aria-label="??????????????????"
+              aria-label={LABEL_ADD_TIMED}
               className="absolute inset-0 z-0 cursor-crosshair rounded-none border-0 bg-transparent p-0"
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
@@ -467,13 +493,13 @@ function DayPane({
 }) {
   return (
     <div className="flex min-h-[420px] min-w-0 flex-1 flex-col md:min-h-[520px]">
-      <PaneHeader title="?" hint={PANE_HINTS.day}>
+      <PaneHeader title={DAY_PANE_TITLE} hint={PANE_HINTS.day}>
         <div className="flex items-center justify-between gap-1">
-          <NavChevron dir="prev" label="??" onClick={() => onAddDay(-1)} />
-          <span className="min-w-0 flex-1 text-center text-[11px] font-semibold text-zinc-800 sm:text-xs dark:text-zinc-100">
+          <NavChevron dir="prev" label={LABEL_PREV_DAY} onClick={() => onAddDay(-1)} />
+          <span className="min-w-0 flex-1 text-center text-[11px] font-semibold text-black sm:text-xs">
             {formatDayHeader(cursor)}
           </span>
-          <NavChevron dir="next" label="??" onClick={() => onAddDay(1)} />
+          <NavChevron dir="next" label={LABEL_NEXT_DAY} onClick={() => onAddDay(1)} />
         </div>
       </PaneHeader>
       <TimelineDay
@@ -557,7 +583,7 @@ export function CalendarPanes() {
   const openYearScope = (year: number) => {
     setScopeModal({
       key: yearKey(year),
-      heading: `${year}?`,
+      heading: scopeHeadingYear(year),
     });
   };
 
@@ -577,7 +603,10 @@ export function CalendarPanes() {
         onOpenScope={() =>
           setScopeModal({
             key: monthKey(cursor),
-            heading: `${cursor.getFullYear()}?${cursor.getMonth() + 1}?`,
+            heading: scopeHeadingYearMonth(
+              cursor.getFullYear(),
+              cursor.getMonth() + 1,
+            ),
           })
         }
       />
@@ -604,12 +633,12 @@ export function CalendarPanes() {
     </>
   );
 
-  const tabs = ["?", "?", "?", "?"] as const;
+  const tabs = MOBILE_TABS;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div
-        className="flex gap-1 border-b border-zinc-200 bg-zinc-100 p-1.5 md:hidden dark:border-zinc-800 dark:bg-zinc-950"
+        className="flex gap-1 border-b border-zinc-200 bg-white p-1.5 md:hidden"
         role="tablist"
       >
         {tabs.map((label, i) => (
@@ -620,8 +649,8 @@ export function CalendarPanes() {
             aria-selected={mobileTab === i}
             className={`flex-1 rounded-md border px-2 py-2 text-xs font-medium ${
               mobileTab === i
-                ? "border-zinc-400 bg-white text-zinc-900 shadow-sm"
-                : "border-transparent text-zinc-600"
+                ? "border-zinc-400 bg-white text-black shadow-sm"
+                : "border-transparent text-black/80"
             }`}
             onClick={() => setMobileTab(i)}
           >
@@ -652,7 +681,10 @@ export function CalendarPanes() {
             onOpenScope={() =>
               setScopeModal({
                 key: monthKey(cursor),
-                heading: `${cursor.getFullYear()}?${cursor.getMonth() + 1}?`,
+                heading: scopeHeadingYearMonth(
+              cursor.getFullYear(),
+              cursor.getMonth() + 1,
+            ),
               })
             }
           />

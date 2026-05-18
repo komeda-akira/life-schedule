@@ -21,7 +21,7 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
   return (
     <>
       <div
-        className={`border-b border-zinc-200 bg-zinc-50 px-3 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/80 ${className}`}
+        className={`border-b border-zinc-200 bg-white px-3 py-2.5 ${className}`}
         role="toolbar"
         aria-label="北極星（理念・目的・目標・プライムシート）"
       >
@@ -31,7 +31,7 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
               key={cat}
               type="button"
               onClick={() => setOpen(cat)}
-              className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+              className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-black shadow-sm hover:bg-zinc-100"
             >
               {NORTH_STAR_LABELS[cat]}
             </button>

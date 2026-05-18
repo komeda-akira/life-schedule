@@ -7,9 +7,11 @@ type ModalProps = {
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  /** 中長期行動計画表など横長レイアウト用 */
+  plan?: boolean;
 };
 
-export function Modal({ title, onClose, children, wide }: ModalProps) {
+export function Modal({ title, onClose, children, wide, plan }: ModalProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -20,7 +22,9 @@ export function Modal({ title, onClose, children, wide }: ModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className={`fixed inset-0 z-50 flex justify-center p-4 ${
+        plan ? "items-start pt-6" : "items-center"
+      }`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
@@ -32,7 +36,15 @@ export function Modal({ title, onClose, children, wide }: ModalProps) {
         onClick={onClose}
       />
       <div
-        className={`relative z-10 flex max-h-[min(90vh,720px)] w-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl ${wide ? "max-w-2xl" : "max-w-md"}`}
+        className={`relative z-10 flex w-full flex-col rounded-xl border border-zinc-200 bg-white shadow-xl ${
+          plan
+            ? "max-w-[min(98vw,1400px)]"
+            : `overflow-hidden ${
+                wide
+                  ? "max-h-[min(90vh,720px)] max-w-2xl"
+                  : "max-h-[min(90vh,720px)] max-w-md"
+              }`
+        }`}
       >
         <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3">
           <h2
@@ -49,7 +61,9 @@ export function Modal({ title, onClose, children, wide }: ModalProps) {
             閉じる
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">{children}</div>
+        <div className={plan ? "p-4" : "min-h-0 flex-1 overflow-y-auto p-4"}>
+          {children}
+        </div>
       </div>
     </div>
   );

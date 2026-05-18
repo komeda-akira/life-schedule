@@ -1,4 +1,5 @@
 import { withDemoDataIfEmpty } from "@/lib/demo-data";
+import { normalizeMidLongTermPlan } from "@/lib/mid-long-term-plan";
 import {
   createEmptyAppData,
   DATA_VERSION,
@@ -36,6 +37,7 @@ export function normalizeAppData(input: Partial<AppData>): AppData {
       input.scopeComments && typeof input.scopeComments === "object"
         ? { ...input.scopeComments }
         : base.scopeComments,
+    midLongTermPlan: normalizeMidLongTermPlan(input.midLongTermPlan),
   };
 }
 

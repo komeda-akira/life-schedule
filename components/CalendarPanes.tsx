@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -10,6 +11,7 @@ import {
 } from "react";
 import { useAppData } from "@/components/AppDataProvider";
 import { EventModal } from "@/components/EventModal";
+import { MidLongTermPlanModal } from "@/components/MidLongTermPlanModal";
 import { ScopeCommentModal } from "@/components/ScopeCommentModal";
 import {
   addDays,
@@ -57,9 +59,11 @@ import {
   scopeHeadingYearMonth,
   WEEK_PANE_TITLE,
   DAY_PANE_TITLE,
+  OPEN_MLTP_HINT,
   YEAR_PANE_TITLE,
   YEAR_START_LABEL,
 } from "@/lib/pane-labels";
+import { yearPlanSummaryExcerpt } from "@/lib/mid-long-term-plan";
 import type { CalendarEvent, EventKind } from "@/lib/types";
 
 const HOUR_PX = 48;
@@ -100,19 +104,36 @@ function PaneHeader({
   title,
   hint,
   children,
+  onTitleClick,
+  titleClickHint,
 }: {
   title: string;
-  hint: string;
+  hint?: string;
   children?: ReactNode;
+  onTitleClick?: () => void;
+  titleClickHint?: string;
 }) {
   return (
     <div className="border-b border-zinc-200 bg-white px-2 py-2">
-      <div className="text-center text-sm font-semibold text-black">
-        {title}
-      </div>
-      <p className="mt-0.5 text-center text-[10px] leading-snug text-black/60">
-        {hint}
-      </p>
+      {onTitleClick ? (
+        <button
+          type="button"
+          onClick={onTitleClick}
+          title={titleClickHint}
+          className="mx-auto block w-full text-center text-sm font-semibold text-black underline decoration-zinc-400 underline-offset-2 hover:bg-zinc-50"
+        >
+          {title}
+        </button>
+      ) : (
+        <div className="text-center text-sm font-semibold text-black">
+          {title}
+        </div>
+      )}
+      {hint ? (
+        <p className="mt-0.5 text-center text-[10px] leading-snug text-black/60">
+          {hint}
+        </p>
+      ) : null}
       {children ? <div className="mt-2">{children}</div> : null}
     </div>
   );
@@ -174,13 +195,17 @@ function Connector() {
 function YearPane({
   cursor,
   comment,
+  planYearExcerpt,
   onSelectYear,
   onOpenYearScope,
+  onOpenPlan,
 }: {
   cursor: Date;
   comment: string;
+  planYearExcerpt: (year: number) => string;
   onSelectYear: (y: number) => void;
   onOpenYearScope: (y: number) => void;
+  onOpenPlan: () => void;
 }) {
   const years = useMemo(
     () => listYearsChronological(YEAR_PANE_MIN, YEAR_PANE_MAX),
@@ -190,12 +215,17 @@ function YearPane({
 
   return (
     <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px]">
-      <PaneHeader title={YEAR_PANE_TITLE} hint={PANE_HINTS.year} />
+      <PaneHeader
+        title={YEAR_PANE_TITLE}
+        onTitleClick={onOpenPlan}
+        titleClickHint={OPEN_MLTP_HINT}
+      />
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         <ul className="flex flex-col gap-1">
           {years.map((year) => {
             const selected = year === y;
             const isStart = year === YEAR_PANE_MIN;
+            const summary = planYearExcerpt(year);
             return (
               <li
                 key={year}
@@ -212,12 +242,19 @@ function YearPane({
                     title={scopeCommentTitle(year)}
                     className="text-sm no-underline hover:underline"
                   >
-                    {year}
-                    {isStart ? (
-                      <span className="ml-1 text-[10px] font-normal text-black/60">
-                        {YEAR_START_LABEL}
-                      </span>
-                    ) : null}
+                    <span className="flex min-w-0 items-baseline gap-1.5">
+                      <span className="shrink-0 tabular-nums">{year}</span>
+                      {summary ? (
+                        <span className="min-w-0 truncate text-[10px] font-normal text-black/60 no-underline">
+                          {summary}
+                        </span>
+                      ) : null}
+                      {isStart ? (
+                        <span className="shrink-0 text-[10px] font-normal text-black/60">
+                          {YEAR_START_LABEL}
+                        </span>
+                      ) : null}
+                    </span>
                   </ScopeLabelButton>
                   {selected && comment ? <ScopeExcerpt text={comment} /> : null}
                 </button>
@@ -513,10 +550,11 @@ function DayPane({
 }
 
 export function CalendarPanes() {
-  const { eventsForDate, getScopeComment } = useAppData();
+  const { eventsForDate, getScopeComment, getMidLongTermPlan } = useAppData();
   const [cursor, setCursor] = useState(INITIAL_CURSOR);
   const [mobileTab, setMobileTab] = useState(3);
   const [scopeModal, setScopeModal] = useState<ScopeModalState>(null);
+  const [mltpOpen, setMltpOpen] = useState(false);
   const [eventDraft, setEventDraft] = useState<EventDraft | null>(null);
   const dayScrollRef = useRef<HTMLDivElement>(null);
 
@@ -526,6 +564,11 @@ export function CalendarPanes() {
   const yComment = getScopeComment(yearKey(cursor.getFullYear()));
   const mComment = getScopeComment(monthKey(cursor));
   const wComment = getScopeComment(weekKey(cursor));
+
+  const planYearExcerpt = useCallback(
+    (year: number) => yearPlanSummaryExcerpt(getMidLongTermPlan(), year),
+    [getMidLongTermPlan],
+  );
 
   useEffect(() => {
     if (!isToday(cursor)) return;
@@ -592,8 +635,10 @@ export function CalendarPanes() {
       <YearPane
         cursor={cursor}
         comment={yComment}
+        planYearExcerpt={planYearExcerpt}
         onSelectYear={onSelectYear}
         onOpenYearScope={openYearScope}
+        onOpenPlan={() => setMltpOpen(true)}
       />
       <MonthPane
         cursor={cursor}
@@ -668,8 +713,10 @@ export function CalendarPanes() {
           <YearPane
             cursor={cursor}
             comment={yComment}
+            planYearExcerpt={planYearExcerpt}
             onSelectYear={onSelectYear}
             onOpenYearScope={openYearScope}
+            onOpenPlan={() => setMltpOpen(true)}
           />
         ) : null}
         {mobileTab === 1 ? (
@@ -721,6 +768,10 @@ export function CalendarPanes() {
           heading={scopeModal.heading}
           onClose={() => setScopeModal(null)}
         />
+      ) : null}
+
+      {mltpOpen ? (
+        <MidLongTermPlanModal onClose={() => setMltpOpen(false)} />
       ) : null}
 
       {eventDraft ? (

@@ -9,6 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { createDefaultPlan } from "@/lib/mid-long-term-plan";
+import type { MidLongTermPlan } from "@/lib/mid-long-term-plan";
 import {
   loadAppData,
   mergeImportEvents,
@@ -32,6 +34,8 @@ type AppDataContextValue = {
   northStarFor: (category: NorthStarCategory) => NorthStarItem[];
   getScopeComment: (key: string) => string;
   setScopeComment: (key: string, text: string) => void;
+  getMidLongTermPlan: () => MidLongTermPlan;
+  setMidLongTermPlan: (plan: MidLongTermPlan) => void;
   importData: (partial: Partial<AppData>) => void;
   exportData: () => AppData;
 };
@@ -124,6 +128,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [update],
   );
 
+  const getMidLongTermPlan = useCallback(
+    () => data.midLongTermPlan ?? createDefaultPlan(),
+    [data.midLongTermPlan],
+  );
+
+  const setMidLongTermPlan = useCallback(
+    (plan: MidLongTermPlan) => {
+      update((prev) => ({ ...prev, midLongTermPlan: plan }));
+    },
+    [update],
+  );
+
   const importData = useCallback(
     (partial: Partial<AppData>) => {
       const normalized = normalizeAppData(partial);
@@ -132,6 +148,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         events: mergeImportEvents(prev.events, normalized.events),
         northStar: mergeNorthStar(prev.northStar, normalized.northStar),
         scopeComments: { ...prev.scopeComments, ...normalized.scopeComments },
+        midLongTermPlan:
+          normalized.midLongTermPlan ?? prev.midLongTermPlan,
       }));
     },
     [update],
@@ -150,6 +168,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       northStarFor,
       getScopeComment,
       setScopeComment,
+      getMidLongTermPlan,
+      setMidLongTermPlan,
       importData,
       exportData,
     }),
@@ -163,6 +183,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       northStarFor,
       getScopeComment,
       setScopeComment,
+      getMidLongTermPlan,
+      setMidLongTermPlan,
       importData,
       exportData,
     ],

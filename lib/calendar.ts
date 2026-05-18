@@ -55,7 +55,7 @@ export function formatWeekRowLabel(d: Date): string {
 
 /** 年ペインの表示開始年（現時点＝2026年から、下へ未来） */
 export const YEAR_PANE_MIN = 2026;
-export const YEAR_PANE_MAX = 2032;
+export const YEAR_PANE_MAX = 2041;
 
 /** 年ペイン用: 古い年 → 新しい年の昇順 */
 export function listYearsChronological(

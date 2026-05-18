@@ -1,3 +1,5 @@
+import type { MidLongTermPlan } from "@/lib/mid-long-term-plan";
+
 export const DATA_VERSION = 1 as const;
 
 export type EventKind = "timed" | "allDay";
@@ -37,6 +39,7 @@ export type AppData = {
   northStar: NorthStarItem[];
   /** 例: year:2026 / month:2026-03 / week:2026-W11 */
   scopeComments: Record<string, string>;
+  midLongTermPlan?: MidLongTermPlan;
 };
 
 export function createEmptyAppData(): AppData {

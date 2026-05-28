@@ -15,6 +15,18 @@ import {
   normalizeLifePhilosophy,
   type LifePhilosophy,
 } from "@/lib/life-philosophy";
+import {
+  normalizeLifeWishList100,
+  type LifeWishList100,
+} from "@/lib/life-wish-list-100";
+import {
+  normalizeMy100YearHistory,
+  type My100YearHistory,
+} from "@/lib/my-100-year-history";
+import {
+  normalizePurposeVision,
+  type PurposeVision,
+} from "@/lib/purpose-vision";
 import { applyNorthStarScreenshotDefaults } from "@/lib/north-star-seeds";
 import {
   loadAppData,
@@ -44,6 +56,12 @@ type AppDataContextValue = {
   setMidLongTermPlan: (plan: MidLongTermPlan) => void;
   getLifePhilosophy: () => LifePhilosophy;
   updateLifePhilosophy: (partial: Partial<LifePhilosophy>) => void;
+  getPurposeVision: () => PurposeVision;
+  updatePurposeVision: (partial: Partial<PurposeVision>) => void;
+  getMy100YearHistory: () => My100YearHistory;
+  updateMy100YearHistory: (partial: Partial<My100YearHistory>) => void;
+  getLifeWishList100: () => LifeWishList100;
+  updateLifeWishList100: (partial: Partial<LifeWishList100>) => void;
   importData: (partial: Partial<AppData>) => void;
   exportData: () => AppData;
 };
@@ -166,6 +184,60 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [update],
   );
 
+  const getPurposeVision = useCallback(
+    () => normalizePurposeVision(data.purposeVision),
+    [data.purposeVision],
+  );
+
+  const updatePurposeVision = useCallback(
+    (partial: Partial<PurposeVision>) => {
+      update((prev) => ({
+        ...prev,
+        purposeVision: normalizePurposeVision({
+          ...normalizePurposeVision(prev.purposeVision),
+          ...partial,
+        }),
+      }));
+    },
+    [update],
+  );
+
+  const getMy100YearHistory = useCallback(
+    () => normalizeMy100YearHistory(data.my100YearHistory),
+    [data.my100YearHistory],
+  );
+
+  const updateMy100YearHistory = useCallback(
+    (partial: Partial<My100YearHistory>) => {
+      update((prev) => ({
+        ...prev,
+        my100YearHistory: normalizeMy100YearHistory({
+          ...normalizeMy100YearHistory(prev.my100YearHistory),
+          ...partial,
+        }),
+      }));
+    },
+    [update],
+  );
+
+  const getLifeWishList100 = useCallback(
+    () => normalizeLifeWishList100(data.lifeWishList100),
+    [data.lifeWishList100],
+  );
+
+  const updateLifeWishList100 = useCallback(
+    (partial: Partial<LifeWishList100>) => {
+      update((prev) => ({
+        ...prev,
+        lifeWishList100: normalizeLifeWishList100({
+          ...normalizeLifeWishList100(prev.lifeWishList100),
+          ...partial,
+        }),
+      }));
+    },
+    [update],
+  );
+
   const importData = useCallback(
     (partial: Partial<AppData>) => {
       const normalized = normalizeAppData(partial);
@@ -182,6 +254,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               ...normalized.lifePhilosophy,
             })
           : prev.lifePhilosophy,
+        purposeVision: normalized.purposeVision
+          ? normalizePurposeVision({
+              ...normalizePurposeVision(prev.purposeVision),
+              ...normalized.purposeVision,
+            })
+          : prev.purposeVision,
+        my100YearHistory: normalized.my100YearHistory
+          ? normalizeMy100YearHistory({
+              ...normalizeMy100YearHistory(prev.my100YearHistory),
+              ...normalized.my100YearHistory,
+            })
+          : prev.my100YearHistory,
+        lifeWishList100: normalized.lifeWishList100
+          ? normalizeLifeWishList100({
+              ...normalizeLifeWishList100(prev.lifeWishList100),
+              ...normalized.lifeWishList100,
+            })
+          : prev.lifeWishList100,
       }));
     },
     [update],
@@ -204,6 +294,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setMidLongTermPlan,
       getLifePhilosophy,
       updateLifePhilosophy,
+      getPurposeVision,
+      updatePurposeVision,
+      getMy100YearHistory,
+      updateMy100YearHistory,
+      getLifeWishList100,
+      updateLifeWishList100,
       importData,
       exportData,
     }),
@@ -221,6 +317,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setMidLongTermPlan,
       getLifePhilosophy,
       updateLifePhilosophy,
+      getPurposeVision,
+      updatePurposeVision,
+      getMy100YearHistory,
+      updateMy100YearHistory,
+      getLifeWishList100,
+      updateLifeWishList100,
       importData,
       exportData,
     ],

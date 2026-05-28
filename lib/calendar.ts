@@ -37,6 +37,14 @@ export function formatWeekdayJa(d: Date): string {
   return WD[d.getDay()] ?? "—";
 }
 
+/** 土曜=青・日曜=赤（getDay: 0=日, 6=土） */
+export function weekdayTextClass(d: Date): string {
+  const day = d.getDay();
+  if (day === 0) return "text-red-600";
+  if (day === 6) return "text-blue-600";
+  return "text-black";
+}
+
 export function formatMonthHeader(d: Date): string {
   return `${d.getFullYear()}年`;
 }

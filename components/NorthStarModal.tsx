@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/Modal";
+import { PurposeVisionView } from "@/components/PurposeVisionView";
 import { VisionPhilosophyView } from "@/components/VisionPhilosophyView";
 import { useAppData } from "@/components/AppDataProvider";
 import {
@@ -22,6 +23,14 @@ export function NorthStarModal({ category, onClose }: NorthStarModalProps) {
     return (
       <Modal title={label} onClose={onClose} plan>
         <VisionPhilosophyView />
+      </Modal>
+    );
+  }
+
+  if (category === "purpose") {
+    return (
+      <Modal title={label} onClose={onClose} plan>
+        <PurposeVisionView />
       </Modal>
     );
   }

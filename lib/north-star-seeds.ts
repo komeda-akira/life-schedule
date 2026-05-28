@@ -46,6 +46,7 @@ export function applyNorthStarScreenshotDefaults(data: AppData): AppData {
   for (const category of Object.keys(
     NORTH_STAR_SCREENSHOT_DEFAULTS,
   ) as NorthStarCategory[]) {
+    if (category === "purpose") continue;
     if (hasValidNorthStar(northStar, category)) continue;
     northStar = northStar.filter(
       (n) => n.category !== category || n.title.trim().length > 0,

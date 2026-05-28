@@ -1,6 +1,16 @@
 import { withDemoDataIfEmpty } from "@/lib/demo-data";
 import { applyNorthStarScreenshotDefaults } from "@/lib/north-star-seeds";
+import {
+  applyLifeWishList100Defaults,
+  normalizeLifeWishList100,
+} from "@/lib/life-wish-list-100";
+import {
+  applyMy100YearHistoryDefaults,
+  normalizeMy100YearHistory,
+} from "@/lib/my-100-year-history";
+import { applyPurposeVisionDefaults } from "@/lib/purpose-vision";
 import { normalizeLifePhilosophy } from "@/lib/life-philosophy";
+import { normalizePurposeVision } from "@/lib/purpose-vision";
 import { normalizeMidLongTermPlan } from "@/lib/mid-long-term-plan";
 import {
   createEmptyAppData,
@@ -17,16 +27,34 @@ export function loadAppData(): AppData {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       return withDemoDataIfEmpty(
-        applyNorthStarScreenshotDefaults(createEmptyAppData()),
+        applyLifeWishList100Defaults(
+          applyMy100YearHistoryDefaults(
+            applyPurposeVisionDefaults(
+              applyNorthStarScreenshotDefaults(createEmptyAppData()),
+            ),
+          ),
+        ),
       );
     }
     const parsed = JSON.parse(raw) as Partial<AppData>;
     return withDemoDataIfEmpty(
-      applyNorthStarScreenshotDefaults(normalizeAppData(parsed)),
+      applyLifeWishList100Defaults(
+        applyMy100YearHistoryDefaults(
+          applyPurposeVisionDefaults(
+            applyNorthStarScreenshotDefaults(normalizeAppData(parsed)),
+          ),
+        ),
+      ),
     );
   } catch {
     return withDemoDataIfEmpty(
-      applyNorthStarScreenshotDefaults(createEmptyAppData()),
+      applyLifeWishList100Defaults(
+        applyMy100YearHistoryDefaults(
+          applyPurposeVisionDefaults(
+            applyNorthStarScreenshotDefaults(createEmptyAppData()),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -49,6 +77,9 @@ export function normalizeAppData(input: Partial<AppData>): AppData {
         : base.scopeComments,
     midLongTermPlan: normalizeMidLongTermPlan(input.midLongTermPlan),
     lifePhilosophy: normalizeLifePhilosophy(input.lifePhilosophy),
+    purposeVision: normalizePurposeVision(input.purposeVision),
+    my100YearHistory: normalizeMy100YearHistory(input.my100YearHistory),
+    lifeWishList100: normalizeLifeWishList100(input.lifeWishList100),
   };
 }
 

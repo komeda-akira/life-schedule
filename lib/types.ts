@@ -1,4 +1,7 @@
 import type { LifePhilosophy } from "@/lib/life-philosophy";
+import type { LifeWishList100 } from "@/lib/life-wish-list-100";
+import type { My100YearHistory } from "@/lib/my-100-year-history";
+import type { PurposeVision } from "@/lib/purpose-vision";
 import type { MidLongTermPlan } from "@/lib/mid-long-term-plan";
 
 export const DATA_VERSION = 1 as const;
@@ -42,6 +45,9 @@ export type AppData = {
   scopeComments: Record<string, string>;
   midLongTermPlan?: MidLongTermPlan;
   lifePhilosophy?: LifePhilosophy;
+  purposeVision?: PurposeVision;
+  my100YearHistory?: My100YearHistory;
+  lifeWishList100?: LifeWishList100;
 };
 
 export function createEmptyAppData(): AppData {

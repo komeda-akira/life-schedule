@@ -28,6 +28,7 @@ import {
   listYearsChronological,
   startOfDay,
   toTimedForLayout,
+  weekdayTextClass,
   YEAR_PANE_MAX,
   YEAR_PANE_MIN,
   type PlacedEvent,
@@ -374,7 +375,7 @@ function WeekPane({
                 <button
                   type="button"
                   onClick={() => onSelectDay(startOfDay(d))}
-                  className={`w-full rounded-md px-2.5 py-2 text-left text-sm font-medium text-black ${selectClass(selected)}`}
+                  className={`w-full rounded-md px-2.5 py-2 text-left text-sm font-medium ${weekdayTextClass(d)} ${selectClass(selected)}`}
                 >
                   {formatWeekRowLabel(d)}
                 </button>
@@ -534,7 +535,9 @@ function DayPane({
       <PaneHeader title={DAY_PANE_TITLE} hint={PANE_HINTS.day}>
         <div className="flex items-center justify-between gap-1">
           <NavChevron dir="prev" label={LABEL_PREV_DAY} onClick={() => onAddDay(-1)} />
-          <span className="min-w-0 flex-1 text-center text-[11px] font-semibold text-black sm:text-xs">
+          <span
+            className={`min-w-0 flex-1 text-center text-[11px] font-semibold sm:text-xs ${weekdayTextClass(cursor)}`}
+          >
             {formatDayHeader(cursor)}
           </span>
           <NavChevron dir="next" label={LABEL_NEXT_DAY} onClick={() => onAddDay(1)} />

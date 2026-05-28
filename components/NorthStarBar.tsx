@@ -57,8 +57,7 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
     if (cat === "vision") return null;
     if (cat === "purpose") return null;
     if (cat === "goal") {
-      const ex = goalSettingBarExcerpt(getGoalSetting());
-      return ex ? excerptComment(ex, 32) : "";
+      return goalSettingBarExcerpt(getGoalSetting());
     }
     if (cat === "prime") {
       const ex = primeTimeSheetDataExcerpt(getPrimeTimeSheetData());
@@ -83,6 +82,8 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
       >
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((cat) => {
+            const goalBarText = cat === "goal" ? excerptFor("goal") : "";
+
             if (cat === "prime") {
               return (
                 <div
@@ -131,7 +132,9 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
                 type="button"
                 onClick={() => setOpen(cat)}
                 className={`${northStarBtnClass} ${
-                  cat === "purpose" ? "max-w-[14.5rem] min-w-[11.5rem]" : "max-w-[11rem]"
+                  cat === "purpose" || cat === "goal"
+                    ? "max-w-[14.5rem] min-w-[11.5rem]"
+                    : "max-w-[11rem]"
                 }`}
               >
                 <span>{NORTH_STAR_LABELS[cat]}</span>
@@ -157,9 +160,11 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
                       ) : null}
                     </span>
                   ) : cat === "goal" ? (
-                    <span className="text-base font-bold text-red-700">
-                      {excerptFor(cat)}
-                    </span>
+                    goalBarText ? (
+                      <span className="flex w-full flex-col text-[10px] font-bold leading-[1.35] text-red-700">
+                        <span className="line-clamp-3">{goalBarText}</span>
+                      </span>
+                    ) : null
                   ) : (
                     <span className="text-[10px] font-normal text-black/60">
                       {excerptFor(cat)}

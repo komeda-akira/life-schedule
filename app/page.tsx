@@ -15,7 +15,7 @@ export default function Home() {
                 人生のカレンダー
               </h1>
               <p className="text-sm text-black/70">
-                Life Calendar — 年・月・週・日で実行スケジュールを俯瞰する
+                Life Calendar — 年・月・週・日で実行スケジュールを俯瞰し未来を創造し思考を現実化させる
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">

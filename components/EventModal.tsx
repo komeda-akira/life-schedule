@@ -9,7 +9,9 @@ type EventModalProps = {
   event: CalendarEvent | null;
   dateKey: string;
   defaultStartMin?: number;
+  defaultEndMin?: number;
   defaultKind?: EventKind;
+  prefilledTitle?: string;
   onClose: () => void;
 };
 
@@ -32,12 +34,14 @@ export function EventModal({
   event,
   dateKey,
   defaultStartMin = 9 * 60,
+  defaultEndMin,
   defaultKind = "timed",
+  prefilledTitle = "",
   onClose,
 }: EventModalProps) {
   const { upsertEvent, deleteEvent } = useAppData();
   const isNew = !event;
-  const [title, setTitle] = useState(event?.title ?? "");
+  const [title, setTitle] = useState(event?.title ?? prefilledTitle);
   const [memo, setMemo] = useState(event?.memo ?? "");
   const [kind, setKind] = useState<EventKind>(event?.kind ?? defaultKind);
   const [startStr, setStartStr] = useState(
@@ -45,7 +49,9 @@ export function EventModal({
   );
   const [endStr, setEndStr] = useState(
     minutesToInput(
-      event?.endMin ?? (event?.startMin ?? defaultStartMin) + 60,
+      event?.endMin ??
+        defaultEndMin ??
+        (event?.startMin ?? defaultStartMin) + 60,
     ),
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -166,7 +172,7 @@ export function EventModal({
             type="button"
             onClick={save}
             disabled={!title.trim()}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-40"
           >
             保存
           </button>

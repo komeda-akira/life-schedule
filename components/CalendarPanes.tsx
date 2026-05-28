@@ -16,6 +16,12 @@ import { DailyWorksheetModal } from "@/components/DailyWorksheetModal";
 import { MonthlyWorksheetModal } from "@/components/MonthlyWorksheetModal";
 import { WeeklyWorksheetModal } from "@/components/WeeklyWorksheetModal";
 import { ScopeCommentModal } from "@/components/ScopeCommentModal";
+import {
+  DayScheduleTimeline,
+  DAY_TIMELINE_HOUR_PX,
+} from "@/components/DayScheduleTimeline";
+import { EventQuickCreatePopover } from "@/components/EventQuickCreatePopover";
+import { MonthSelfCounselingPanel } from "@/components/MonthSelfCounselingPanel";
 import { dayWorksheetKey } from "@/lib/daily-worksheet";
 import { monthlyWorksheetExcerpt } from "@/lib/monthly-worksheet";
 import { weeklyWorksheetExcerpt } from "@/lib/weekly-worksheet";
@@ -37,14 +43,11 @@ import {
   getMonday,
   isSameDay,
   isToday,
-  layoutDayEvents,
   listYearsChronological,
   startOfDay,
-  toTimedForLayout,
   weekdayTextClass,
   YEAR_PANE_MAX,
   YEAR_PANE_MIN,
-  type PlacedEvent,
 } from "@/lib/calendar";
 import {
   formatDateKey,
@@ -53,9 +56,6 @@ import {
   yearKey,
 } from "@/lib/scope-keys";
 import {
-  LABEL_ADD_ALL_DAY,
-  LABEL_ADD_TIMED,
-  LABEL_ALL_DAY,
   LABEL_NEXT_DAY,
   LABEL_NEXT_WEEK,
   LABEL_NEXT_YEAR,
@@ -66,10 +66,13 @@ import {
   monthLabel,
   MONTH_PANE_TITLE,
   PANE_HINTS,
+  OPEN_DAILY_SHEET_ACTION,
+  OPEN_DAILY_SHEET_HINT,
   OPEN_MONTHLY_SHEET_ACTION,
   OPEN_MONTHLY_SHEET_HINT,
   OPEN_WEEKLY_SHEET_ACTION,
   OPEN_WEEKLY_SHEET_HINT,
+  DAY_SWITCH_HINT,
   MONTH_SWITCH_HINT,
   scopeCommentTitle,
   WEEK_DAY_SECTION,
@@ -79,15 +82,15 @@ import {
   scopeHeadingYearMonth,
   WEEK_PANE_TITLE,
   DAY_PANE_TITLE,
+  OPEN_MLTP_ACTION,
   OPEN_MLTP_HINT,
+  OPEN_YEAR_SCOPE_ACTION,
   YEAR_PANE_TITLE,
   YEAR_START_LABEL,
+  YEAR_SWITCH_HINT,
 } from "@/lib/pane-labels";
 import { yearPlanSummaryExcerpt } from "@/lib/mid-long-term-plan";
 import type { CalendarEvent, EventKind } from "@/lib/types";
-
-const HOUR_PX = 48;
-const DAY_HEIGHT = 24 * HOUR_PX;
 
 /** 月・週・日ペインのナビ日付（年／年月／年月日） */
 const PANE_DATE_NAV_CLASS =
@@ -222,8 +225,15 @@ type EventDraft = {
   event: CalendarEvent | null;
   dateKey: string;
   defaultStartMin?: number;
+  defaultEndMin?: number;
   defaultKind?: EventKind;
+  prefilledTitle?: string;
 };
+
+type QuickCreateState = {
+  startMin: number;
+  endMin: number;
+} | null;
 
 function Connector() {
   return (
@@ -263,7 +273,7 @@ function YearPane({
         onTitleClick={onOpenPlan}
         titleClickHint={OPEN_MLTP_HINT}
       />
-      <div className="px-2 py-2">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         <ul className="flex flex-col gap-1">
           {years.map((year) => {
             const selected = year === y;
@@ -278,27 +288,21 @@ function YearPane({
                 <button
                   type="button"
                   onClick={() => onSelectYear(year)}
-                  className={`min-w-0 flex-1 rounded-md px-2.5 py-2 text-left text-sm transition-colors ${selectClass(selected)}`}
+                  className={`min-w-0 flex-1 rounded-md px-2.5 py-2 text-left text-sm font-medium text-black transition-colors ${selectClass(selected)}`}
                 >
-                  <ScopeLabelButton
-                    onOpenScope={() => onOpenYearScope(year)}
-                    title={scopeCommentTitle(year)}
-                    className="text-sm no-underline hover:underline"
-                  >
-                    <span className="flex min-w-0 items-baseline gap-1.5">
-                      <span className="shrink-0 tabular-nums">{year}</span>
-                      {summary ? (
-                        <span className="min-w-0 truncate text-[10px] font-normal text-black/60 no-underline">
-                          {summary}
-                        </span>
-                      ) : null}
-                      {isStart ? (
-                        <span className="shrink-0 text-[10px] font-normal text-black/60">
-                          {YEAR_START_LABEL}
-                        </span>
-                      ) : null}
-                    </span>
-                  </ScopeLabelButton>
+                  <span className="flex min-w-0 items-baseline gap-1.5">
+                    <span className="shrink-0 tabular-nums">{year}</span>
+                    {summary ? (
+                      <span className="min-w-0 truncate text-[10px] font-normal text-black/60">
+                        {summary}
+                      </span>
+                    ) : null}
+                    {isStart ? (
+                      <span className="shrink-0 text-[10px] font-normal text-black/60">
+                        {YEAR_START_LABEL}
+                      </span>
+                    ) : null}
+                  </span>
                   {selected && comment ? <ScopeExcerpt text={comment} /> : null}
                 </button>
                 {selected ? <Connector /> : null}
@@ -306,6 +310,29 @@ function YearPane({
             );
           })}
         </ul>
+        <p className="mt-2 text-[9px] leading-snug text-black/45">
+          {YEAR_SWITCH_HINT}
+        </p>
+        <button
+          type="button"
+          onClick={onOpenPlan}
+          className="mt-2 w-full rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
+        >
+          <span className="font-semibold">{OPEN_MLTP_ACTION}</span>
+          <span className="mt-0.5 block text-[10px] text-black/55">
+            {scopeHeadingYear(y)}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onOpenYearScope(y)}
+          className="mt-2 w-full rounded-md border border-dashed border-zinc-200 bg-white px-2 py-2 text-left text-xs text-black hover:bg-zinc-50"
+        >
+          <span className="font-semibold">{OPEN_YEAR_SCOPE_ACTION}</span>
+          <span className="mt-0.5 block text-[10px] text-black/55">
+            {scopeCommentTitle(y)}
+          </span>
+        </button>
       </div>
     </div>
   );
@@ -341,13 +368,13 @@ function MonthPane({
           <NavChevron dir="next" label={LABEL_NEXT_YEAR} onClick={() => onAddYear(1)} />
         </div>
       </PaneHeader>
-      <div className="p-2">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
         {comment ? (
-          <div className="mb-2 rounded border border-dashed border-zinc-200 px-2 py-1">
+          <div className="mb-2 shrink-0 rounded border border-dashed border-zinc-200 px-2 py-1">
             <ScopeExcerpt text={comment} />
           </div>
         ) : null}
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid shrink-0 grid-cols-3 gap-1.5">
           {Array.from({ length: 12 }, (_, i) => {
             const selected = i === selectedMonth;
             return (
@@ -364,19 +391,25 @@ function MonthPane({
             );
           })}
         </div>
-        <p className="mt-2 text-[9px] leading-snug text-black/45">
+        <p className="mt-2 shrink-0 text-[9px] leading-snug text-black/45">
           {MONTH_SWITCH_HINT}
         </p>
         <button
           type="button"
           onClick={onOpenScope}
-          className="mt-2 w-full rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
+          className="mt-2 w-full shrink-0 rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
         >
           <span className="font-semibold">{OPEN_MONTHLY_SHEET_ACTION}</span>
           <span className="mt-0.5 block text-[10px] text-black/55">
-            {scopeHeadingYearMonth(cursor.getFullYear(), cursor.getMonth() + 1)}
+            {scopeHeadingYearMonth(
+              cursor.getFullYear(),
+              cursor.getMonth() + 1,
+            )}
           </span>
         </button>
+        <div className="mt-2 min-h-0 flex-1">
+          <MonthSelfCounselingPanel />
+        </div>
       </div>
     </div>
   );
@@ -390,6 +423,7 @@ function WeekPane({
   onSelectDay,
   onAddWeek,
   onOpenWeeklySheet,
+  onOpenDailySheet,
 }: {
   cursor: Date;
   comment: string;
@@ -398,6 +432,7 @@ function WeekPane({
   onSelectDay: (d: Date) => void;
   onAddWeek: (delta: number) => void;
   onOpenWeeklySheet: () => void;
+  onOpenDailySheet: () => void;
 }) {
   const days = useMemo(() => {
     const monday = getMonday(cursor);
@@ -469,7 +504,10 @@ function WeekPane({
         <p className="mb-1 text-[10px] font-medium text-black/60">
           {WEEK_DAY_SECTION}
         </p>
-        <ul className="flex flex-col gap-1">
+        <p className="mb-1.5 text-[9px] leading-snug text-black/45">
+          {DAY_SWITCH_HINT}
+        </p>
+        <ul className="mb-2 flex flex-col gap-1">
           {days.map((d) => {
             const selected = isSameDay(d, cursor);
             const inCurrentWeek = isSameWeekMonday(d, cursorMonday);
@@ -487,132 +525,18 @@ function WeekPane({
             );
           })}
         </ul>
-      </div>
-    </div>
-  );
-}
-
-function EventBlock({
-  ev,
-  onEdit,
-}: {
-  ev: PlacedEvent;
-  onEdit: (id: string) => void;
-}) {
-  const top = (ev.startMin / 60) * HOUR_PX;
-  const height = Math.max(((ev.endMin - ev.startMin) / 60) * HOUR_PX, 24);
-  const widthPct = 100 / ev.laneCount;
-  const leftPct = (ev.lane / ev.laneCount) * 100;
-  const startH = Math.floor(ev.startMin / 60);
-  const startM = ev.startMin % 60;
-  const endH = Math.floor(ev.endMin / 60);
-  const endM = ev.endMin % 60;
-  const range = `${startH}:${startM.toString().padStart(2, "0")}\u2013${endH}:${endM.toString().padStart(2, "0")}`;
-
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onEdit(ev.id);
-      }}
-      className="absolute z-10 box-border overflow-hidden rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-left shadow-sm hover:ring-2 hover:ring-zinc-400"
-      style={{
-        top,
-        height,
-        left: `calc(${leftPct}% + 2px)`,
-        width: `calc(${widthPct}% - 4px)`,
-      }}
-    >
-      <div className="text-[11px] leading-tight font-semibold text-black">
-        {ev.title}
-      </div>
-      <div className="text-[10px] leading-tight text-black/80">
-        {range}
-      </div>
-    </button>
-  );
-}
-
-function TimelineDay({
-  events,
-  onCreateTimed,
-  onEdit,
-  scrollRef,
-}: {
-  events: CalendarEvent[];
-  onCreateTimed: (startMin: number) => void;
-  onEdit: (id: string) => void;
-  scrollRef: RefObject<HTMLDivElement | null>;
-}) {
-  const timed = useMemo(() => toTimedForLayout(events), [events]);
-  const placed = useMemo(() => layoutDayEvents(timed), [timed]);
-  const allDay = events.filter((e) => e.kind === "allDay");
-
-  return (
-    <div
-      ref={scrollRef}
-      className="flex min-h-0 min-w-0 flex-1 overflow-y-auto"
-    >
-      <div className="flex w-full flex-col">
         <button
           type="button"
-          onClick={() => onCreateTimed(-1)}
-          className="border-b border-dashed border-zinc-200 px-3 py-2 text-left text-xs text-black/80 hover:bg-zinc-50"
+          onClick={onOpenDailySheet}
+          className="w-full rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
         >
-          <div className="font-medium text-black">
-            {LABEL_ALL_DAY}
-          </div>
-          {allDay.length === 0 ? (
-            <span className="text-black/50">{LABEL_ADD_ALL_DAY}</span>
-          ) : (
-            <span className="mt-0.5 block text-black">
-              {allDay.map((e) => e.title).join(" / ")}
-            </span>
-          )}
+          <span className="font-semibold">{OPEN_DAILY_SHEET_ACTION}</span>
+          <span
+            className={`mt-0.5 block text-[10px] text-black/55 ${weekdayTextClass(cursor)}`}
+          >
+            {formatDayHeader(cursor)}
+          </span>
         </button>
-        <div className="flex min-h-0 flex-1">
-          <div
-            className="flex w-11 shrink-0 flex-col border-r border-zinc-200"
-            style={{ height: DAY_HEIGHT }}
-          >
-            {Array.from({ length: 25 }, (_, h) => (
-              <div
-                key={h}
-                className="shrink-0 pr-1.5 text-right text-[10px] leading-none text-black/60"
-                style={{ height: HOUR_PX }}
-              >
-                {h}:00
-              </div>
-            ))}
-          </div>
-          <div
-            className="relative min-w-0 flex-1 bg-white"
-            style={{ height: DAY_HEIGHT }}
-          >
-            {Array.from({ length: 24 }, (_, h) => (
-              <div
-                key={h}
-                className="pointer-events-none absolute right-0 left-0 border-t border-dashed border-zinc-200"
-                style={{ top: h * HOUR_PX, height: HOUR_PX }}
-              />
-            ))}
-            <button
-              type="button"
-              aria-label={LABEL_ADD_TIMED}
-              className="absolute inset-0 z-0 cursor-crosshair rounded-none border-0 bg-transparent p-0"
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const y = e.clientY - rect.top;
-                const hour = Math.min(23, Math.max(0, Math.floor(y / HOUR_PX)));
-                onCreateTimed(hour * 60);
-              }}
-            />
-            {placed.map((ev) => (
-              <EventBlock key={ev.id} ev={ev} onEdit={onEdit} />
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -623,7 +547,8 @@ function DayPane({
   events,
   onAddDay,
   onOpenDailySheet,
-  onCreateTimed,
+  onCreateRange,
+  onCreateAllDay,
   onEdit,
   scrollRef,
 }: {
@@ -631,7 +556,8 @@ function DayPane({
   events: CalendarEvent[];
   onAddDay: (delta: number) => void;
   onOpenDailySheet: () => void;
-  onCreateTimed: (startMin: number) => void;
+  onCreateRange: (startMin: number, endMin: number) => void;
+  onCreateAllDay: () => void;
   onEdit: (id: string) => void;
   scrollRef: RefObject<HTMLDivElement | null>;
 }) {
@@ -642,7 +568,7 @@ function DayPane({
           <NavChevron dir="prev" label={LABEL_PREV_DAY} onClick={() => onAddDay(-1)} />
           <ScopeLabelButton
             onOpenScope={onOpenDailySheet}
-            title="日次プランナーを開く"
+            title={OPEN_DAILY_SHEET_HINT}
             className={`${PANE_DATE_NAV_CLASS} ${weekdayTextClass(cursor)}`}
           >
             {formatDayHeader(cursor)}
@@ -650,11 +576,13 @@ function DayPane({
           <NavChevron dir="next" label={LABEL_NEXT_DAY} onClick={() => onAddDay(1)} />
         </div>
       </PaneHeader>
-      <TimelineDay
+      <DayScheduleTimeline
+        date={cursor}
         events={events}
-        onCreateTimed={onCreateTimed}
-        onEdit={onEdit}
         scrollRef={scrollRef}
+        onCreateRange={onCreateRange}
+        onCreateAllDay={onCreateAllDay}
+        onEdit={onEdit}
       />
     </div>
   );
@@ -679,6 +607,7 @@ export function CalendarPanes() {
     useState<DailySheetModalState>(null);
   const [mltpOpen, setMltpOpen] = useState(false);
   const [eventDraft, setEventDraft] = useState<EventDraft | null>(null);
+  const [quickCreate, setQuickCreate] = useState<QuickCreateState>(null);
   const dayScrollRef = useRef<HTMLDivElement>(null);
 
   const dateKey = formatDateKey(cursor);
@@ -724,20 +653,28 @@ export function CalendarPanes() {
     if (!el) return;
     const now = new Date();
     const min = now.getHours() * 60 + now.getMinutes();
-    el.scrollTop = Math.max(0, (min / 60) * HOUR_PX - el.clientHeight / 3);
+    el.scrollTop = Math.max(
+      0,
+      (min / 60) * DAY_TIMELINE_HOUR_PX - el.clientHeight / 3,
+    );
   }, [cursor, dateKey]);
 
   const openEvent = (draft: {
     dateKey?: string;
     event?: CalendarEvent | null;
     defaultStartMin?: number;
+    defaultEndMin?: number;
     defaultKind?: EventKind;
+    prefilledTitle?: string;
   }) => {
+    setQuickCreate(null);
     setEventDraft({
       dateKey: draft.dateKey ?? dateKey,
       event: draft.event ?? null,
       defaultStartMin: draft.defaultStartMin,
+      defaultEndMin: draft.defaultEndMin,
       defaultKind: draft.defaultKind,
+      prefilledTitle: draft.prefilledTitle,
     });
   };
 
@@ -746,12 +683,12 @@ export function CalendarPanes() {
     if (ev) openEvent({ event: ev });
   };
 
-  const onCreateTimed = (startMin: number) => {
-    if (startMin < 0) {
-      openEvent({ defaultKind: "allDay" });
-      return;
-    }
-    openEvent({ defaultStartMin: startMin, defaultKind: "timed" });
+  const onCreateRange = useCallback((startMin: number, endMin: number) => {
+    setQuickCreate({ startMin, endMin });
+  }, []);
+
+  const onCreateAllDay = () => {
+    openEvent({ defaultKind: "allDay" });
   };
 
   const onSelectYear = (year: number) => {
@@ -807,10 +744,8 @@ export function CalendarPanes() {
   };
 
   const onSelectDay = (d: Date) => {
-    const day = startOfDay(d);
-    setCursor(day);
+    setCursor(startOfDay(d));
     setMobileTab(3);
-    openDailySheet(day);
   };
 
   const openYearScope = (year: number) => {
@@ -851,13 +786,15 @@ export function CalendarPanes() {
             cursor.getMonth() + 1,
           )
         }
+        onOpenDailySheet={() => openDailySheet(cursor)}
       />
       <DayPane
         cursor={cursor}
         events={dayEvents}
         onAddDay={(d) => setCursor(startOfDay(addDays(cursor, d)))}
         onOpenDailySheet={() => openDailySheet(cursor)}
-        onCreateTimed={onCreateTimed}
+        onCreateRange={onCreateRange}
+        onCreateAllDay={onCreateAllDay}
         onEdit={onEditEvent}
         scrollRef={dayScrollRef}
       />
@@ -929,6 +866,7 @@ export function CalendarPanes() {
                 cursor.getMonth() + 1,
               )
             }
+            onOpenDailySheet={() => openDailySheet(cursor)}
           />
         ) : null}
         {mobileTab === 3 ? (
@@ -937,7 +875,8 @@ export function CalendarPanes() {
             events={dayEvents}
             onAddDay={(d) => setCursor(startOfDay(addDays(cursor, d)))}
             onOpenDailySheet={() => openDailySheet(cursor)}
-            onCreateTimed={onCreateTimed}
+            onCreateRange={onCreateRange}
+            onCreateAllDay={onCreateAllDay}
             onEdit={onEditEvent}
             scrollRef={dayScrollRef}
           />
@@ -983,12 +922,30 @@ export function CalendarPanes() {
         <MidLongTermPlanModal onClose={() => setMltpOpen(false)} />
       ) : null}
 
+      {quickCreate ? (
+        <EventQuickCreatePopover
+          dateKey={dateKey}
+          startMin={quickCreate.startMin}
+          endMin={quickCreate.endMin}
+          onClose={() => setQuickCreate(null)}
+          onMoreDetails={({ title, startMin, endMin }) => {
+            openEvent({
+              defaultStartMin: startMin,
+              defaultEndMin: endMin,
+              defaultKind: "timed",
+              prefilledTitle: title,
+            });
+          }}
+        />
+      ) : null}
       {eventDraft ? (
         <EventModal
           event={eventDraft.event}
           dateKey={eventDraft.dateKey}
           defaultStartMin={eventDraft.defaultStartMin}
+          defaultEndMin={eventDraft.defaultEndMin}
           defaultKind={eventDraft.defaultKind}
+          prefilledTitle={eventDraft.prefilledTitle}
           onClose={() => setEventDraft(null)}
         />
       ) : null}

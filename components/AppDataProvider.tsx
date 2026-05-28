@@ -28,6 +28,21 @@ import {
   type GoalSetting,
 } from "@/lib/goal-setting";
 import {
+  normalizeDailyWorksheet,
+  normalizeDailyWorksheets,
+  type DailyWorksheet,
+} from "@/lib/daily-worksheet";
+import {
+  normalizeMonthlyWorksheet,
+  normalizeMonthlyWorksheets,
+  type MonthlyWorksheet,
+} from "@/lib/monthly-worksheet";
+import {
+  normalizeWeeklyWorksheet,
+  normalizeWeeklyWorksheets,
+  type WeeklyWorksheet,
+} from "@/lib/weekly-worksheet";
+import {
   normalizePurposeVision,
   type PurposeVision,
 } from "@/lib/purpose-vision";
@@ -68,6 +83,28 @@ type AppDataContextValue = {
   updateLifeWishList100: (partial: Partial<LifeWishList100>) => void;
   getGoalSetting: () => GoalSetting;
   updateGoalSetting: (partial: Partial<GoalSetting>) => void;
+  getMonthlyWorksheet: (
+    monthKey: string,
+    year: number,
+    month: number,
+  ) => MonthlyWorksheet;
+  updateMonthlyWorksheet: (
+    monthKey: string,
+    year: number,
+    month: number,
+    partial: Partial<MonthlyWorksheet>,
+  ) => void;
+  getDailyWorksheet: (dayKey: string) => DailyWorksheet;
+  updateDailyWorksheet: (
+    dayKey: string,
+    partial: Partial<DailyWorksheet>,
+  ) => void;
+  getWeeklyWorksheet: (weekKey: string, weekMonday: Date) => WeeklyWorksheet;
+  updateWeeklyWorksheet: (
+    weekKey: string,
+    weekMonday: Date,
+    partial: Partial<WeeklyWorksheet>,
+  ) => void;
   importData: (partial: Partial<AppData>) => void;
   exportData: () => AppData;
 };
@@ -262,6 +299,78 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [update],
   );
 
+  const getMonthlyWorksheet = useCallback(
+    (key: string, year: number, month: number) => {
+      const sheets = data.monthlyWorksheets ?? {};
+      return normalizeMonthlyWorksheet(sheets[key], year, month);
+    },
+    [data.monthlyWorksheets],
+  );
+
+  const updateMonthlyWorksheet = useCallback(
+    (
+      key: string,
+      year: number,
+      month: number,
+      partial: Partial<MonthlyWorksheet>,
+    ) => {
+      update((prev) => {
+        const sheets = { ...(prev.monthlyWorksheets ?? {}) };
+        const current = normalizeMonthlyWorksheet(sheets[key], year, month);
+        sheets[key] = normalizeMonthlyWorksheet(
+          { ...current, ...partial },
+          year,
+          month,
+        );
+        return { ...prev, monthlyWorksheets: sheets };
+      });
+    },
+    [update],
+  );
+
+  const getDailyWorksheet = useCallback(
+    (key: string) => {
+      const sheets = data.dailyWorksheets ?? {};
+      return normalizeDailyWorksheet(sheets[key]);
+    },
+    [data.dailyWorksheets],
+  );
+
+  const updateDailyWorksheet = useCallback(
+    (key: string, partial: Partial<DailyWorksheet>) => {
+      update((prev) => {
+        const sheets = { ...(prev.dailyWorksheets ?? {}) };
+        const current = normalizeDailyWorksheet(sheets[key]);
+        sheets[key] = normalizeDailyWorksheet({ ...current, ...partial });
+        return { ...prev, dailyWorksheets: sheets };
+      });
+    },
+    [update],
+  );
+
+  const getWeeklyWorksheet = useCallback(
+    (key: string, weekMonday: Date) => {
+      const sheets = data.weeklyWorksheets ?? {};
+      return normalizeWeeklyWorksheet(sheets[key], weekMonday);
+    },
+    [data.weeklyWorksheets],
+  );
+
+  const updateWeeklyWorksheet = useCallback(
+    (key: string, weekMonday: Date, partial: Partial<WeeklyWorksheet>) => {
+      update((prev) => {
+        const sheets = { ...(prev.weeklyWorksheets ?? {}) };
+        const current = normalizeWeeklyWorksheet(sheets[key], weekMonday);
+        sheets[key] = normalizeWeeklyWorksheet(
+          { ...current, ...partial },
+          weekMonday,
+        );
+        return { ...prev, weeklyWorksheets: sheets };
+      });
+    },
+    [update],
+  );
+
   const importData = useCallback(
     (partial: Partial<AppData>) => {
       const normalized = normalizeAppData(partial);
@@ -302,6 +411,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               ...normalized.goalSetting,
             })
           : prev.goalSetting,
+        monthlyWorksheets: normalized.monthlyWorksheets
+          ? {
+              ...normalizeMonthlyWorksheets(prev.monthlyWorksheets),
+              ...normalizeMonthlyWorksheets(normalized.monthlyWorksheets),
+            }
+          : prev.monthlyWorksheets,
+        dailyWorksheets: normalized.dailyWorksheets
+          ? {
+              ...normalizeDailyWorksheets(prev.dailyWorksheets),
+              ...normalizeDailyWorksheets(normalized.dailyWorksheets),
+            }
+          : prev.dailyWorksheets,
+        weeklyWorksheets: normalized.weeklyWorksheets
+          ? {
+              ...normalizeWeeklyWorksheets(prev.weeklyWorksheets),
+              ...normalizeWeeklyWorksheets(normalized.weeklyWorksheets),
+            }
+          : prev.weeklyWorksheets,
       }));
     },
     [update],
@@ -332,6 +459,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateLifeWishList100,
       getGoalSetting,
       updateGoalSetting,
+      getMonthlyWorksheet,
+      updateMonthlyWorksheet,
+      getDailyWorksheet,
+      updateDailyWorksheet,
+      getWeeklyWorksheet,
+      updateWeeklyWorksheet,
       importData,
       exportData,
     }),
@@ -357,6 +490,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateLifeWishList100,
       getGoalSetting,
       updateGoalSetting,
+      getMonthlyWorksheet,
+      updateMonthlyWorksheet,
+      getDailyWorksheet,
+      updateDailyWorksheet,
+      getWeeklyWorksheet,
+      updateWeeklyWorksheet,
       importData,
       exportData,
     ],

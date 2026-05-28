@@ -12,7 +12,20 @@ import {
 import { useAppData } from "@/components/AppDataProvider";
 import { EventModal } from "@/components/EventModal";
 import { MidLongTermPlanModal } from "@/components/MidLongTermPlanModal";
+import { DailyWorksheetModal } from "@/components/DailyWorksheetModal";
+import { MonthlyWorksheetModal } from "@/components/MonthlyWorksheetModal";
+import { WeeklyWorksheetModal } from "@/components/WeeklyWorksheetModal";
 import { ScopeCommentModal } from "@/components/ScopeCommentModal";
+import { dayWorksheetKey } from "@/lib/daily-worksheet";
+import { monthlyWorksheetExcerpt } from "@/lib/monthly-worksheet";
+import { weeklyWorksheetExcerpt } from "@/lib/weekly-worksheet";
+import {
+  findWeekInMonth,
+  isSameWeekMonday,
+  listWeeksInMonth,
+  weekInMonthLabel,
+  type WeekInMonth,
+} from "@/lib/week-in-month";
 import {
   addDays,
   addYears,
@@ -53,9 +66,11 @@ import {
   monthLabel,
   MONTH_PANE_TITLE,
   PANE_HINTS,
+  OPEN_WEEKLY_SHEET_HINT,
   SCOPE_COMMENT_MONTH,
-  SCOPE_COMMENT_WEEK,
   scopeCommentTitle,
+  WEEK_DAY_SECTION,
+  WEEK_OF_MONTH_SECTION,
   scopeHeadingYear,
   scopeHeadingYearMonth,
   WEEK_PANE_TITLE,
@@ -177,6 +192,24 @@ function ScopeLabelButton({
 }
 
 type ScopeModalState = { key: string; heading: string } | null;
+
+type MonthlySheetModalState = {
+  key: string;
+  year: number;
+  month: number;
+  heading: string;
+} | null;
+
+type DailySheetModalState = {
+  key: string;
+  date: Date;
+} | null;
+
+type WeeklySheetModalState = {
+  key: string;
+  weekMonday: Date;
+  heading: string;
+} | null;
 type EventDraft = {
   event: CalendarEvent | null;
   dateKey: string;
@@ -331,20 +364,26 @@ function MonthPane({
 function WeekPane({
   cursor,
   comment,
+  weeksInMonth,
+  onSelectWeekOfMonth,
   onSelectDay,
   onAddWeek,
-  onOpenScope,
+  onOpenWeeklySheet,
 }: {
   cursor: Date;
   comment: string;
+  weeksInMonth: WeekInMonth[];
+  onSelectWeekOfMonth: (monday: Date) => void;
   onSelectDay: (d: Date) => void;
   onAddWeek: (delta: number) => void;
-  onOpenScope: () => void;
+  onOpenWeeklySheet: () => void;
 }) {
   const days = useMemo(() => {
     const monday = getMonday(cursor);
     return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
   }, [cursor]);
+
+  const cursorMonday = getMonday(cursor);
 
   return (
     <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px]">
@@ -352,30 +391,54 @@ function WeekPane({
         <div className="flex items-center justify-between gap-1">
           <NavChevron dir="prev" label={LABEL_PREV_WEEK} onClick={() => onAddWeek(-1)} />
           <ScopeLabelButton
-            onOpenScope={onOpenScope}
-            title={SCOPE_COMMENT_WEEK}
-            className="text-xs"
+            onOpenScope={onOpenWeeklySheet}
+            title={OPEN_WEEKLY_SHEET_HINT}
+            className="text-xs font-semibold underline decoration-zinc-800 underline-offset-2"
           >
             {formatWeekHeader(cursor)}
           </ScopeLabelButton>
           <NavChevron dir="next" label={LABEL_NEXT_WEEK} onClick={() => onAddWeek(1)} />
         </div>
       </PaneHeader>
-      <div className="px-2 py-2">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         {comment ? (
           <div className="mb-2 rounded border border-dashed border-zinc-200 px-2 py-1">
             <ScopeExcerpt text={comment} />
           </div>
         ) : null}
+        <p className="mb-1 text-[10px] font-medium text-black/60">
+          {WEEK_OF_MONTH_SECTION}
+        </p>
+        <ul className="mb-3 flex flex-col gap-1">
+          {weeksInMonth.map((w) => {
+            const selected = isSameWeekMonday(cursor, w.monday);
+            return (
+              <li key={w.index} className="relative">
+                <button
+                  type="button"
+                  onClick={() => onSelectWeekOfMonth(w.monday)}
+                  className={`w-full rounded-md px-2.5 py-2 text-left text-sm font-medium text-black ${selectClass(selected)}`}
+                >
+                  {weekInMonthLabel(w)}
+                </button>
+                {selected ? <Connector /> : null}
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mb-1 text-[10px] font-medium text-black/60">
+          {WEEK_DAY_SECTION}
+        </p>
         <ul className="flex flex-col gap-1">
           {days.map((d) => {
             const selected = isSameDay(d, cursor);
+            const inCurrentWeek = isSameWeekMonday(d, cursorMonday);
             return (
               <li key={formatDateKey(d)} className="relative">
                 <button
                   type="button"
                   onClick={() => onSelectDay(startOfDay(d))}
-                  className={`w-full rounded-md px-2.5 py-2 text-left text-sm font-medium ${weekdayTextClass(d)} ${selectClass(selected)}`}
+                  className={`w-full rounded-md px-2.5 py-2 text-left text-sm font-medium ${weekdayTextClass(d)} ${selectClass(selected)} ${!inCurrentWeek ? "opacity-70" : ""}`}
                 >
                   {formatWeekRowLabel(d)}
                 </button>
@@ -519,6 +582,7 @@ function DayPane({
   cursor,
   events,
   onAddDay,
+  onOpenDailySheet,
   onCreateTimed,
   onEdit,
   scrollRef,
@@ -526,6 +590,7 @@ function DayPane({
   cursor: Date;
   events: CalendarEvent[];
   onAddDay: (delta: number) => void;
+  onOpenDailySheet: () => void;
   onCreateTimed: (startMin: number) => void;
   onEdit: (id: string) => void;
   scrollRef: RefObject<HTMLDivElement | null>;
@@ -535,11 +600,13 @@ function DayPane({
       <PaneHeader title={DAY_PANE_TITLE} hint={PANE_HINTS.day}>
         <div className="flex items-center justify-between gap-1">
           <NavChevron dir="prev" label={LABEL_PREV_DAY} onClick={() => onAddDay(-1)} />
-          <span
+          <ScopeLabelButton
+            onOpenScope={onOpenDailySheet}
+            title="日次プランナーを開く"
             className={`min-w-0 flex-1 text-center text-[11px] font-semibold sm:text-xs ${weekdayTextClass(cursor)}`}
           >
             {formatDayHeader(cursor)}
-          </span>
+          </ScopeLabelButton>
           <NavChevron dir="next" label={LABEL_NEXT_DAY} onClick={() => onAddDay(1)} />
         </div>
       </PaneHeader>
@@ -554,10 +621,22 @@ function DayPane({
 }
 
 export function CalendarPanes() {
-  const { eventsForDate, getScopeComment, getMidLongTermPlan } = useAppData();
+  const {
+    eventsForDate,
+    getScopeComment,
+    getMidLongTermPlan,
+    getMonthlyWorksheet,
+    getWeeklyWorksheet,
+  } = useAppData();
   const [cursor, setCursor] = useState(INITIAL_CURSOR);
   const [mobileTab, setMobileTab] = useState(3);
   const [scopeModal, setScopeModal] = useState<ScopeModalState>(null);
+  const [monthlySheetModal, setMonthlySheetModal] =
+    useState<MonthlySheetModalState>(null);
+  const [weeklySheetModal, setWeeklySheetModal] =
+    useState<WeeklySheetModalState>(null);
+  const [dailySheetModal, setDailySheetModal] =
+    useState<DailySheetModalState>(null);
   const [mltpOpen, setMltpOpen] = useState(false);
   const [eventDraft, setEventDraft] = useState<EventDraft | null>(null);
   const dayScrollRef = useRef<HTMLDivElement>(null);
@@ -568,6 +647,31 @@ export function CalendarPanes() {
   const yComment = getScopeComment(yearKey(cursor.getFullYear()));
   const mComment = getScopeComment(monthKey(cursor));
   const wComment = getScopeComment(weekKey(cursor));
+
+  const monthExcerpt = useMemo(() => {
+    const y = cursor.getFullYear();
+    const m = cursor.getMonth() + 1;
+    const sheetExcerpt = monthlyWorksheetExcerpt(
+      getMonthlyWorksheet(monthKey(cursor), y, m),
+    );
+    if (sheetExcerpt) return sheetExcerpt;
+    return mComment;
+  }, [cursor, getMonthlyWorksheet, mComment]);
+
+  const weeksInMonth = useMemo(() => {
+    const y = cursor.getFullYear();
+    const m = cursor.getMonth() + 1;
+    return listWeeksInMonth(y, m);
+  }, [cursor]);
+
+  const weekExcerpt = useMemo(() => {
+    const monday = getMonday(cursor);
+    const sheetExcerpt = weeklyWorksheetExcerpt(
+      getWeeklyWorksheet(weekKey(monday), monday),
+    );
+    if (sheetExcerpt) return sheetExcerpt;
+    return wComment;
+  }, [cursor, getWeeklyWorksheet, wComment]);
 
   const planYearExcerpt = useCallback(
     (year: number) => yearPlanSummaryExcerpt(getMidLongTermPlan(), year),
@@ -616,15 +720,66 @@ export function CalendarPanes() {
     setCursor(startOfDay(d));
   };
 
+  const openMonthlySheet = useCallback((d: Date) => {
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    setMonthlySheetModal({
+      key: monthKey(d),
+      year: y,
+      month: m,
+      heading: scopeHeadingYearMonth(y, m),
+    });
+  }, []);
+
+  const openDailySheet = useCallback((d: Date) => {
+    const day = startOfDay(d);
+    setDailySheetModal({
+      key: dayWorksheetKey(day),
+      date: day,
+    });
+  }, []);
+
+  const openWeeklySheet = useCallback(
+    (d: Date, displayYear: number, displayMonth: number) => {
+      const monday = startOfDay(getMonday(d));
+      const w = findWeekInMonth(displayYear, displayMonth, monday);
+      const heading = w
+        ? `${displayYear}年${displayMonth}月 ${weekInMonthLabel(w)}`
+        : formatWeekHeader(monday);
+      setWeeklySheetModal({
+        key: weekKey(monday),
+        weekMonday: monday,
+        heading,
+      });
+    },
+    [],
+  );
+
+  const onSelectWeekOfMonth = useCallback(
+    (monday: Date) => {
+      const y = cursor.getFullYear();
+      const m = cursor.getMonth() + 1;
+      const day = startOfDay(monday);
+      setCursor(day);
+      setMobileTab(2);
+      openWeeklySheet(day, y, m);
+    },
+    [cursor, openWeeklySheet],
+  );
+
   const onSelectMonth = (monthIndex: number) => {
     const d = new Date(cursor);
     d.setMonth(monthIndex);
-    setCursor(startOfDay(d));
+    const next = startOfDay(d);
+    setCursor(next);
+    openMonthlySheet(next);
   };
 
   const onSelectDay = (d: Date) => {
-    setCursor(startOfDay(d));
+    const day = startOfDay(d);
+    setCursor(day);
     setMobileTab(3);
+    openDailySheet(day);
   };
 
   const openYearScope = (year: number) => {
@@ -646,35 +801,31 @@ export function CalendarPanes() {
       />
       <MonthPane
         cursor={cursor}
-        comment={mComment}
+        comment={monthExcerpt}
         onSelectMonth={onSelectMonth}
         onAddYear={(d) => setCursor(startOfDay(addYears(cursor, d)))}
-        onOpenScope={() =>
-          setScopeModal({
-            key: monthKey(cursor),
-            heading: scopeHeadingYearMonth(
-              cursor.getFullYear(),
-              cursor.getMonth() + 1,
-            ),
-          })
-        }
+        onOpenScope={() => openMonthlySheet(cursor)}
       />
       <WeekPane
         cursor={cursor}
-        comment={wComment}
+        comment={weekExcerpt}
+        weeksInMonth={weeksInMonth}
+        onSelectWeekOfMonth={onSelectWeekOfMonth}
         onSelectDay={onSelectDay}
         onAddWeek={(d) => setCursor(startOfDay(addDays(cursor, d * 7)))}
-        onOpenScope={() =>
-          setScopeModal({
-            key: weekKey(cursor),
-            heading: formatWeekHeader(cursor),
-          })
+        onOpenWeeklySheet={() =>
+          openWeeklySheet(
+            cursor,
+            cursor.getFullYear(),
+            cursor.getMonth() + 1,
+          )
         }
       />
       <DayPane
         cursor={cursor}
         events={dayEvents}
         onAddDay={(d) => setCursor(startOfDay(addDays(cursor, d)))}
+        onOpenDailySheet={() => openDailySheet(cursor)}
         onCreateTimed={onCreateTimed}
         onEdit={onEditEvent}
         scrollRef={dayScrollRef}
@@ -726,31 +877,26 @@ export function CalendarPanes() {
         {mobileTab === 1 ? (
           <MonthPane
             cursor={cursor}
-            comment={mComment}
+            comment={monthExcerpt}
             onSelectMonth={onSelectMonth}
             onAddYear={(d) => setCursor(startOfDay(addYears(cursor, d)))}
-            onOpenScope={() =>
-              setScopeModal({
-                key: monthKey(cursor),
-                heading: scopeHeadingYearMonth(
-              cursor.getFullYear(),
-              cursor.getMonth() + 1,
-            ),
-              })
-            }
+            onOpenScope={() => openMonthlySheet(cursor)}
           />
         ) : null}
         {mobileTab === 2 ? (
           <WeekPane
             cursor={cursor}
-            comment={wComment}
+            comment={weekExcerpt}
+            weeksInMonth={weeksInMonth}
+            onSelectWeekOfMonth={onSelectWeekOfMonth}
             onSelectDay={onSelectDay}
             onAddWeek={(d) => setCursor(startOfDay(addDays(cursor, d * 7)))}
-            onOpenScope={() =>
-              setScopeModal({
-                key: weekKey(cursor),
-                heading: formatWeekHeader(cursor),
-              })
+            onOpenWeeklySheet={() =>
+              openWeeklySheet(
+                cursor,
+                cursor.getFullYear(),
+                cursor.getMonth() + 1,
+              )
             }
           />
         ) : null}
@@ -759,12 +905,40 @@ export function CalendarPanes() {
             cursor={cursor}
             events={dayEvents}
             onAddDay={(d) => setCursor(startOfDay(addDays(cursor, d)))}
+            onOpenDailySheet={() => openDailySheet(cursor)}
             onCreateTimed={onCreateTimed}
             onEdit={onEditEvent}
             scrollRef={dayScrollRef}
           />
         ) : null}
       </div>
+
+      {monthlySheetModal ? (
+        <MonthlyWorksheetModal
+          monthKey={monthlySheetModal.key}
+          year={monthlySheetModal.year}
+          month={monthlySheetModal.month}
+          heading={monthlySheetModal.heading}
+          onClose={() => setMonthlySheetModal(null)}
+        />
+      ) : null}
+
+      {weeklySheetModal ? (
+        <WeeklyWorksheetModal
+          weekKey={weeklySheetModal.key}
+          weekMonday={weeklySheetModal.weekMonday}
+          heading={weeklySheetModal.heading}
+          onClose={() => setWeeklySheetModal(null)}
+        />
+      ) : null}
+
+      {dailySheetModal ? (
+        <DailyWorksheetModal
+          dayKey={dailySheetModal.key}
+          date={dailySheetModal.date}
+          onClose={() => setDailySheetModal(null)}
+        />
+      ) : null}
 
       {scopeModal ? (
         <ScopeCommentModal

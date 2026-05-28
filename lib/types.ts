@@ -4,6 +4,9 @@ import type { LifeWishList100 } from "@/lib/life-wish-list-100";
 import type { My100YearHistory } from "@/lib/my-100-year-history";
 import type { PurposeVision } from "@/lib/purpose-vision";
 import type { MidLongTermPlan } from "@/lib/mid-long-term-plan";
+import type { DailyWorksheet } from "@/lib/daily-worksheet";
+import type { MonthlyWorksheet } from "@/lib/monthly-worksheet";
+import type { WeeklyWorksheet } from "@/lib/weekly-worksheet";
 
 export const DATA_VERSION = 1 as const;
 
@@ -50,6 +53,12 @@ export type AppData = {
   my100YearHistory?: My100YearHistory;
   lifeWishList100?: LifeWishList100;
   goalSetting?: GoalSetting;
+  /** month:YYYY-MM → 月間振り返り・行動計画 */
+  monthlyWorksheets?: Record<string, MonthlyWorksheet>;
+  /** day:YYYY-MM-DD → 日次プランナー */
+  dailyWorksheets?: Record<string, DailyWorksheet>;
+  /** week:YYYY-Wnn → 週次プランナー */
+  weeklyWorksheets?: Record<string, WeeklyWorksheet>;
 };
 
 export function createEmptyAppData(): AppData {

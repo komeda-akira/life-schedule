@@ -23,6 +23,10 @@ export function scopeCommentTitle(year: number): string {
 
 export const SCOPE_COMMENT_MONTH = "\u3053\u306e\u6708\u306e\u30b9\u30b3\u30fc\u30d7\u30b3\u30e1\u30f3\u30c8";
 export const SCOPE_COMMENT_WEEK = "\u3053\u306e\u9031\u306e\u30b9\u30b3\u30fc\u30d7\u30b3\u30e1\u30f3\u30c8";
+export const OPEN_WEEKLY_SHEET_HINT =
+  "\u30af\u30ea\u30c3\u30af\u3067\u9031\u6b21\u30d7\u30e9\u30f3\u30ca\u30fc\u3092\u958b\u304f";
+export const WEEK_OF_MONTH_SECTION = "\u9031\u306e\u9078\u629e";
+export const WEEK_DAY_SECTION = "\u65e5\u306e\u9078\u629e";
 
 export const MOBILE_TABS = ["\u5e74", "\u6708", "\u9031", "\u65e5"] as const;
 

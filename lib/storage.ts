@@ -1,6 +1,10 @@
 import { withDemoDataIfEmpty } from "@/lib/demo-data";
 import { applyNorthStarScreenshotDefaults } from "@/lib/north-star-seeds";
 import {
+  applyGoalSettingDefaults,
+  normalizeGoalSetting,
+} from "@/lib/goal-setting";
+import {
   applyLifeWishList100Defaults,
   normalizeLifeWishList100,
 } from "@/lib/life-wish-list-100";
@@ -27,10 +31,12 @@ export function loadAppData(): AppData {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       return withDemoDataIfEmpty(
-        applyLifeWishList100Defaults(
-          applyMy100YearHistoryDefaults(
-            applyPurposeVisionDefaults(
-              applyNorthStarScreenshotDefaults(createEmptyAppData()),
+        applyGoalSettingDefaults(
+          applyLifeWishList100Defaults(
+            applyMy100YearHistoryDefaults(
+              applyPurposeVisionDefaults(
+                applyNorthStarScreenshotDefaults(createEmptyAppData()),
+              ),
             ),
           ),
         ),
@@ -38,20 +44,24 @@ export function loadAppData(): AppData {
     }
     const parsed = JSON.parse(raw) as Partial<AppData>;
     return withDemoDataIfEmpty(
-      applyLifeWishList100Defaults(
-        applyMy100YearHistoryDefaults(
-          applyPurposeVisionDefaults(
-            applyNorthStarScreenshotDefaults(normalizeAppData(parsed)),
+      applyGoalSettingDefaults(
+        applyLifeWishList100Defaults(
+          applyMy100YearHistoryDefaults(
+            applyPurposeVisionDefaults(
+              applyNorthStarScreenshotDefaults(normalizeAppData(parsed)),
+            ),
           ),
         ),
       ),
     );
   } catch {
     return withDemoDataIfEmpty(
-      applyLifeWishList100Defaults(
-        applyMy100YearHistoryDefaults(
-          applyPurposeVisionDefaults(
-            applyNorthStarScreenshotDefaults(createEmptyAppData()),
+      applyGoalSettingDefaults(
+        applyLifeWishList100Defaults(
+          applyMy100YearHistoryDefaults(
+            applyPurposeVisionDefaults(
+              applyNorthStarScreenshotDefaults(createEmptyAppData()),
+            ),
           ),
         ),
       ),
@@ -80,6 +90,7 @@ export function normalizeAppData(input: Partial<AppData>): AppData {
     purposeVision: normalizePurposeVision(input.purposeVision),
     my100YearHistory: normalizeMy100YearHistory(input.my100YearHistory),
     lifeWishList100: normalizeLifeWishList100(input.lifeWishList100),
+    goalSetting: normalizeGoalSetting(input.goalSetting),
   };
 }
 

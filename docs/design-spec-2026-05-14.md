@@ -1,5 +1,7 @@
 # 人生スケジュール管理ツール — 設計メモ（合意事項）
 
+**公開図解（改善の設計）:** https://diagram-life-schedule-improvements.surge.sh/（同梱: `docs/design-improvements-diagram.html`）
+
 **公開図解（画面・操作）:** https://diagram-life-schedule-tool.surge.sh/
 
 会話（グリル）で整理した内容を、実装前の参照用に保存したものです。  

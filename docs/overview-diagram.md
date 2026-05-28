@@ -2,6 +2,18 @@
 
 会話で合意した機能と、`docs` 内のワイヤー PNG の対応を一枚に整理したものです。
 
+## 改善の設計図解（2026-05 追記）
+
+チャットで悩みながら積み上げた改善内容を、画面モックと「悩み→改善」対応表にまとめた **HTML 図解** をリポジトリに同梱しています。
+
+| 形式 | 場所 |
+|------|------|
+| 公開 URL | https://diagram-life-schedule-improvements.surge.sh/ |
+| ローカル HTML | [`design-improvements-diagram.html`](design-improvements-diagram.html)（Surge と同一内容） |
+| 画面・操作（旧） | https://diagram-life-schedule-tool.surge.sh/ |
+
+ブラウザで HTML を開くか、上記 Surge URL を参照してください。
+
 ---
 
 ## 1. 画面レイアウト（情報構造）
@@ -10,9 +22,11 @@
 flowchart TB
   subgraph bar["北極星バー（年列の上／狭い画面はカレンダー上）"]
     B1["理念"]
-    B2["目的"]
+    B2["目的・ビジョン"]
     B3["目標"]
     B4["プライムシート"]
+    B5["自分100年史"]
+    B6["やりたいこと100"]
   end
 
   subgraph panes["四ペイン（単一カーソル）"]

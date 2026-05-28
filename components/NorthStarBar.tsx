@@ -8,8 +8,9 @@ import { useAppData } from "@/components/AppDataProvider";
 import { excerptComment } from "@/lib/calendar";
 import { LIFE_WISH_LIST_100_LABEL } from "@/lib/life-wish-list-100";
 import { MY_100_YEAR_HISTORY_LABEL } from "@/lib/my-100-year-history";
+import { goalSettingBarExcerpt } from "@/lib/goal-setting";
 import { defaultNorthStarTitle } from "@/lib/north-star-seeds";
-import { purposeVisionBarExcerpt } from "@/lib/purpose-vision";
+import { purposeVisionBarLines } from "@/lib/purpose-vision";
 import { NORTH_STAR_LABELS, type NorthStarCategory } from "@/lib/types";
 
 const CATEGORIES: NorthStarCategory[] = [
@@ -41,12 +42,17 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
   const [open, setOpen] = useState<NorthStarCategory | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [wishListOpen, setWishListOpen] = useState(false);
-  const { northStarFor, getLifePhilosophy, getPurposeVision } = useAppData();
+  const { northStarFor, getLifePhilosophy, getPurposeVision, getGoalSetting } =
+    useAppData();
+
+  const purposeBarLines = purposeVisionBarLines(getPurposeVision());
 
   const excerptFor = (cat: NorthStarCategory) => {
     if (cat === "vision") return null;
-    if (cat === "purpose") {
-      return excerptComment(purposeVisionBarExcerpt(getPurposeVision()), 36);
+    if (cat === "purpose") return null;
+    if (cat === "goal") {
+      const ex = goalSettingBarExcerpt(getGoalSetting());
+      return ex ? excerptComment(ex, 32) : "";
     }
     return excerptComment(
       northStarFor(cat)[0]?.title.trim() || defaultNorthStarTitle(cat),
@@ -115,26 +121,37 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
                 type="button"
                 onClick={() => setOpen(cat)}
                 className={`${northStarBtnClass} ${
-                  cat === "purpose" ? "max-w-[13rem]" : "max-w-[11rem]"
+                  cat === "purpose" ? "max-w-[14.5rem] min-w-[11.5rem]" : "max-w-[11rem]"
                 }`}
               >
                 <span>{NORTH_STAR_LABELS[cat]}</span>
-                <span className="mt-0.5 line-clamp-2 text-[10px] leading-snug">
+                <span className="mt-0.5 line-clamp-2 leading-snug">
                   {cat === "vision" ? (
                     <>
-                      <span className="font-semibold text-red-700">
+                      <span className="text-base font-bold text-red-700">
                         {visionWord}
                       </span>
                       {visionNote ? (
-                        <span className="text-black/60">（{visionNote}）</span>
+                        <span className="text-[10px] text-black/60">
+                          （{visionNote}）
+                        </span>
                       ) : null}
                     </>
                   ) : cat === "purpose" ? (
-                    <span className="font-semibold text-red-700">
+                    <span className="flex w-full flex-col gap-0.5 text-[10px] font-bold leading-[1.4] text-red-700">
+                      {purposeBarLines.line1 ? (
+                        <span className="line-clamp-2">{purposeBarLines.line1}</span>
+                      ) : null}
+                      {purposeBarLines.line2 ? (
+                        <span className="line-clamp-2">{purposeBarLines.line2}</span>
+                      ) : null}
+                    </span>
+                  ) : cat === "goal" ? (
+                    <span className="text-base font-bold text-red-700">
                       {excerptFor(cat)}
                     </span>
                   ) : (
-                    <span className="font-normal text-black/60">
+                    <span className="text-[10px] font-normal text-black/60">
                       {excerptFor(cat)}
                     </span>
                   )}

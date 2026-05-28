@@ -2,7 +2,7 @@ import { AppDataProvider } from "@/components/AppDataProvider";
 import { CalendarPanes } from "@/components/CalendarPanes";
 import { DataMenu } from "@/components/DataMenu";
 import { NorthStarBar } from "@/components/NorthStarBar";
-import { DIAGRAM_PUBLIC_URL } from "@/lib/constants";
+import { DIAGRAM_IMPROVEMENTS_URL, DIAGRAM_PUBLIC_URL } from "@/lib/constants";
 
 export default function Home() {
   return (
@@ -21,12 +21,20 @@ export default function Home() {
             <div className="flex flex-wrap items-center gap-2">
               <DataMenu />
               <a
-                href={DIAGRAM_PUBLIC_URL}
+                href={DIAGRAM_IMPROVEMENTS_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-black hover:bg-zinc-50"
               >
                 設計図解
+              </a>
+              <a
+                href={DIAGRAM_PUBLIC_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-black/75 hover:bg-zinc-100"
+              >
+                画面図解
               </a>
             </div>
           </div>

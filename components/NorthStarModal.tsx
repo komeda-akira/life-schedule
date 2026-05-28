@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/Modal";
+import { GoalSettingView } from "@/components/GoalSettingView";
 import { PurposeVisionView } from "@/components/PurposeVisionView";
 import { VisionPhilosophyView } from "@/components/VisionPhilosophyView";
 import { useAppData } from "@/components/AppDataProvider";
@@ -34,6 +35,15 @@ export function NorthStarModal({ category, onClose }: NorthStarModalProps) {
       </Modal>
     );
   }
+
+  if (category === "goal") {
+    return (
+      <Modal title={label} onClose={onClose} plan>
+        <GoalSettingView />
+      </Modal>
+    );
+  }
+
   const { northStarFor, upsertNorthStar, deleteNorthStar } = useAppData();
   const items = northStarFor(category);
   const [mode, setMode] = useState<"list" | "form">("list");

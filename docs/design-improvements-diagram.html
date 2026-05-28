@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta property="og:title" content="life-schedule 改善の設計図解">
+  <meta property="og:description" content="チャットで悩みながら積み上げた北極星・ワークシート・カレンダー改善を、画面モックと対応表で整理した設計図解です。">
+  <meta property="og:type" content="article">
+  <title>life-schedule 改善の設計図解</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FFFFFF'/><rect x='8' y='8' width='84' height='84' rx='14' fill='none' stroke='%233B82F6' stroke-width='4'/><circle cx='32' cy='40' r='10' fill='%233B82F6' opacity='0.8'/><circle cx='68' cy='40' r='10' fill='%2360A5FA' opacity='0.8'/><rect x='25' y='62' width='50' height='6' rx='3' fill='%2394A3B8' opacity='0.6'/><rect x='30' y='74' width='40' height='6' rx='3' fill='%2394A3B8' opacity='0.3'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ads: {
+              bg: '#FFFFFF',
+              surface: '#F8FAFC',
+              hover: '#F1F5F9',
+              border: '#E2E8F0',
+              accent: '#3B82F6',
+              'accent-light': '#2563EB',
+              text: '#1E293B',
+              muted: '#64748B',
+              dim: '#94A3B8',
+              positive: '#10B981',
+              negative: '#EF4444',
+              warning: '#F59E0B',
+            }
+          },
+          fontFamily: {
+            sans: ['"Noto Sans JP"', '"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', '"Yu Gothic UI"', '"Meiryo"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { border-top: none !important; }
+      .rounded-xl { break-inside: avoid; }
+      .md\:flex-row { flex-direction: row !important; }
+      .md\:hidden { display: none !important; }
+      .hidden.md\:block { display: block !important; }
+      .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      .sm\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+      .md\:mb-20 { margin-bottom: 5rem !important; }
+      .md\:py-16 { padding-top: 4rem !important; padding-bottom: 4rem !important; }
+      .bg-clip-text.text-transparent {
+        -webkit-background-clip: initial !important;
+        background-clip: initial !important;
+        color: #2563EB !important;
+        -webkit-text-fill-color: #2563EB !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-ads-bg text-slate-600 antialiased leading-relaxed border-t-4 border-ads-accent">
+  <div class="no-print max-w-3xl mx-auto px-5 pt-2 flex justify-end">
+    <button onclick="window.print()" class="flex items-center gap-1.5 text-xs text-ads-dim hover:text-ads-accent transition-colors cursor-pointer">
+      <i data-lucide="download" class="w-3.5 h-3.5"></i>
+      PDF
+    </button>
+  </div>
+  <main class="max-w-3xl mx-auto px-5 py-10 md:py-16">
+<!-- CONTENT_START -->
+
+<div class="text-center mb-8 md:mb-10">
+  <div class="inline-flex items-center gap-2 bg-ads-accent/10 text-ads-accent-light px-4 py-1.5 rounded-full text-sm font-medium mb-6">
+    <i data-lucide="compass" class="w-4 h-4"></i>
+    開発ツール
+  </div>
+  <h1 class="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-6">
+    life-schedule<br class="hidden sm:block" />
+    <span class="text-ads-accent-light">改善の設計</span>図解
+  </h1>
+  <p class="text-lg text-ads-muted max-w-xl mx-auto leading-relaxed">
+    手書きワークシートをそのまま載せるのではなく、編集できて毎日見返せる形に直していった記録。<br class="hidden md:block" />
+    ひとことで言うと ──
+  </p>
+</div>
+
+<div class="bg-ads-surface border border-ads-border rounded-2xl p-6 md:p-10 mb-6">
+  <div class="text-center mb-8 md:mb-10">
+    <p class="text-xl md:text-2xl font-black text-slate-900 mb-2">
+      <span class="text-ads-accent-light">北極星</span>で人生の軸を見て、<span class="text-ads-accent-light">カレンダー</span>で今日を動かす
+    </p>
+    <p class="text-sm text-ads-muted">Next.js + ブラウザ内保存（localStorage）。編集は即自動保存。</p>
+  </div>
+
+  <div class="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-0 mb-8">
+    <div class="flex flex-col items-center w-32 p-3">
+      <div class="w-14 h-14 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-2">
+        <i data-lucide="star" class="w-7 h-7 text-purple-600"></i>
+      </div>
+      <div class="font-bold text-slate-900 text-sm text-center">北極星バー</div>
+      <div class="text-[10px] text-ads-muted text-center mt-0.5">理念・目的・目標…</div>
+    </div>
+    <div class="flex items-center justify-center md:w-12 py-1 md:py-0">
+      <i data-lucide="arrow-right" class="w-5 h-5 text-ads-accent hidden md:block"></i>
+      <i data-lucide="arrow-down" class="w-5 h-5 text-ads-accent md:hidden"></i>
+    </div>
+    <div class="flex flex-col items-center w-36 p-4 bg-ads-accent/5 border-2 border-ads-accent/20 rounded-2xl">
+      <div class="w-16 h-16 rounded-2xl bg-ads-accent/15 border-2 border-ads-accent/30 flex items-center justify-center mb-2">
+        <i data-lucide="database" class="w-8 h-8 text-ads-accent-light"></i>
+      </div>
+      <div class="font-bold text-ads-accent-light text-base">AppData</div>
+      <div class="text-[10px] text-ads-muted mt-0.5 text-center">Provider が読み書き</div>
+    </div>
+    <div class="flex items-center justify-center md:w-12 py-1 md:py-0">
+      <i data-lucide="arrow-right" class="w-5 h-5 text-ads-accent hidden md:block"></i>
+      <i data-lucide="arrow-down" class="w-5 h-5 text-ads-accent md:hidden"></i>
+    </div>
+    <div class="flex flex-col items-center w-32 p-3">
+      <div class="w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-2">
+        <i data-lucide="calendar-days" class="w-7 h-7 text-emerald-600"></i>
+      </div>
+      <div class="font-bold text-slate-900 text-sm text-center">四ペイン</div>
+      <div class="text-[10px] text-ads-muted text-center mt-0.5">年・月・週・日</div>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap justify-center gap-2">
+    <div class="flex items-center gap-1.5 bg-white border border-ads-border rounded-full px-3 py-1 text-[11px] text-slate-700">
+      <i data-lucide="file-edit" class="w-3.5 h-3.5 text-ads-accent"></i>
+      手書き→編集フィールド
+    </div>
+    <div class="flex items-center gap-1.5 bg-white border border-ads-border rounded-full px-3 py-1 text-[11px] text-slate-700">
+      <i data-lucide="save" class="w-3.5 h-3.5 text-emerald-600"></i>
+      自動保存
+    </div>
+    <div class="flex items-center gap-1.5 bg-white border border-ads-border rounded-full px-3 py-1 text-[11px] text-slate-700">
+      <i data-lucide="github" class="w-3.5 h-3.5 text-slate-600"></i>
+      komeda-akira/life-schedule
+    </div>
+  </div>
+</div>
+
+<p class="text-center text-ads-muted mb-12 md:mb-16">
+  ここから、画面上部の北極星バーと、対話で積み上げた改善の対応表を見ていきます。
+</p>
+
+<h2 class="text-xl md:text-2xl font-black text-slate-900 mb-4 flex items-center gap-2">
+  <i data-lucide="layout-dashboard" class="w-6 h-6 text-ads-accent"></i>
+  北極星バー（いまの構成）
+</h2>
+<p class="text-ads-muted text-sm mb-4 leading-relaxed">
+  初期は4ボタンだけだった領域が、ワークシート連携で<strong class="text-slate-800">6モジュール</strong>に拡張された。プライムの右に100年史と100リストを縦に並べ、高さを揃えた。
+</p>
+
+<div class="rounded-xl border border-ads-border bg-white shadow-sm overflow-hidden mb-12">
+  <div class="bg-slate-800 text-white text-[10px] px-3 py-1.5 flex items-center gap-2">
+    <span class="inline-flex gap-1"><span class="w-2 h-2 rounded-full bg-red-400"></span><span class="w-2 h-2 rounded-full bg-amber-400"></span><span class="w-2 h-2 rounded-full bg-emerald-400"></span></span>
+    <span class="opacity-70">NorthStarBar — 現在のモック</span>
+  </div>
+  <div class="p-3 md:p-4">
+    <div class="flex flex-wrap gap-2 items-stretch">
+      <div class="flex flex-col rounded-lg border border-ads-border bg-white px-2.5 py-2 min-w-[72px]">
+        <span class="text-[11px] font-bold text-slate-900">理念</span>
+        <span class="text-sm font-black text-red-600 mt-1">利他</span>
+      </div>
+      <div class="flex flex-col rounded-lg border border-ads-border bg-white px-2.5 py-2 min-w-[140px] max-w-[200px]">
+        <span class="text-[11px] font-bold text-slate-900">目的・ビジョン</span>
+        <span class="text-[9px] font-bold text-red-600 leading-snug mt-1">愛する家族と愛する仲間、愛する日本の安心、安全、平和な未来への発展のために生きる</span>
+        <span class="text-[9px] font-bold text-red-600 leading-snug mt-0.5">会計を通じて家族と社会の発展に貢献することが自分の使命である</span>
+      </div>
+      <div class="flex flex-col rounded-lg border border-ads-border bg-white px-2.5 py-2 min-w-[80px]">
+        <span class="text-[11px] font-bold text-slate-900">目標</span>
+        <span class="text-[10px] font-bold text-red-600 mt-1 leading-snug">構造化シート</span>
+      </div>
+      <div class="flex gap-1.5 items-stretch">
+        <div class="flex flex-col rounded-lg border border-ads-border bg-white px-2.5 py-2 min-w-[88px]">
+          <span class="text-[11px] font-bold text-slate-900">プライム</span>
+          <span class="text-[10px] text-ads-muted mt-1">中長期計画</span>
+        </div>
+        <div class="flex flex-col gap-1 min-w-[100px]">
+          <div class="flex-1 rounded-lg border border-ads-border bg-white px-2 py-1 flex items-center">
+            <span class="text-[10px] font-medium text-slate-800">自分100年史</span>
+          </div>
+          <div class="flex-1 rounded-lg border border-ads-border bg-white px-2 py-1 flex items-center">
+            <span class="text-[10px] font-medium text-slate-800 leading-tight">やりたいこと100</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="text-[10px] text-ads-dim mt-3 text-center">土曜は青・日曜は赤（カレンダーペイン側）</p>
+  </div>
+</div>
+
+<h2 class="text-xl md:text-2xl font-black text-slate-900 mb-4 flex items-center gap-2">
+  <i data-lucide="git-compare" class="w-6 h-6 text-emerald-600"></i>
+  悩み → 改善（対応表）
+</h2>
+<p class="text-ads-muted text-sm mb-4">チャットで出た要望と、コードに落とした解決策の一覧。</p>
+
+<div class="rounded-xl border border-ads-border overflow-hidden mb-12">
+  <table class="w-full text-left text-[11px] md:text-xs">
+    <thead class="bg-ads-surface border-b border-ads-border">
+      <tr>
+        <th class="px-3 py-2 font-bold text-slate-900 w-[18%]">領域</th>
+        <th class="px-3 py-2 font-bold text-slate-900 w-[32%]">悩み・要望</th>
+        <th class="px-3 py-2 font-bold text-slate-900">実装した改善</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-ads-border bg-white">
+      <tr>
+        <td class="px-3 py-2.5 font-medium text-slate-800">ワークシート</td>
+        <td class="px-3 py-2.5 text-ads-muted">手書きスクショを画像のままでは編集できない</td>
+        <td class="px-3 py-2.5">専用 View + localStorage 自動保存</td>
+      </tr>
+      <tr class="bg-ads-surface/50">
+        <td class="px-3 py-2.5 font-medium text-slate-800">カレンダー</td>
+        <td class="px-3 py-2.5 text-ads-muted">土日が区別しづらい</td>
+        <td class="px-3 py-2.5">土=青・日=赤</td>
+      </tr>
+      <tr>
+        <td class="px-3 py-2.5 font-medium text-slate-800">目的・ビジョン</td>
+        <td class="px-3 py-2.5 text-ads-muted">行動指針を5つにしたい／2だけ赤が強い</td>
+        <td class="px-3 py-2.5">5枠化・指針2は黒字</td>
+      </tr>
+      <tr class="bg-ads-surface/50">
+        <td class="px-3 py-2.5 font-medium text-slate-800">北極星バー</td>
+        <td class="px-3 py-2.5 text-ads-muted">バーに「思考は現実化する」ではなく生きる意味を見せたい</td>
+        <td class="px-3 py-2.5">2行表示（10px・枠内収まるサイズ）</td>
+      </tr>
+      <tr>
+        <td class="px-3 py-2.5 font-medium text-slate-800">100年史</td>
+        <td class="px-3 py-2.5 text-ads-muted">スクショ内容を載せたい／年表編集は不要</td>
+        <td class="px-3 py-2.5">4列×100歳・編集UI削除</td>
+      </tr>
+      <tr class="bg-ads-surface/50">
+        <td class="px-3 py-2.5 font-medium text-slate-800">100リスト</td>
+        <td class="px-3 py-2.5 text-ads-muted">100年史の下・プライムと同じ高さ・「ト」欠け</td>
+        <td class="px-3 py-2.5">縦2段配置・leading調整・補足文削除</td>
+      </tr>
+      <tr>
+        <td class="px-3 py-2.5 font-medium text-slate-800">目標</td>
+        <td class="px-3 py-2.5 text-ads-muted">目標の構造化シートを載せたい</td>
+        <td class="px-3 py-2.5">欲求5段×分野×短中長期（GoalSettingView）</td>
+      </tr>
+      <tr class="bg-ads-surface/50">
+        <td class="px-3 py-2.5 font-medium text-slate-800">レイアウト試行</td>
+        <td class="px-3 py-2.5 text-ads-muted">ビジョン上／意味使命下 → やっぱり戻したい</td>
+        <td class="px-3 py-2.5">目的→ビジョンの順に復元（バー表示のみ別仕様）</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 class="text-xl md:text-2xl font-black text-slate-900 mb-4 flex items-center gap-2">
+  <i data-lucide="boxes" class="w-6 h-6 text-purple-600"></i>
+  6つの北極星モジュール
+</h2>
+
+<div class="grid sm:grid-cols-2 gap-3 mb-12">
+  <div class="rounded-xl border border-ads-border bg-white p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center"><i data-lucide="heart" class="w-4 h-4 text-purple-700"></i></div>
+      <div class="font-bold text-slate-900 text-sm">理念</div>
+    </div>
+    <p class="text-xs text-ads-muted leading-relaxed">一言「利他」を大きく表示。lifePhilosophy。</p>
+  </div>
+  <div class="rounded-xl border border-ads-border bg-white p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <div class="w-8 h-8 rounded-lg bg-pink-100 flex items-center justify-center"><i data-lucide="target" class="w-4 h-4 text-pink-700"></i></div>
+      <div class="font-bold text-slate-900 text-sm">目的・ビジョン</div>
+    </div>
+    <p class="text-xs text-ads-muted leading-relaxed">人生の目的→ビジョン。行動指針5・4面・キーフレーズ。purposeVision。</p>
+  </div>
+  <div class="rounded-xl border border-ads-border bg-white p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center"><i data-lucide="flag" class="w-4 h-4 text-orange-700"></i></div>
+      <div class="font-bold text-slate-900 text-sm">目標</div>
+    </div>
+    <p class="text-xs text-ads-muted leading-relaxed">目標の構造化シート（欲求×分野×短中長）。goalSetting。</p>
+  </div>
+  <div class="rounded-xl border border-ads-border bg-white p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center"><i data-lucide="clipboard-list" class="w-4 h-4 text-blue-700"></i></div>
+      <div class="font-bold text-slate-900 text-sm">プライムシート</div>
+    </div>
+    <p class="text-xs text-ads-muted leading-relaxed">中長期計画。midLongTermPlan。</p>
+  </div>
+  <div class="rounded-xl border border-ads-border bg-white p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center"><i data-lucide="timeline" class="w-4 h-4 text-emerald-700"></i></div>
+      <div class="font-bold text-slate-900 text-sm">自分100年史</div>
+    </div>
+    <p class="text-xs text-ads-muted leading-relaxed">4列×100歳。my100YearHistory。</p>
+  </div>
+  <div class="rounded-xl border border-ads-border bg-white p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center"><i data-lucide="list-checks" class="w-4 h-4 text-amber-700"></i></div>
+      <div class="font-bold text-slate-900 text-sm">やりたいこと100</div>
+    </div>
+    <p class="text-xs text-ads-muted leading-relaxed">1〜27に手書き初期値。lifeWishList100。</p>
+  </div>
+</div>
+
+<h2 class="text-xl md:text-2xl font-black text-slate-900 mb-4 flex items-center gap-2">
+  <i data-lucide="workflow" class="w-6 h-6 text-blue-600"></i>
+  データの流れ（保存の仕組み）
+</h2>
+
+<div class="space-y-0 mb-12 border-l-2 border-ads-accent/30 pl-5 ml-2">
+  <div class="relative pb-6">
+    <div class="absolute -left-[1.35rem] top-1 w-3 h-3 rounded-full bg-ads-accent border-2 border-white"></div>
+    <div class="text-xs font-bold text-ads-accent-light mb-0.5">1</div>
+    <div class="font-bold text-slate-900 text-sm">画面で編集</div>
+    <p class="text-xs text-ads-muted mt-1">各 *View が AppDataProvider の update* を呼ぶ</p>
+  </div>
+  <div class="relative pb-6">
+    <div class="absolute -left-[1.35rem] top-1 w-3 h-3 rounded-full bg-ads-accent border-2 border-white"></div>
+    <div class="text-xs font-bold text-ads-accent-light mb-0.5">2</div>
+    <div class="font-bold text-slate-900 text-sm">正規化</div>
+    <p class="text-xs text-ads-muted mt-1">normalizePurposeVision などで型と既定値を補完</p>
+  </div>
+  <div class="relative pb-6">
+    <div class="absolute -left-[1.35rem] top-1 w-3 h-3 rounded-full bg-ads-accent border-2 border-white"></div>
+    <div class="text-xs font-bold text-ads-accent-light mb-0.5">3</div>
+    <div class="font-bold text-slate-900 text-sm">localStorage</div>
+    <p class="text-xs text-ads-muted mt-1">キー life-schedule:v1 · storage.ts</p>
+    <p class="text-[10px] text-ads-dim mt-1">出典: <a href="https://developer.mozilla.org/ja/docs/Web/API/Window/localStorage" class="underline">MDN Web API — localStorage</a></p>
+  </div>
+  <div class="relative">
+    <div class="absolute -left-[1.35rem] top-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white"></div>
+    <div class="text-xs font-bold text-emerald-600 mb-0.5">再読込時</div>
+    <div class="font-bold text-slate-900 text-sm">apply*Defaults</div>
+    <p class="text-xs text-ads-muted mt-1">未入力のワークシート項目に手書き相当の初期文を補う</p>
+  </div>
+</div>
+
+<div class="grid sm:grid-cols-3 gap-3 mb-12">
+  <div class="rounded-xl bg-blue-50 border border-blue-200 p-5 text-center">
+    <div class="text-3xl font-black text-blue-700 mb-1">6</div>
+    <div class="text-xs font-bold text-blue-900/80">北極星モジュール</div>
+  </div>
+  <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-5 text-center">
+    <div class="text-3xl font-black text-emerald-700 mb-1">15+</div>
+    <div class="text-xs font-bold text-emerald-900/80">改善サイクル</div>
+  </div>
+  <div class="rounded-xl bg-amber-50 border border-amber-200 p-5 text-center">
+    <div class="text-3xl font-black text-amber-700 mb-1">1</div>
+    <div class="text-xs font-bold text-amber-900/80">ブラウザ内が正本</div>
+  </div>
+</div>
+
+<div class="rounded-2xl border-2 border-ads-accent/20 bg-ads-accent/5 p-6 md:p-8">
+  <div class="flex items-start gap-3">
+    <div class="w-10 h-10 rounded-xl bg-ads-accent/15 flex items-center justify-center shrink-0">
+      <i data-lucide="lightbulb" class="w-5 h-5 text-ads-accent-light"></i>
+    </div>
+    <div>
+      <h3 class="font-bold text-slate-900 mb-2">設計の芯</h3>
+      <p class="text-sm text-ads-muted leading-relaxed">
+        「ノートに書いた人生設計」と「今日の予定」を別アプリで持つと、毎朝つなぎ直すコストがかかる。life-schedule は<strong class="text-slate-800">同じ画面の家族</strong>として北極星とカレンダーを並べ、手書きの代替ではなく<strong class="text-slate-800">編集可能なワークシート</strong>として再実装していく方針で改善を重ねた。
+      </p>
+      <p class="text-xs text-ads-dim mt-3">リポジトリ: github.com/komeda-akira/life-schedule · スタック: Next.js 16 App Router</p>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENT_END -->
+  </main>
+  <footer class="max-w-3xl mx-auto px-5 pb-10 pt-6 border-t border-ads-border/30">
+    <p class="text-xs text-ads-dim text-center">AI-Driven School の図解ツールで作成</p>
+  </footer>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

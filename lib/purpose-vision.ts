@@ -24,7 +24,7 @@ export type PurposeVision = {
 
 export const DEFAULT_PURPOSE_VISION: PurposeVision = {
   lifePurposeLead:
-    "\u611b\u3059\u308b\u5bb6\u65cf\u3068\u611b\u3059\u308b\u4ef2\u9593\u3001\u611b\u3059\u308b\u65e5\u672c\u306e\u5b89\u5fc3\u3001\u5b89\u5168\u3001\u5e73\u548c\u306a\u672a\u6765\u3078\u306e\u767a\u5c55\u306e\u305f\u3081\u306b\u751f\u304d\u308b",
+    "\u611b\u3059\u308b\u5bb6\u65cf\u3068\u611b\u3059\u308b\u4ef2\u9593\u3001\u611b\u3059\u308b\u65e5\u672c\u306e\u5b89\u5fc3\u3001\u5b89\u5168\u3001\u5e73\u548c\u306a\u672a\u6765\u3078\u306e\u767a\u5c55\u306e\u305f\u3081\u306b\u751f\u304d\u308b\n\u4f1a\u8a08\u3092\u901a\u3058\u3066\u5bb6\u65cf\u3068\u793e\u4f1a\u306e\u767a\u5c55\u306b\u8ca2\u732e\u3059\u308b\u3053\u3068\u304c\u81ea\u5206\u306e\u4f7f\u547d\u3067\u3042\u308b",
   lifePurposeService:
     "\u4f1a\u8a08\u3092\u901a\u3058\u3066\u5bb6\u65cf\u306e\u767a\u5c55\u306e\u305f\u3081\u3001\u3072\u3044\u3066\u306f\u793e\u4f1a\u306e\u7e41\u69ae\u3001\u5b89\u5168\u3001\u5e73\u548c\u306b\u8ca2\u732e\u3059\u308b\u3053\u3068\u3092\u76ee\u7684\u306b\u5949\u4ed5\u3092\u5b9f\u8df5\u3059\u308b\u3002",
   lifePurposeActions: [
@@ -50,12 +50,33 @@ export const DEFAULT_PURPOSE_VISION: PurposeVision = {
 };
 
 type LegacyPurposeVision = Partial<PurposeVision> & {
+  lifePurposeMeaning?: string;
+  lifePurposeMission?: string;
   lifePurposeAction1?: string;
   lifePurposeAction2?: string;
 };
 
 function mergeField(value: unknown, fallback: string): string {
   return typeof value === "string" ? value : fallback;
+}
+
+function mergeSplitPurposeLead(input: LegacyPurposeVision, base: string): string {
+  const lead = mergeField(input.lifePurposeLead, "");
+  if (lead.trim()) return lead;
+
+  const meaning =
+    typeof input.lifePurposeMeaning === "string"
+      ? input.lifePurposeMeaning.trim()
+      : "";
+  const mission =
+    typeof input.lifePurposeMission === "string"
+      ? input.lifePurposeMission.trim()
+      : "";
+
+  if (meaning && mission) return `${meaning}\n${mission}`;
+  if (meaning) return meaning;
+  if (mission) return mission;
+  return base;
 }
 
 function normalizeActions(
@@ -85,7 +106,7 @@ export function normalizePurposeVision(
   if (!input) return { ...base };
 
   return {
-    lifePurposeLead: mergeField(input.lifePurposeLead, base.lifePurposeLead),
+    lifePurposeLead: mergeSplitPurposeLead(input, base.lifePurposeLead),
     lifePurposeService: mergeField(
       input.lifePurposeService,
       base.lifePurposeService,
@@ -108,11 +129,30 @@ export function normalizePurposeVision(
   };
 }
 
+export type PurposeVisionBarLines = {
+  line1: string;
+  line2: string;
+};
+
+/** \u5317\u6975\u661f\u30d0\u30fc\u7528\uff08\u751f\u304d\u308b\u610f\u5473\u30fb\u4f7f\u547d\u306e2\u884c\uff09 */
+export function purposeVisionBarLines(pv: PurposeVision): PurposeVisionBarLines {
+  const parts = pv.lifePurposeLead
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const line1 = parts[0] ?? "";
+  const line2 =
+    parts[1] ??
+    "\u4f1a\u8a08\u3092\u901a\u3058\u3066\u5bb6\u65cf\u3068\u793e\u4f1a\u306e\u767a\u5c55\u306b\u8ca2\u732e\u3059\u308b\u3053\u3068\u304c\u81ea\u5206\u306e\u4f7f\u547d\u3067\u3042\u308b";
+
+  return { line1, line2 };
+}
+
 export function purposeVisionBarExcerpt(pv: PurposeVision): string {
-  const motto = pv.visionMotto.trim();
-  if (motto) return motto;
-  const lead = pv.lifePurposeLead.trim();
-  if (lead) return lead;
+  const { line1, line2 } = purposeVisionBarLines(pv);
+  if (line1 && line2) return `${line1}\n${line2}`;
+  if (line1) return line1;
   return pv.visionMain.trim();
 }
 

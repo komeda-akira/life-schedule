@@ -161,7 +161,7 @@ export function PurposeVisionView() {
                   onChange={(e) => setAction(index, e.target.value)}
                   rows={2}
                   className={textareaClass}
-                  aria-label={`\u884c\u52d5\u6307\u91dd ${index + 1}`}
+                  aria-label={`行動指針 ${index + 1}`}
                 />
               </li>
             ))}
@@ -228,7 +228,7 @@ export function PurposeVisionView() {
             type="text"
             value={data.visionMotto}
             onChange={(e) => patch({ visionMotto: e.target.value })}
-            className={`${inputClass} text-center text-base font-bold text-red-700`}
+            className={`${inputClass} text-center text-xl font-bold text-red-700 sm:text-2xl`}
           />
         </label>
       </section>

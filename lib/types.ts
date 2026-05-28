@@ -1,4 +1,5 @@
 import type { LifePhilosophy } from "@/lib/life-philosophy";
+import type { GoalSetting } from "@/lib/goal-setting";
 import type { LifeWishList100 } from "@/lib/life-wish-list-100";
 import type { My100YearHistory } from "@/lib/my-100-year-history";
 import type { PurposeVision } from "@/lib/purpose-vision";
@@ -48,6 +49,7 @@ export type AppData = {
   purposeVision?: PurposeVision;
   my100YearHistory?: My100YearHistory;
   lifeWishList100?: LifeWishList100;
+  goalSetting?: GoalSetting;
 };
 
 export function createEmptyAppData(): AppData {

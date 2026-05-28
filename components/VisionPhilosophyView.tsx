@@ -415,7 +415,7 @@ export function VisionPhilosophyView() {
               value={philosophy.coreWord}
               onChange={(e) => patch({ coreWord: e.target.value })}
               placeholder="一言"
-              className={`${inputClass} max-w-[12rem] text-center text-xl font-bold text-red-700`}
+              className={`${inputClass} max-w-[14rem] text-center text-2xl font-bold text-red-700`}
               aria-label="一言で表す言葉"
             />
           </div>

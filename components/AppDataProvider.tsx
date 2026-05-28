@@ -24,6 +24,10 @@ import {
   type My100YearHistory,
 } from "@/lib/my-100-year-history";
 import {
+  normalizeGoalSetting,
+  type GoalSetting,
+} from "@/lib/goal-setting";
+import {
   normalizePurposeVision,
   type PurposeVision,
 } from "@/lib/purpose-vision";
@@ -62,6 +66,8 @@ type AppDataContextValue = {
   updateMy100YearHistory: (partial: Partial<My100YearHistory>) => void;
   getLifeWishList100: () => LifeWishList100;
   updateLifeWishList100: (partial: Partial<LifeWishList100>) => void;
+  getGoalSetting: () => GoalSetting;
+  updateGoalSetting: (partial: Partial<GoalSetting>) => void;
   importData: (partial: Partial<AppData>) => void;
   exportData: () => AppData;
 };
@@ -238,6 +244,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [update],
   );
 
+  const getGoalSetting = useCallback(
+    () => normalizeGoalSetting(data.goalSetting),
+    [data.goalSetting],
+  );
+
+  const updateGoalSetting = useCallback(
+    (partial: Partial<GoalSetting>) => {
+      update((prev) => ({
+        ...prev,
+        goalSetting: normalizeGoalSetting({
+          ...normalizeGoalSetting(prev.goalSetting),
+          ...partial,
+        }),
+      }));
+    },
+    [update],
+  );
+
   const importData = useCallback(
     (partial: Partial<AppData>) => {
       const normalized = normalizeAppData(partial);
@@ -272,6 +296,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               ...normalized.lifeWishList100,
             })
           : prev.lifeWishList100,
+        goalSetting: normalized.goalSetting
+          ? normalizeGoalSetting({
+              ...normalizeGoalSetting(prev.goalSetting),
+              ...normalized.goalSetting,
+            })
+          : prev.goalSetting,
       }));
     },
     [update],
@@ -300,6 +330,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateMy100YearHistory,
       getLifeWishList100,
       updateLifeWishList100,
+      getGoalSetting,
+      updateGoalSetting,
       importData,
       exportData,
     }),
@@ -323,6 +355,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateMy100YearHistory,
       getLifeWishList100,
       updateLifeWishList100,
+      getGoalSetting,
+      updateGoalSetting,
       importData,
       exportData,
     ],

@@ -6,6 +6,7 @@ import type { PurposeVision } from "@/lib/purpose-vision";
 import type { MidLongTermPlan } from "@/lib/mid-long-term-plan";
 import type { DailyWorksheet } from "@/lib/daily-worksheet";
 import type { MonthlyWorksheet } from "@/lib/monthly-worksheet";
+import type { PrimeTimeSheetData } from "@/lib/prime-time-sheet";
 import type { WeeklyWorksheet } from "@/lib/weekly-worksheet";
 
 export const DATA_VERSION = 1 as const;
@@ -59,6 +60,8 @@ export type AppData = {
   dailyWorksheets?: Record<string, DailyWorksheet>;
   /** week:YYYY-Wnn → 週次プランナー */
   weeklyWorksheets?: Record<string, WeeklyWorksheet>;
+  /** プライムタイムシート（複数ページ） */
+  primeTimeSheet?: PrimeTimeSheetData;
 };
 
 export function createEmptyAppData(): AppData {

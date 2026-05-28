@@ -9,6 +9,7 @@ import { excerptComment } from "@/lib/calendar";
 import { LIFE_WISH_LIST_100_LABEL } from "@/lib/life-wish-list-100";
 import { MY_100_YEAR_HISTORY_LABEL } from "@/lib/my-100-year-history";
 import { goalSettingBarExcerpt } from "@/lib/goal-setting";
+import { primeTimeSheetDataExcerpt } from "@/lib/prime-time-sheet";
 import { defaultNorthStarTitle } from "@/lib/north-star-seeds";
 import { purposeVisionBarLines } from "@/lib/purpose-vision";
 import { NORTH_STAR_LABELS, type NorthStarCategory } from "@/lib/types";
@@ -42,8 +43,13 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
   const [open, setOpen] = useState<NorthStarCategory | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [wishListOpen, setWishListOpen] = useState(false);
-  const { northStarFor, getLifePhilosophy, getPurposeVision, getGoalSetting } =
-    useAppData();
+  const {
+    northStarFor,
+    getLifePhilosophy,
+    getPurposeVision,
+    getGoalSetting,
+    getPrimeTimeSheetData,
+  } = useAppData();
 
   const purposeBarLines = purposeVisionBarLines(getPurposeVision());
 
@@ -52,6 +58,10 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
     if (cat === "purpose") return null;
     if (cat === "goal") {
       const ex = goalSettingBarExcerpt(getGoalSetting());
+      return ex ? excerptComment(ex, 32) : "";
+    }
+    if (cat === "prime") {
+      const ex = primeTimeSheetDataExcerpt(getPrimeTimeSheetData());
       return ex ? excerptComment(ex, 32) : "";
     }
     return excerptComment(

@@ -13,6 +13,10 @@ import {
   normalizeWeeklyWorksheets,
 } from "@/lib/weekly-worksheet";
 import {
+  applyPrimeTimeSheetDefaults,
+  normalizePrimeTimeSheetData,
+} from "@/lib/prime-time-sheet";
+import {
   applyMonthlyWorksheetDefaults,
   normalizeMonthlyWorksheets,
 } from "@/lib/monthly-worksheet";
@@ -43,14 +47,16 @@ export function loadAppData(): AppData {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       return withDemoDataIfEmpty(
-        applyWeeklyWorksheetDefaults(
-          applyDailyWorksheetDefaults(
-            applyMonthlyWorksheetDefaults(
-              applyGoalSettingDefaults(
-                applyLifeWishList100Defaults(
-                  applyMy100YearHistoryDefaults(
-                    applyPurposeVisionDefaults(
-                      applyNorthStarScreenshotDefaults(createEmptyAppData()),
+        applyPrimeTimeSheetDefaults(
+          applyWeeklyWorksheetDefaults(
+            applyDailyWorksheetDefaults(
+              applyMonthlyWorksheetDefaults(
+                applyGoalSettingDefaults(
+                  applyLifeWishList100Defaults(
+                    applyMy100YearHistoryDefaults(
+                      applyPurposeVisionDefaults(
+                        applyNorthStarScreenshotDefaults(createEmptyAppData()),
+                      ),
                     ),
                   ),
                 ),
@@ -62,14 +68,16 @@ export function loadAppData(): AppData {
     }
     const parsed = JSON.parse(raw) as Partial<AppData>;
     return withDemoDataIfEmpty(
-      applyWeeklyWorksheetDefaults(
-        applyDailyWorksheetDefaults(
-          applyMonthlyWorksheetDefaults(
-            applyGoalSettingDefaults(
-              applyLifeWishList100Defaults(
-                applyMy100YearHistoryDefaults(
-                  applyPurposeVisionDefaults(
-                    applyNorthStarScreenshotDefaults(normalizeAppData(parsed)),
+      applyPrimeTimeSheetDefaults(
+        applyWeeklyWorksheetDefaults(
+          applyDailyWorksheetDefaults(
+            applyMonthlyWorksheetDefaults(
+              applyGoalSettingDefaults(
+                applyLifeWishList100Defaults(
+                  applyMy100YearHistoryDefaults(
+                    applyPurposeVisionDefaults(
+                      applyNorthStarScreenshotDefaults(normalizeAppData(parsed)),
+                    ),
                   ),
                 ),
               ),
@@ -80,14 +88,16 @@ export function loadAppData(): AppData {
     );
   } catch {
     return withDemoDataIfEmpty(
-      applyWeeklyWorksheetDefaults(
-        applyDailyWorksheetDefaults(
-          applyMonthlyWorksheetDefaults(
-            applyGoalSettingDefaults(
-              applyLifeWishList100Defaults(
-                applyMy100YearHistoryDefaults(
-                  applyPurposeVisionDefaults(
-                    applyNorthStarScreenshotDefaults(createEmptyAppData()),
+      applyPrimeTimeSheetDefaults(
+        applyWeeklyWorksheetDefaults(
+          applyDailyWorksheetDefaults(
+            applyMonthlyWorksheetDefaults(
+              applyGoalSettingDefaults(
+                applyLifeWishList100Defaults(
+                  applyMy100YearHistoryDefaults(
+                    applyPurposeVisionDefaults(
+                      applyNorthStarScreenshotDefaults(createEmptyAppData()),
+                    ),
                   ),
                 ),
               ),
@@ -124,6 +134,7 @@ export function normalizeAppData(input: Partial<AppData>): AppData {
     monthlyWorksheets: normalizeMonthlyWorksheets(input.monthlyWorksheets),
     dailyWorksheets: normalizeDailyWorksheets(input.dailyWorksheets),
     weeklyWorksheets: normalizeWeeklyWorksheets(input.weeklyWorksheets),
+    primeTimeSheet: normalizePrimeTimeSheetData(input.primeTimeSheet),
   };
 }
 

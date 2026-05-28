@@ -66,11 +66,15 @@ import {
   monthLabel,
   MONTH_PANE_TITLE,
   PANE_HINTS,
+  OPEN_MONTHLY_SHEET_ACTION,
+  OPEN_MONTHLY_SHEET_HINT,
+  OPEN_WEEKLY_SHEET_ACTION,
   OPEN_WEEKLY_SHEET_HINT,
-  SCOPE_COMMENT_MONTH,
+  MONTH_SWITCH_HINT,
   scopeCommentTitle,
   WEEK_DAY_SECTION,
-  WEEK_OF_MONTH_SECTION,
+  WEEK_SWITCH_HINT,
+  WEEK_SWITCH_SECTION,
   scopeHeadingYear,
   scopeHeadingYearMonth,
   WEEK_PANE_TITLE,
@@ -84,6 +88,10 @@ import type { CalendarEvent, EventKind } from "@/lib/types";
 
 const HOUR_PX = 48;
 const DAY_HEIGHT = 24 * HOUR_PX;
+
+/** 月・週・日ペインのナビ日付（年／年月／年月日） */
+const PANE_DATE_NAV_CLASS =
+  "min-w-0 flex-1 text-center text-sm font-semibold underline decoration-zinc-800 underline-offset-2 sm:text-base";
 
 const INITIAL_CURSOR = startOfDay(new Date(2026, 4, 21));
 
@@ -325,8 +333,8 @@ function MonthPane({
           <NavChevron dir="prev" label={LABEL_PREV_YEAR} onClick={() => onAddYear(-1)} />
           <ScopeLabelButton
             onOpenScope={onOpenScope}
-            title={SCOPE_COMMENT_MONTH}
-            className="text-xs"
+            title={OPEN_MONTHLY_SHEET_HINT}
+            className={PANE_DATE_NAV_CLASS}
           >
             {formatMonthHeader(cursor)}
           </ScopeLabelButton>
@@ -356,6 +364,19 @@ function MonthPane({
             );
           })}
         </div>
+        <p className="mt-2 text-[9px] leading-snug text-black/45">
+          {MONTH_SWITCH_HINT}
+        </p>
+        <button
+          type="button"
+          onClick={onOpenScope}
+          className="mt-2 w-full rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
+        >
+          <span className="font-semibold">{OPEN_MONTHLY_SHEET_ACTION}</span>
+          <span className="mt-0.5 block text-[10px] text-black/55">
+            {scopeHeadingYearMonth(cursor.getFullYear(), cursor.getMonth() + 1)}
+          </span>
+        </button>
       </div>
     </div>
   );
@@ -384,6 +405,10 @@ function WeekPane({
   }, [cursor]);
 
   const cursorMonday = getMonday(cursor);
+  const selectedWeek = useMemo(
+    () => weeksInMonth.find((w) => isSameWeekMonday(cursor, w.monday)),
+    [weeksInMonth, cursor],
+  );
 
   return (
     <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px]">
@@ -393,7 +418,7 @@ function WeekPane({
           <ScopeLabelButton
             onOpenScope={onOpenWeeklySheet}
             title={OPEN_WEEKLY_SHEET_HINT}
-            className="text-xs font-semibold underline decoration-zinc-800 underline-offset-2"
+            className={PANE_DATE_NAV_CLASS}
           >
             {formatWeekHeader(cursor)}
           </ScopeLabelButton>
@@ -406,10 +431,13 @@ function WeekPane({
             <ScopeExcerpt text={comment} />
           </div>
         ) : null}
-        <p className="mb-1 text-[10px] font-medium text-black/60">
-          {WEEK_OF_MONTH_SECTION}
+        <p className="mb-0.5 text-[10px] font-medium text-black/60">
+          {WEEK_SWITCH_SECTION}
         </p>
-        <ul className="mb-3 flex flex-col gap-1">
+        <p className="mb-1.5 text-[9px] leading-snug text-black/45">
+          {WEEK_SWITCH_HINT}
+        </p>
+        <ul className="mb-2 flex flex-col gap-1">
           {weeksInMonth.map((w) => {
             const selected = isSameWeekMonday(cursor, w.monday);
             return (
@@ -426,6 +454,18 @@ function WeekPane({
             );
           })}
         </ul>
+        {selectedWeek ? (
+          <button
+            type="button"
+            onClick={onOpenWeeklySheet}
+            className="mb-3 w-full rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
+          >
+            <span className="font-semibold">{OPEN_WEEKLY_SHEET_ACTION}</span>
+            <span className="mt-0.5 block text-[10px] text-black/55">
+              {weekInMonthLabel(selectedWeek)}
+            </span>
+          </button>
+        ) : null}
         <p className="mb-1 text-[10px] font-medium text-black/60">
           {WEEK_DAY_SECTION}
         </p>
@@ -603,7 +643,7 @@ function DayPane({
           <ScopeLabelButton
             onOpenScope={onOpenDailySheet}
             title="日次プランナーを開く"
-            className={`min-w-0 flex-1 text-center text-[11px] font-semibold sm:text-xs ${weekdayTextClass(cursor)}`}
+            className={`${PANE_DATE_NAV_CLASS} ${weekdayTextClass(cursor)}`}
           >
             {formatDayHeader(cursor)}
           </ScopeLabelButton>
@@ -755,24 +795,15 @@ export function CalendarPanes() {
     [],
   );
 
-  const onSelectWeekOfMonth = useCallback(
-    (monday: Date) => {
-      const y = cursor.getFullYear();
-      const m = cursor.getMonth() + 1;
-      const day = startOfDay(monday);
-      setCursor(day);
-      setMobileTab(2);
-      openWeeklySheet(day, y, m);
-    },
-    [cursor, openWeeklySheet],
-  );
+  const onSelectWeekOfMonth = useCallback((monday: Date) => {
+    setCursor(startOfDay(monday));
+    setMobileTab(2);
+  }, []);
 
   const onSelectMonth = (monthIndex: number) => {
     const d = new Date(cursor);
     d.setMonth(monthIndex);
-    const next = startOfDay(d);
-    setCursor(next);
-    openMonthlySheet(next);
+    setCursor(startOfDay(d));
   };
 
   const onSelectDay = (d: Date) => {

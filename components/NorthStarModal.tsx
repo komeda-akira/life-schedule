@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Modal } from "@/components/Modal";
 import { GoalSettingView } from "@/components/GoalSettingView";
+import { PrimeTimeSheetView } from "@/components/PrimeTimeSheetView";
 import { PurposeVisionView } from "@/components/PurposeVisionView";
 import { VisionPhilosophyView } from "@/components/VisionPhilosophyView";
 import { useAppData } from "@/components/AppDataProvider";
@@ -40,6 +41,14 @@ export function NorthStarModal({ category, onClose }: NorthStarModalProps) {
     return (
       <Modal title={label} onClose={onClose} plan>
         <GoalSettingView />
+      </Modal>
+    );
+  }
+
+  if (category === "prime") {
+    return (
+      <Modal title={label} onClose={onClose} plan>
+        <PrimeTimeSheetView />
       </Modal>
     );
   }

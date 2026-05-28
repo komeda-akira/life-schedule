@@ -43,6 +43,16 @@ import {
   type WeeklyWorksheet,
 } from "@/lib/weekly-worksheet";
 import {
+  createEmptyPrimeTimeSheetContent,
+  getActivePrimeTimeSheetPage,
+  normalizePrimeTimeSheetContent,
+  normalizePrimeTimeSheetData,
+  suggestPageTitle,
+  type PrimeTimeSheetContent,
+  type PrimeTimeSheetData,
+  type PrimeTimeSheetPage,
+} from "@/lib/prime-time-sheet";
+import {
   normalizePurposeVision,
   type PurposeVision,
 } from "@/lib/purpose-vision";
@@ -105,6 +115,15 @@ type AppDataContextValue = {
     weekMonday: Date,
     partial: Partial<WeeklyWorksheet>,
   ) => void;
+  getPrimeTimeSheetData: () => PrimeTimeSheetData;
+  getActivePrimeTimeSheetPage: () => PrimeTimeSheetPage;
+  updatePrimeTimeSheetPage: (
+    pageId: string,
+    partial: Partial<PrimeTimeSheetContent> & { title?: string },
+  ) => void;
+  addPrimeTimeSheetPage: () => void;
+  deletePrimeTimeSheetPage: (pageId: string) => void;
+  setActivePrimeTimeSheetPage: (pageId: string) => void;
   importData: (partial: Partial<AppData>) => void;
   exportData: () => AppData;
 };
@@ -371,6 +390,108 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [update],
   );
 
+  const getPrimeTimeSheetData = useCallback(
+    () => normalizePrimeTimeSheetData(data.primeTimeSheet),
+    [data.primeTimeSheet],
+  );
+
+  const getActivePrimeTimeSheetPageCb = useCallback(
+    () => getActivePrimeTimeSheetPage(getPrimeTimeSheetData()),
+    [getPrimeTimeSheetData],
+  );
+
+  const updatePrimeTimeSheetPage = useCallback(
+    (
+      pageId: string,
+      partial: Partial<PrimeTimeSheetContent> & { title?: string },
+    ) => {
+      update((prev) => {
+        const current = normalizePrimeTimeSheetData(prev.primeTimeSheet);
+        const pages = current.pages.map((page) => {
+          if (page.id !== pageId) return page;
+          const { title, ...contentPartial } = partial;
+          const content = normalizePrimeTimeSheetContent({
+            ...page,
+            ...contentPartial,
+          });
+          return {
+            ...page,
+            ...content,
+            title:
+              title !== undefined
+                ? title.trim() || suggestPageTitle(content, 1)
+                : page.title,
+          };
+        });
+        return {
+          ...prev,
+          primeTimeSheet: normalizePrimeTimeSheetData({
+            ...current,
+            pages,
+          }),
+        };
+      });
+    },
+    [update],
+  );
+
+  const addPrimeTimeSheetPage = useCallback(() => {
+    update((prev) => {
+      const current = normalizePrimeTimeSheetData(prev.primeTimeSheet);
+      const content = createEmptyPrimeTimeSheetContent();
+      const id =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `page-${Date.now()}`;
+      const index = current.pages.length + 1;
+      const page: PrimeTimeSheetPage = {
+        id,
+        title: suggestPageTitle(content, index),
+        ...content,
+      };
+      return {
+        ...prev,
+        primeTimeSheet: {
+          activePageId: id,
+          pages: [...current.pages, page],
+        },
+      };
+    });
+  }, [update]);
+
+  const deletePrimeTimeSheetPage = useCallback(
+    (pageId: string) => {
+      update((prev) => {
+        const current = normalizePrimeTimeSheetData(prev.primeTimeSheet);
+        if (current.pages.length <= 1) return prev;
+        const pages = current.pages.filter((p) => p.id !== pageId);
+        const activePageId =
+          current.activePageId === pageId
+            ? (pages[0]?.id ?? "")
+            : current.activePageId;
+        return {
+          ...prev,
+          primeTimeSheet: { activePageId, pages },
+        };
+      });
+    },
+    [update],
+  );
+
+  const setActivePrimeTimeSheetPage = useCallback(
+    (pageId: string) => {
+      update((prev) => {
+        const current = normalizePrimeTimeSheetData(prev.primeTimeSheet);
+        if (!current.pages.some((p) => p.id === pageId)) return prev;
+        return {
+          ...prev,
+          primeTimeSheet: { ...current, activePageId: pageId },
+        };
+      });
+    },
+    [update],
+  );
+
   const importData = useCallback(
     (partial: Partial<AppData>) => {
       const normalized = normalizeAppData(partial);
@@ -429,6 +550,23 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
               ...normalizeWeeklyWorksheets(normalized.weeklyWorksheets),
             }
           : prev.weeklyWorksheets,
+        primeTimeSheet: normalized.primeTimeSheet
+          ? (() => {
+              const prevPts = normalizePrimeTimeSheetData(prev.primeTimeSheet);
+              const newPts = normalizePrimeTimeSheetData(
+                normalized.primeTimeSheet,
+              );
+              const byId = new Map(prevPts.pages.map((p) => [p.id, p]));
+              for (const p of newPts.pages) byId.set(p.id, p);
+              const pages = [...byId.values()];
+              const activePageId = pages.some(
+                (p) => p.id === newPts.activePageId,
+              )
+                ? newPts.activePageId
+                : prevPts.activePageId;
+              return normalizePrimeTimeSheetData({ activePageId, pages });
+            })()
+          : prev.primeTimeSheet,
       }));
     },
     [update],
@@ -465,6 +603,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateDailyWorksheet,
       getWeeklyWorksheet,
       updateWeeklyWorksheet,
+      getPrimeTimeSheetData,
+      getActivePrimeTimeSheetPage: getActivePrimeTimeSheetPageCb,
+      updatePrimeTimeSheetPage,
+      addPrimeTimeSheetPage,
+      deletePrimeTimeSheetPage,
+      setActivePrimeTimeSheetPage,
       importData,
       exportData,
     }),
@@ -496,6 +640,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       updateDailyWorksheet,
       getWeeklyWorksheet,
       updateWeeklyWorksheet,
+      getPrimeTimeSheetData,
+      getActivePrimeTimeSheetPageCb,
+      updatePrimeTimeSheetPage,
+      addPrimeTimeSheetPage,
+      deletePrimeTimeSheetPage,
+      setActivePrimeTimeSheetPage,
       importData,
       exportData,
     ],

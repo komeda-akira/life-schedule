@@ -1,4 +1,6 @@
 import { withDemoDataIfEmpty } from "@/lib/demo-data";
+import { applyNorthStarScreenshotDefaults } from "@/lib/north-star-seeds";
+import { normalizeLifePhilosophy } from "@/lib/life-philosophy";
 import { normalizeMidLongTermPlan } from "@/lib/mid-long-term-plan";
 import {
   createEmptyAppData,
@@ -13,11 +15,19 @@ export function loadAppData(): AppData {
   if (typeof window === "undefined") return createEmptyAppData();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return withDemoDataIfEmpty(createEmptyAppData());
+    if (!raw) {
+      return withDemoDataIfEmpty(
+        applyNorthStarScreenshotDefaults(createEmptyAppData()),
+      );
+    }
     const parsed = JSON.parse(raw) as Partial<AppData>;
-    return withDemoDataIfEmpty(normalizeAppData(parsed));
+    return withDemoDataIfEmpty(
+      applyNorthStarScreenshotDefaults(normalizeAppData(parsed)),
+    );
   } catch {
-    return withDemoDataIfEmpty(createEmptyAppData());
+    return withDemoDataIfEmpty(
+      applyNorthStarScreenshotDefaults(createEmptyAppData()),
+    );
   }
 }
 
@@ -38,6 +48,7 @@ export function normalizeAppData(input: Partial<AppData>): AppData {
         ? { ...input.scopeComments }
         : base.scopeComments,
     midLongTermPlan: normalizeMidLongTermPlan(input.midLongTermPlan),
+    lifePhilosophy: normalizeLifePhilosophy(input.lifePhilosophy),
   };
 }
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/Modal";
+import { VisionPhilosophyView } from "@/components/VisionPhilosophyView";
 import { useAppData } from "@/components/AppDataProvider";
 import {
   NORTH_STAR_LABELS,
@@ -15,9 +16,17 @@ type NorthStarModalProps = {
 };
 
 export function NorthStarModal({ category, onClose }: NorthStarModalProps) {
+  const label = NORTH_STAR_LABELS[category];
+
+  if (category === "vision") {
+    return (
+      <Modal title={label} onClose={onClose} plan>
+        <VisionPhilosophyView />
+      </Modal>
+    );
+  }
   const { northStarFor, upsertNorthStar, deleteNorthStar } = useAppData();
   const items = northStarFor(category);
-  const label = NORTH_STAR_LABELS[category];
   const [mode, setMode] = useState<"list" | "form">("list");
   const [editing, setEditing] = useState<NorthStarItem | null>(null);
   const [title, setTitle] = useState("");

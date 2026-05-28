@@ -31,7 +31,7 @@ export default function Home() {
             </div>
           </div>
 
-          <article className="overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-sm">
+          <article className="rounded-xl border border-zinc-300 bg-white shadow-sm">
             <NorthStarBar />
             <CalendarPanes />
             <footer className="flex items-center justify-center gap-2 border-t border-zinc-200 bg-white px-4 py-2.5 text-xs text-black/60">

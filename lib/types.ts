@@ -1,3 +1,4 @@
+import type { LifePhilosophy } from "@/lib/life-philosophy";
 import type { MidLongTermPlan } from "@/lib/mid-long-term-plan";
 
 export const DATA_VERSION = 1 as const;
@@ -20,7 +21,7 @@ export type NorthStarCategory = "vision" | "purpose" | "goal" | "prime";
 
 export const NORTH_STAR_LABELS: Record<NorthStarCategory, string> = {
   vision: "理念",
-  purpose: "目的",
+  purpose: "\u76ee\u7684\u30fb\u30d3\u30b8\u30e7\u30f3",
   goal: "目標",
   prime: "プライムシート",
 };
@@ -40,6 +41,7 @@ export type AppData = {
   /** 例: year:2026 / month:2026-03 / week:2026-W11 */
   scopeComments: Record<string, string>;
   midLongTermPlan?: MidLongTermPlan;
+  lifePhilosophy?: LifePhilosophy;
 };
 
 export function createEmptyAppData(): AppData {

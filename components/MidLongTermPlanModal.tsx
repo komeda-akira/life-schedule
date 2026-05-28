@@ -5,6 +5,8 @@ import { Modal } from "@/components/Modal";
 import { useAppData } from "@/components/AppDataProvider";
 import {
   cellLineSpecs,
+  fillAgesForPlan,
+  fillAgesForRow,
   isSummaryRow,
   MLTP_LABELS,
   planYearLabels,
@@ -113,7 +115,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
   );
 
   useEffect(() => {
-    const loaded = getMidLongTermPlan();
+    const loaded = fillAgesForPlan(getMidLongTermPlan());
     setPlan(loaded);
     setCreated(parseCreatedParts(loaded.createdAt));
   }, [getMidLongTermPlan]);
@@ -140,9 +142,11 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
     rowIndex: number,
     patch: Partial<MidLongTermPlan["rows"][number]>,
   ) => {
-    const rows = plan.rows.map((row, i) =>
-      i === rowIndex ? { ...row, ...patch } : row,
-    );
+    const rows = plan.rows.map((row, i) => {
+      if (i !== rowIndex) return row;
+      const merged = { ...row, ...patch };
+      return fillAgesForRow(merged, plan.startYear, plan.endYear);
+    });
     persist({ ...plan, rows });
   };
 
@@ -162,7 +166,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
 
   const setStartYear = (startYear: number) => {
     if (!Number.isFinite(startYear)) return;
-    persist(withPlanYearRange(plan, Math.round(startYear)));
+    persist(fillAgesForPlan(withPlanYearRange(plan, Math.round(startYear))));
   };
 
   return (
@@ -324,7 +328,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                     key={y}
                     className="border border-zinc-400 px-0.5 py-0.5 text-center leading-tight"
                   >
-                    {MLTP_LABELS.colYearHint}
+                    {MLTP_LABELS.colYearAgeHint}
                   </th>
                 ))}
                 <th className="border border-zinc-400 px-1 py-0.5 text-left">

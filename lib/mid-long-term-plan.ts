@@ -7,6 +7,13 @@ export const PLAN_ROW_COUNT = PLAN_THEME_ROW_COUNT + 1;
 export const PLAN_SUB_ROW_COUNT = 4;
 export const PLAN_YEAR_COLUMN_COUNT = 10;
 
+/** 表の年列の終端（2025年〜2034年の10年分） */
+export const MLTP_PLAN_END_YEAR = 2034;
+
+export function defaultPlanStartYear(): number {
+  return MLTP_PLAN_END_YEAR - PLAN_YEAR_COLUMN_COUNT + 1;
+}
+
 export type PlanCell = [string, string, string, string];
 
 export type MidLongTermPlanRow = {
@@ -64,8 +71,88 @@ export function defaultThemeRowLabels(): MidLongTermPlan["themeRowLabels"] {
   ];
 }
 
+/** 文字列から西暦（生年）を取り出す */
+export function parseBirthYear(text: string): number | null {
+  const t = text.trim();
+  if (!t) return null;
+  const onlyYear = /^(\d{4})$/.exec(t);
+  if (onlyYear) {
+    const y = Number(onlyYear[1]);
+    if (y >= 1900 && y <= 2100) return y;
+  }
+  const embedded = /(19\d{2}|20\d{2})/.exec(t);
+  if (embedded) return Number(embedded[1]);
+  return null;
+}
+
+export function formatAgeInCalendarYear(
+  birthYear: number,
+  calendarYear: number,
+): string {
+  const age = calendarYear - birthYear;
+  if (age < 0) return "\u672a\u51fa\u751f";
+  return `${age}\u6b73`;
+}
+
+type SlotIdentity = { name: string; birthYear: number | null };
+
+/** ①家族の名前・②年齢（生年）列から名前と生年を解釈（年齢列に名前だけ書いた場合も可） */
+export function resolveSlotIdentity(
+  row: MidLongTermPlanRow,
+  slot: number,
+): SlotIdentity {
+  const themeText = row.theme[slot]?.trim() ?? "";
+  const ageColText = row.successPoint[slot]?.trim() ?? "";
+  const birthInAgeCol = parseBirthYear(ageColText);
+  const birthInThemeCol = parseBirthYear(themeText);
+  const ageColIsBirthYear =
+    birthInAgeCol != null && /^\d{4}$/.test(ageColText);
+  const themeColIsBirthYear =
+    birthInThemeCol != null && /^\d{4}$/.test(themeText);
+
+  let name = "";
+  let birthYear: number | null = null;
+
+  if (themeText && !themeColIsBirthYear) name = themeText;
+  if (ageColText && !ageColIsBirthYear) {
+    if (!name) name = ageColText;
+  }
+  if (ageColIsBirthYear) birthYear = birthInAgeCol;
+  else if (themeColIsBirthYear) birthYear = birthInThemeCol;
+
+  return { name, birthYear };
+}
+
+/** 名前＋生年がそろっているスロットについて、各年列①に満年齢を入れる */
+export function fillAgesForRow(
+  row: MidLongTermPlanRow,
+  startYear: number,
+  endYear: number,
+): MidLongTermPlanRow {
+  const years = row.years.map((cell, colIndex) => {
+    const calendarYear = startYear + colIndex;
+    if (calendarYear > endYear) return cell;
+    const next = [...cell] as PlanCell;
+    for (let slot = 0; slot < PLAN_SUB_ROW_COUNT; slot++) {
+      const { name, birthYear } = resolveSlotIdentity(row, slot);
+      if (!name || birthYear == null) continue;
+      next[slot] = formatAgeInCalendarYear(birthYear, calendarYear);
+    }
+    return next;
+  });
+  return { ...row, years };
+}
+
+export function fillAgesForPlan(plan: MidLongTermPlan): MidLongTermPlan {
+  const endYear = Math.min(plan.endYear, MLTP_PLAN_END_YEAR);
+  const rows = plan.rows.map((row) =>
+    fillAgesForRow(row, plan.startYear, endYear),
+  );
+  return { ...plan, endYear, rows };
+}
+
 export function createDefaultPlan(
-  startYear = YEAR_PANE_MIN,
+  startYear = defaultPlanStartYear(),
 ): MidLongTermPlan {
   return {
     startYear,
@@ -230,13 +317,13 @@ export function normalizeMidLongTermPlan(
   if (!input || typeof input !== "object") return undefined;
   const p = input as Partial<MidLongTermPlan>;
   const startYear =
-    typeof p.startYear === "number" ? p.startYear : YEAR_PANE_MIN;
+    typeof p.startYear === "number" ? p.startYear : defaultPlanStartYear();
   const base = createDefaultPlan(startYear);
   const goals = Array.isArray(p.goals)
     ? p.goals.slice(0, 6).map((g) => (typeof g === "string" ? g : ""))
     : [];
   while (goals.length < 6) goals.push("");
-  return {
+  return fillAgesForPlan({
     startYear,
     endYear:
       typeof p.endYear === "number"
@@ -248,7 +335,7 @@ export function normalizeMidLongTermPlan(
     goals: goals as MidLongTermPlan["goals"],
     themeRowLabels: normalizeThemeRowLabels(p.themeRowLabels),
     rows: migrateRows(p.rows),
-  };
+  });
 }
 
 export const MLTP_LABELS = {
@@ -267,14 +354,14 @@ export const MLTP_LABELS = {
     "\u4e0a\u306e\u6700\u91cd\u70b9\u76ee\u6a19\u3092\u5206\u89e3\u3057\u305f\u5177\u4f53\u76ee\u6a19\uff081\u301c6\uff09",
   boxesRelationHint:
     "\u2193 \u8868\u3067\u30c6\u30fc\u30de\u00d7\u5e74\u306e\u5b9f\u884c\u8a08\u753b\u3092\u7d44\u307f\u7acb\u3066\u307e\u3059",
-  colRow: "\u884c",
-  colTheme: "\u30c6\u30fc\u30de",
-  colSuccess: "\u6210\u5426\u306e\u30dd\u30a4\u30f3\u30c8",
+  colRow: "\u30c6\u30fc\u30de",
+  colTheme: "\u5bb6\u65cf\u306e\u540d\u524d",
+  colSuccess: "\u5e74\u9f62",
   colOutcome:
     "\u9054\u6210\u306b\u3088\u308b\u6210\u679c\u306e\u30a4\u30e1\u30fc\u30b8",
-  colThemeHint: "\u4f8b\uff1a\u4ed5\u4e8b\u30fb\u5065\u5eb7\u30fb\u8cc7\u7523",
-  colSuccessHint:
-    "\u6210\u529f/\u5931\u6557\u306e\u5224\u65ad\u306b\u306a\u308b\u57fa\u6e96",
+  colThemeHint: "\u4f8b\uff1a\u592a\u90ce\u30fb\u82b1\u5b50",
+  colSuccessHint: "\u751f\u5e74\uff08\u4f8b: 2018\uff09\u2192\u5e74\u5217\u306b\u81ea\u52d5",
+  colYearAgeHint: "\u6e80\u5e74\u9f62\uff08\u81ea\u52d5\u8a08\u7b97\uff09",
   colYearHint: "\u305d\u306e\u5e74\u306e\u30c6\u30fc\u30de\u5225\u306e\u884c\u52d5",
   colYearSummaryHint:
     "\u203b\u30b5\u30de\u30ea\u30fc\u884c\u306e\u5e74\u5217\u2192\u5e74\u30da\u30a4\u30f3\u306b\u8868\u793a",
@@ -301,11 +388,22 @@ export function cellLineSpecs(
   isSummaryRow: boolean,
 ): LineSpec[] {
   if (column === "theme") {
+    if (isSummaryRow) {
+      return lineSpecs(
+        ["\u2460", "\u2461", "\u2462", "\u2463"],
+        [
+          "\u5bb6\u65cf\u2460 \u540d\u524d",
+          "\u5bb6\u65cf\u2461 \u540d\u524d",
+          "\u5bb6\u65cf\u2462 \u540d\u524d",
+          "\u5bb6\u65cf\u2463 \u540d\u524d",
+        ],
+      );
+    }
     return lineSpecs(
       ["\u2460", "\u2461", "\u2462", "\u2463"],
       [
-        "\u30c6\u30fc\u30de\u540d",
-        "\u88dc\u8db3\u30e1\u30e2",
+        "\u540d\u524d",
+        "\u88dc\u8db3",
         "",
         "",
       ],
@@ -315,30 +413,21 @@ export function cellLineSpecs(
     return lineSpecs(
       ["\u2460", "\u2461", "\u2462", "\u2463"],
       [
-        "\u6210\u529f\u306e\u6761\u4ef6",
-        "\u5931\u6557\u306e\u30b5\u30a4\u30f3",
-        "\u5224\u65ad\u57fa\u6e96",
+        "\u751f\u5e74\uff08\u4f8b: 2018\uff09",
+        "\u540d\u524d\u3092\u5165\u529b\u3057\u305f\u5834\u5408\u3082\u53ef",
+        "",
         "",
       ],
     );
   }
   if (column === "year") {
-    if (isSummaryRow) {
-      return lineSpecs(
-        ["\u2460", "\u2461", "\u2462", "\u2463"],
-        [
-          "\u5e74\u30da\u30a4\u30f3\u8981\u7d04\uff081\u884c\u76ee\uff09",
-          "\u88dc\u8db3\uff082\u884c\u76ee\u307e\u3067\u8868\u793a\uff09",
-          "",
-          "",
-        ],
-      );
-    }
     return lineSpecs(
       ["\u2460", "\u2461", "\u2462", "\u2463"],
       [
-        "\u305d\u306e\u5e74\u306e\u884c\u52d5",
-        "\u9032\u6357\u30fb\u30e1\u30e2",
+        MLTP_LABELS.colYearAgeHint,
+        isSummaryRow
+          ? "\u88dc\u8db3\uff082\u884c\u76ee\u307e\u3067\u8868\u793a\uff09"
+          : "\u9032\u6357\u30fb\u30e1\u30e2",
         "\u30ea\u30b9\u30af",
         "",
       ],

@@ -217,10 +217,11 @@ function YearPane({
     <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px]">
       <PaneHeader
         title={YEAR_PANE_TITLE}
+        hint={PANE_HINTS.year}
         onTitleClick={onOpenPlan}
         titleClickHint={OPEN_MLTP_HINT}
       />
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+      <div className="px-2 py-2">
         <ul className="flex flex-col gap-1">
           {years.map((year) => {
             const selected = year === y;
@@ -298,7 +299,7 @@ function MonthPane({
           <NavChevron dir="next" label={LABEL_NEXT_YEAR} onClick={() => onAddYear(1)} />
         </div>
       </PaneHeader>
-      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+      <div className="p-2">
         {comment ? (
           <div className="mb-2 rounded border border-dashed border-zinc-200 px-2 py-1">
             <ScopeExcerpt text={comment} />
@@ -359,7 +360,7 @@ function WeekPane({
           <NavChevron dir="next" label={LABEL_NEXT_WEEK} onClick={() => onAddWeek(1)} />
         </div>
       </PaneHeader>
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+      <div className="px-2 py-2">
         {comment ? (
           <div className="mb-2 rounded border border-dashed border-zinc-200 px-2 py-1">
             <ScopeExcerpt text={comment} />

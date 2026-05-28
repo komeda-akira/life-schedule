@@ -12,11 +12,17 @@ import {
 import { createDefaultPlan } from "@/lib/mid-long-term-plan";
 import type { MidLongTermPlan } from "@/lib/mid-long-term-plan";
 import {
+  normalizeLifePhilosophy,
+  type LifePhilosophy,
+} from "@/lib/life-philosophy";
+import { applyNorthStarScreenshotDefaults } from "@/lib/north-star-seeds";
+import {
   loadAppData,
   mergeImportEvents,
   normalizeAppData,
   saveAppData,
 } from "@/lib/storage";
+import { createEmptyAppData } from "@/lib/types";
 import type {
   AppData,
   CalendarEvent,
@@ -36,6 +42,8 @@ type AppDataContextValue = {
   setScopeComment: (key: string, text: string) => void;
   getMidLongTermPlan: () => MidLongTermPlan;
   setMidLongTermPlan: (plan: MidLongTermPlan) => void;
+  getLifePhilosophy: () => LifePhilosophy;
+  updateLifePhilosophy: (partial: Partial<LifePhilosophy>) => void;
   importData: (partial: Partial<AppData>) => void;
   exportData: () => AppData;
 };
@@ -43,11 +51,11 @@ type AppDataContextValue = {
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<AppData>(() => loadAppData());
+  const [data, setData] = useState<AppData>(createEmptyAppData);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setData(loadAppData());
+    setData(applyNorthStarScreenshotDefaults(loadAppData()));
     setHydrated(true);
   }, []);
 
@@ -140,6 +148,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [update],
   );
 
+  const getLifePhilosophy = useCallback(
+    () => normalizeLifePhilosophy(data.lifePhilosophy),
+    [data.lifePhilosophy],
+  );
+
+  const updateLifePhilosophy = useCallback(
+    (partial: Partial<LifePhilosophy>) => {
+      update((prev) => ({
+        ...prev,
+        lifePhilosophy: normalizeLifePhilosophy({
+          ...normalizeLifePhilosophy(prev.lifePhilosophy),
+          ...partial,
+        }),
+      }));
+    },
+    [update],
+  );
+
   const importData = useCallback(
     (partial: Partial<AppData>) => {
       const normalized = normalizeAppData(partial);
@@ -150,6 +176,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         scopeComments: { ...prev.scopeComments, ...normalized.scopeComments },
         midLongTermPlan:
           normalized.midLongTermPlan ?? prev.midLongTermPlan,
+        lifePhilosophy: normalized.lifePhilosophy
+          ? normalizeLifePhilosophy({
+              ...normalizeLifePhilosophy(prev.lifePhilosophy),
+              ...normalized.lifePhilosophy,
+            })
+          : prev.lifePhilosophy,
       }));
     },
     [update],
@@ -170,6 +202,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setScopeComment,
       getMidLongTermPlan,
       setMidLongTermPlan,
+      getLifePhilosophy,
+      updateLifePhilosophy,
       importData,
       exportData,
     }),
@@ -185,6 +219,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setScopeComment,
       getMidLongTermPlan,
       setMidLongTermPlan,
+      getLifePhilosophy,
+      updateLifePhilosophy,
       importData,
       exportData,
     ],

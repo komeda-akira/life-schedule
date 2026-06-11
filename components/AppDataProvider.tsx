@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -57,11 +58,16 @@ import {
   type PurposeVision,
 } from "@/lib/purpose-vision";
 import { applyNorthStarScreenshotDefaults } from "@/lib/north-star-seeds";
+import { MigrateLocalDataModal } from "@/components/MigrateLocalDataModal";
 import {
-  loadAppData,
+  clearLocalAppData,
+  hasLocalAppData,
+  readRawLocalAppData,
+} from "@/lib/local-storage";
+import {
+  bootstrapAppData,
   mergeImportEvents,
   normalizeAppData,
-  saveAppData,
 } from "@/lib/storage";
 import { createEmptyAppData } from "@/lib/types";
 import type {
@@ -130,18 +136,119 @@ type AppDataContextValue = {
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
+const SAVE_DEBOUNCE_MS = 800;
+
+async function fetchRemoteAppData(): Promise<{
+  exists: boolean;
+  data: AppData | null;
+}> {
+  const res = await fetch("/api/app-data");
+  if (!res.ok) {
+    throw new Error("Failed to load app data");
+  }
+  return (await res.json()) as { exists: boolean; data: AppData | null };
+}
+
+async function persistRemoteAppData(data: AppData): Promise<void> {
+  const res = await fetch("/api/app-data", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    throw new Error("Failed to save app data");
+  }
+}
+
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(createEmptyAppData);
   const [hydrated, setHydrated] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [migrateOpen, setMigrateOpen] = useState(false);
+  const [migrateBusy, setMigrateBusy] = useState(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setData(applyNorthStarScreenshotDefaults(loadAppData()));
-    setHydrated(true);
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const remote = await fetchRemoteAppData();
+        if (cancelled) return;
+
+        if (remote.exists && remote.data) {
+          setData(
+            applyNorthStarScreenshotDefaults(normalizeAppData(remote.data)),
+          );
+          setHydrated(true);
+          return;
+        }
+
+        if (hasLocalAppData()) {
+          setData(bootstrapAppData());
+          setMigrateOpen(true);
+          setHydrated(true);
+          return;
+        }
+
+        setData(bootstrapAppData());
+        setHydrated(true);
+      } catch {
+        if (!cancelled) {
+          setLoadError("クラウドからデータを読み込めませんでした。");
+        }
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (hydrated) saveAppData(data);
-  }, [data, hydrated]);
+    if (!hydrated || migrateOpen) return;
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = setTimeout(() => {
+      void persistRemoteAppData(data).catch(() => {
+        setLoadError("クラウドへの保存に失敗しました。");
+      });
+    }, SAVE_DEBOUNCE_MS);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [data, hydrated, migrateOpen]);
+
+  const finishMigration = useCallback(async (next: AppData) => {
+    setMigrateBusy(true);
+    try {
+      await persistRemoteAppData(next);
+      clearLocalAppData();
+      setData(applyNorthStarScreenshotDefaults(normalizeAppData(next)));
+      setMigrateOpen(false);
+      setLoadError(null);
+    } catch {
+      setLoadError("移行に失敗しました。もう一度お試しください。");
+    } finally {
+      setMigrateBusy(false);
+    }
+  }, []);
+
+  const onMigrateLocal = useCallback(() => {
+    const raw = readRawLocalAppData();
+    void finishMigration(normalizeAppData(raw ?? {}));
+  }, [finishMigration]);
+
+  const onSkipMigration = useCallback(() => {
+    void finishMigration(bootstrapAppData());
+  }, [finishMigration]);
 
   const update = useCallback((fn: (prev: AppData) => AppData) => {
     setData((prev) => fn(prev));
@@ -651,8 +758,38 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     ],
   );
 
+  if (loadError && !hydrated) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center px-6">
+        <p className="text-center text-sm text-red-700">{loadError}</p>
+      </div>
+    );
+  }
+
+  if (!hydrated) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center px-6">
+        <p className="text-sm text-black/60">データを読み込み中…</p>
+      </div>
+    );
+  }
+
   return (
-    <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>
+    <AppDataContext.Provider value={value}>
+      {loadError ? (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">
+          {loadError}
+        </div>
+      ) : null}
+      {children}
+      {migrateOpen ? (
+        <MigrateLocalDataModal
+          busy={migrateBusy}
+          onMigrate={onMigrateLocal}
+          onSkip={onSkipMigration}
+        />
+      ) : null}
+    </AppDataContext.Provider>
   );
 }
 

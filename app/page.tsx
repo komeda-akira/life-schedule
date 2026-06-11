@@ -1,12 +1,16 @@
 import { AppDataProvider } from "@/components/AppDataProvider";
+import { AuthShell, UserSessionBar } from "@/components/AuthShell";
 import { CalendarPanes } from "@/components/CalendarPanes";
 import { DataMenu } from "@/components/DataMenu";
 import { NorthStarBar } from "@/components/NorthStarBar";
+import { Providers } from "@/components/Providers";
 import { DIAGRAM_IMPROVEMENTS_URL, DIAGRAM_PUBLIC_URL } from "@/lib/constants";
 
 export default function Home() {
   return (
-    <AppDataProvider>
+    <Providers>
+      <AuthShell>
+        <AppDataProvider>
       <div className="min-h-full bg-white px-3 py-4 text-black sm:px-6 sm:py-8">
         <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -19,6 +23,7 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <UserSessionBar />
               <DataMenu />
               <a
                 href={DIAGRAM_IMPROVEMENTS_URL}
@@ -51,6 +56,8 @@ export default function Home() {
           </article>
         </div>
       </div>
-    </AppDataProvider>
+        </AppDataProvider>
+      </AuthShell>
+    </Providers>
   );
 }

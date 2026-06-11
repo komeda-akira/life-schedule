@@ -16,10 +16,24 @@ npm run dev
 
 ブラウザで http://localhost:3000 を開きます（`workspace-ui-kit` と同時起動する場合は `npm run dev -- -p 3001` などでポートを変えてください）。
 
+### クラウド保存（講義課題: Neon + Vercel + Google）
+
+1. [Neon](https://neon.tech/) で PostgreSQL を作成し、`scripts/init-db.sql` を SQL エディタで実行
+2. `.env.example` を `.env.local` にコピーし、各値を設定
+   - `AUTH_SECRET`: `openssl rand -base64 32` などで生成
+   - Google Cloud Console で OAuth クライアント（Web）を作成  
+     リダイレクト URI: `http://localhost:3000/api/auth/callback/google` と本番 URL
+   - `ALLOWED_EMAIL`: ログインを許可する自分の Gmail
+   - `DATABASE_URL`: Neon の接続文字列
+3. `npm run dev` → Google ログイン → 初回のみ localStorage からの移行を選択可能
+4. Vercel にデプロイし、上記環境変数を Vercel のプロジェクト設定に追加
+
+記憶の設計図解: https://diagram-life-calendar-memory.surge.sh/
+
 ## 構成（現状）
 
 - 北極星バー — 理念・目的・ビジョン・目標・プライムシート＋自分100年史・やりたいこと100
-- 各ワークシート — 手書き相当の初期値付き編集画面（`localStorage` 自動保存）
+- 各ワークシート — 手書き相当の初期値付き編集画面（Neon へ自動保存）
 - 年・月・週のスコープコメント — ヘッダー／ラベルから編集
 - 日ペイン — 終日行・24hタイムライン、土曜=青・日曜=赤
 - 予定データ — JSON の書き出し／読み込み（ヘッダー）

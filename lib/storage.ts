@@ -32,6 +32,7 @@ import { applyPurposeVisionDefaults } from "@/lib/purpose-vision";
 import { normalizeLifePhilosophy } from "@/lib/life-philosophy";
 import { normalizePurposeVision } from "@/lib/purpose-vision";
 import { normalizeMidLongTermPlan } from "@/lib/mid-long-term-plan";
+import { STORAGE_KEY } from "@/lib/local-storage";
 import {
   createEmptyAppData,
   DATA_VERSION,
@@ -39,77 +40,49 @@ import {
   type CalendarEvent,
 } from "@/lib/types";
 
-const STORAGE_KEY = "life-schedule:v1";
+function withAllDefaults(input: AppData): AppData {
+  return withDemoDataIfEmpty(
+    applyPrimeTimeSheetDefaults(
+      applyWeeklyWorksheetDefaults(
+        applyDailyWorksheetDefaults(
+          applyMonthlyWorksheetDefaults(
+            applyGoalSettingDefaults(
+              applyLifeWishList100Defaults(
+                applyMy100YearHistoryDefaults(
+                  applyPurposeVisionDefaults(
+                    applyNorthStarScreenshotDefaults(input),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/** 初回表示用（localStorage / DB どちらも空のとき） */
+export function bootstrapAppData(): AppData {
+  return withAllDefaults(createEmptyAppData());
+}
 
 export function loadAppData(): AppData {
   if (typeof window === "undefined") return createEmptyAppData();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      return withDemoDataIfEmpty(
-        applyPrimeTimeSheetDefaults(
-          applyWeeklyWorksheetDefaults(
-            applyDailyWorksheetDefaults(
-              applyMonthlyWorksheetDefaults(
-                applyGoalSettingDefaults(
-                  applyLifeWishList100Defaults(
-                    applyMy100YearHistoryDefaults(
-                      applyPurposeVisionDefaults(
-                        applyNorthStarScreenshotDefaults(createEmptyAppData()),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
+      return bootstrapAppData();
     }
     const parsed = JSON.parse(raw) as Partial<AppData>;
-    return withDemoDataIfEmpty(
-      applyPrimeTimeSheetDefaults(
-        applyWeeklyWorksheetDefaults(
-          applyDailyWorksheetDefaults(
-            applyMonthlyWorksheetDefaults(
-              applyGoalSettingDefaults(
-                applyLifeWishList100Defaults(
-                  applyMy100YearHistoryDefaults(
-                    applyPurposeVisionDefaults(
-                      applyNorthStarScreenshotDefaults(normalizeAppData(parsed)),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    return withAllDefaults(normalizeAppData(parsed));
   } catch {
-    return withDemoDataIfEmpty(
-      applyPrimeTimeSheetDefaults(
-        applyWeeklyWorksheetDefaults(
-          applyDailyWorksheetDefaults(
-            applyMonthlyWorksheetDefaults(
-              applyGoalSettingDefaults(
-                applyLifeWishList100Defaults(
-                  applyMy100YearHistoryDefaults(
-                    applyPurposeVisionDefaults(
-                      applyNorthStarScreenshotDefaults(createEmptyAppData()),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    return bootstrapAppData();
   }
 }
 
 export function saveAppData(data: AppData): void {
+  if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 

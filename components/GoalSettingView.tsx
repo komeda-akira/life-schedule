@@ -1,7 +1,15 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import { ChoiceTheoryView } from "@/components/ChoiceTheoryView";
+import { Modal } from "@/components/Modal";
 import { useAppData } from "@/components/AppDataProvider";
+import {
+  CHOICE_THEORY_BUTTON_SUBTITLE,
+  CHOICE_THEORY_MODAL_TITLE,
+  CHOICE_THEORY_NEED_COLORS,
+  CHOICE_THEORY_TITLE,
+} from "@/lib/choice-theory-content";
 import type { GoalDomainRow, GoalNeedGroup, GoalSetting } from "@/lib/goal-setting";
 import {
   GS_COL_DOMAIN,
@@ -26,6 +34,7 @@ const textareaClass = `${inputClass} min-h-[4.5rem] resize-y leading-relaxed`;
 export function GoalSettingView() {
   const { getGoalSetting, updateGoalSetting } = useAppData();
   const data = getGoalSetting();
+  const [choiceTheoryOpen, setChoiceTheoryOpen] = useState(false);
 
   const patch = useCallback(
     (partial: Partial<GoalSetting>) => {
@@ -82,6 +91,48 @@ export function GoalSettingView() {
         </label>
         <p className="mt-3 text-[11px] text-black/55">{GS_SAVE_HINT}</p>
       </header>
+
+      <div className="flex justify-start">
+        <button
+          type="button"
+          onClick={() => setChoiceTheoryOpen(true)}
+          className="group flex max-w-md items-center gap-3 rounded-xl border-2 border-indigo-300 bg-gradient-to-r from-indigo-50 via-violet-50 to-rose-50 px-4 py-3 text-left shadow-md transition-all hover:border-indigo-400 hover:shadow-lg"
+        >
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-sm font-black text-white shadow-sm"
+            aria-hidden
+          >
+            5
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold text-indigo-950">
+              {CHOICE_THEORY_TITLE}
+            </span>
+            <span className="mt-0.5 block text-[11px] font-medium text-indigo-800/80">
+              {CHOICE_THEORY_BUTTON_SUBTITLE}
+            </span>
+            <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {CHOICE_THEORY_NEED_COLORS.map((need) => (
+                <span
+                  key={need.label}
+                  className="inline-flex items-center gap-1 rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold text-black/75 shadow-sm"
+                >
+                  <span
+                    className={`h-2 w-2 shrink-0 rounded-full ${need.className}`}
+                  />
+                  {need.label}
+                </span>
+              ))}
+            </span>
+          </span>
+          <span
+            className="shrink-0 text-lg text-indigo-400 transition-transform group-hover:translate-x-0.5"
+            aria-hidden
+          >
+            ›
+          </span>
+        </button>
+      </div>
 
       <section className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 rounded-lg border border-zinc-200 bg-zinc-50/60 p-3">
@@ -200,6 +251,16 @@ export function GoalSettingView() {
           </tbody>
         </table>
       </div>
+
+      {choiceTheoryOpen ? (
+        <Modal
+          title={CHOICE_THEORY_MODAL_TITLE}
+          onClose={() => setChoiceTheoryOpen(false)}
+          wide
+        >
+          <ChoiceTheoryView />
+        </Modal>
+      ) : null}
     </div>
   );
 }

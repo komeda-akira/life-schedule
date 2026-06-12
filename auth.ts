@@ -3,6 +3,10 @@ import Google from "next-auth/providers/google";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [Google],
+  pages: {
+    signIn: "/",
+    error: "/",
+  },
   callbacks: {
     signIn({ profile }) {
       const allowed = process.env.ALLOWED_EMAIL?.trim().toLowerCase();

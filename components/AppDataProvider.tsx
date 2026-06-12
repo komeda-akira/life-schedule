@@ -64,10 +64,13 @@ import {
   hasLocalAppData,
   readRawLocalAppData,
 } from "@/lib/local-storage";
+import { isLocalDevMode } from "@/lib/auth-config";
 import {
   bootstrapAppData,
+  loadAppData,
   mergeImportEvents,
   normalizeAppData,
+  saveAppData,
 } from "@/lib/storage";
 import { createEmptyAppData } from "@/lib/types";
 import type {
@@ -172,6 +175,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function load() {
+      if (isLocalDevMode) {
+        setData(loadAppData());
+        setHydrated(true);
+        return;
+      }
+
       try {
         const remote = await fetchRemoteAppData();
         if (cancelled) return;
@@ -208,6 +217,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated || migrateOpen) return;
+
+    if (isLocalDevMode) {
+      saveAppData(data);
+      return;
+    }
 
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);

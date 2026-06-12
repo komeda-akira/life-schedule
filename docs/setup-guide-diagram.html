@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta property="og:title" content="人生カレンダー — クラウド公開の手順図解">
+  <meta property="og:description" content="Neon・Google OAuth・環境変数・Vercel・初回ログインまで。">
+  <title>人生カレンダー — クラウド公開の手順図解</title>
+  <style>
+    :root {
+      --bg: #fff;
+      --surface: #f8fafc;
+      --border: #e2e8f0;
+      --accent: #2563eb;
+      --muted: #64748b;
+      --dim: #94a3b8;
+      --text: #0f172a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif;
+      background: var(--bg);
+      color: #475569;
+      line-height: 1.65;
+      border-top: 4px solid #3b82f6;
+      font-size: 15px;
+    }
+    main { max-width: 42rem; margin: 0 auto; padding: 2.5rem 1.25rem 3rem; }
+    h1 { font-size: 1.75rem; font-weight: 900; color: var(--text); line-height: 1.3; margin-bottom: 1rem; }
+    h1 .hl { color: var(--accent); }
+    h2 { font-size: 1.15rem; font-weight: 900; color: var(--text); margin: 2rem 0 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+    h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 0.75rem; }
+    p { margin-bottom: 0.75rem; }
+    a { color: var(--accent); }
+    code { background: #f1f5f9; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      background: #d1fae5; color: #047857; padding: 0.35rem 1rem;
+      border-radius: 999px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1.25rem;
+    }
+    .center { text-align: center; }
+    .lead { color: var(--muted); font-size: 1.05rem; max-width: 32rem; margin: 0 auto 2rem; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 1rem; padding: 1.5rem; margin-bottom: 2rem;
+    }
+    .step {
+      display: flex; align-items: center; gap: 0.75rem;
+      border-radius: 0.5rem; padding: 0.6rem 0.75rem; font-size: 0.9rem; font-weight: 600; color: var(--text);
+    }
+    .step-num {
+      width: 2rem; height: 2rem; border-radius: 50%; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 900; flex-shrink: 0;
+    }
+    .arrow { text-align: center; color: var(--dim); font-size: 0.85rem; padding: 0.15rem 0; }
+    .s1 { border: 1px solid #a7f3d0; background: #ecfdf5; } .s1 .step-num { background: #059669; }
+    .s2 { border: 1px solid #bfdbfe; background: #eff6ff; } .s2 .step-num { background: #2563eb; }
+    .s3 { border: 1px solid #ddd6fe; background: #f5f3ff; } .s3 .step-num { background: #7c3aed; }
+    .s4 { border: 1px solid #fde68a; background: #fffbeb; } .s4 .step-num { background: #f59e0b; }
+    .s5 { border: 1px solid #fecdd3; background: #fff1f2; } .s5 .step-num { background: #f43f5e; }
+    .num { width: 1.75rem; height: 1.75rem; border-radius: 50%; color: #fff; font-size: 0.7rem; font-weight: 900; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .n1 { background: #059669; } .n2 { background: #2563eb; } .n3 { background: #7c3aed; } .n4 { background: #f59e0b; } .n5 { background: #f43f5e; }
+    .muted { color: var(--muted); font-size: 0.9rem; }
+    .dim { color: var(--dim); font-size: 0.8rem; }
+    .panel { border: 1px solid var(--border); border-radius: 0.75rem; overflow: hidden; margin-bottom: 0.75rem; background: #fff; }
+    .panel-head { background: #27272a; color: #d4d4d8; padding: 0.5rem 0.75rem; font-size: 0.65rem; }
+    .panel-head .em { color: #34d399; font-weight: 700; }
+    .panel-body { padding: 1rem; background: #fafafa; border-bottom: 1px solid var(--border); font-size: 0.8rem; color: #334155; }
+    .panel-body ol { padding-left: 1.25rem; }
+    .panel-body li { margin-bottom: 0.35rem; }
+    .sql { background: #18181b; color: #34d399; font-family: Consolas, "Courier New", monospace; font-size: 0.7rem; padding: 0.75rem; line-height: 1.6; overflow-x: auto; }
+    .sql .c { color: #71717a; }
+    .sql .i { padding-left: 1rem; }
+    .box-blue { border: 1px solid #bfdbfe; background: #eff6ff66; border-radius: 0.75rem; padding: 1rem; margin-bottom: 2rem; font-size: 0.8rem; }
+    .box-blue ol { padding-left: 1.25rem; }
+    .box-blue li { margin-bottom: 0.5rem; }
+    .box-blue ul { margin: 0.35rem 0 0 1rem; font-size: 0.75rem; color: var(--muted); }
+    .env { border: 1px solid #d4d4d8; border-radius: 0.75rem; overflow: hidden; margin-bottom: 1rem; }
+    .env-head { background: #f4f4f5; padding: 0.4rem 0.75rem; font-size: 0.65rem; font-weight: 700; color: #52525b; }
+    .env-body { background: #18181b; color: #d4d4d8; font-family: Consolas, monospace; font-size: 0.7rem; padding: 0.75rem; line-height: 1.7; }
+    .env-body .k { color: #a78bfa; } .env-body .v { color: #fcd34d; } .env-body .h { color: #34d399; }
+    .grid2 { display: grid; gap: 0.75rem; margin-bottom: 2rem; }
+    @media (min-width: 640px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .mini { border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem; font-size: 0.8rem; }
+    .mini strong { display: block; color: var(--text); margin-bottom: 0.25rem; }
+    .term { border: 2px solid #ddd6fe; background: #f5f3ff80; border-radius: 0.75rem; padding: 1rem; margin-bottom: 2rem; }
+    .term pre { background: #18181b; color: #f4f4f5; font-family: Consolas, monospace; font-size: 0.75rem; padding: 0.75rem; border-radius: 0.5rem; margin-top: 0.5rem; }
+    .term .p { color: #71717a; }
+    .box-amber { border: 1px solid #fde68a; border-radius: 0.75rem; padding: 1rem; margin-bottom: 1rem; background: #fff; }
+    .box-gray { border: 1px solid var(--border); background: var(--surface); border-radius: 0.75rem; padding: 1rem; margin-bottom: 2rem; font-family: Consolas, monospace; font-size: 0.7rem; }
+    .mock { border: 1px solid var(--border); border-radius: 0.75rem; padding: 1rem; background: #fff; }
+    .mock-title { font-size: 0.65rem; font-weight: 700; color: #64748b; margin-bottom: 0.5rem; }
+    .mock-inner { border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem; text-align: center; font-size: 0.8rem; }
+    .mock-btn { border: 1px solid #d4d4d8; border-radius: 0.25rem; padding: 0.5rem; font-weight: 600; margin-top: 0.5rem; }
+    .mock-warn { border: 1px solid #fde68a; background: #fffbeb; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.7rem; }
+    .check-box { border: 2px solid #bfdbfe; background: #eff6ff40; border-radius: 1rem; padding: 1.25rem; }
+    .check-box ul { list-style: none; font-size: 0.9rem; color: var(--muted); }
+    .check-box li { margin-bottom: 0.5rem; padding-left: 1.25rem; position: relative; }
+    .check-box li::before { content: "✓"; position: absolute; left: 0; color: #059669; font-weight: 700; }
+    footer { max-width: 42rem; margin: 0 auto; padding: 1.5rem 1.25rem 2.5rem; border-top: 1px solid #e2e8f040; text-align: center; font-size: 0.75rem; color: var(--dim); }
+    .print-btn { display: block; text-align: right; max-width: 42rem; margin: 0.5rem auto 0; padding: 0 1.25rem; }
+    .print-btn button { background: none; border: none; color: var(--dim); font-size: 0.75rem; cursor: pointer; text-decoration: underline; }
+    @media print { .print-btn { display: none; } body { border-top: none; } }
+  </style>
+</head>
+<body>
+  <div class="print-btn"><button type="button" onclick="window.print()">PDF として保存</button></div>
+  <main>
+    <div class="center">
+      <div class="badge">🚀 開発ツール</div>
+      <h1>人生カレンダー<br><span class="hl">クラウド公開</span>の手順</h1>
+      <p class="lead">講義課題（Neon + Vercel + Google）のセットアップを、上から順に進めます。</p>
+    </div>
+
+    <div class="card">
+      <p class="center" style="font-weight:900;color:var(--text);margin-bottom:1rem;">全体の流れ（5ステップ）</p>
+      <div class="step s1"><span class="step-num">1</span>Neon で DB 作成 + SQL 実行</div>
+      <div class="arrow">▼</div>
+      <div class="step s2"><span class="step-num">2</span>Google OAuth クライアント作成</div>
+      <div class="arrow">▼</div>
+      <div class="step s3"><span class="step-num">3</span>.env.local に環境変数を設定</div>
+      <div class="arrow">▼</div>
+      <div class="step s4"><span class="step-num">4</span>Vercel にデプロイ + 同じ環境変数</div>
+      <div class="arrow">▼</div>
+      <div class="step s5"><span class="step-num">5</span>ログイン → 必要なら localStorage 移行</div>
+    </div>
+
+    <h2><span class="num n1">1</span> Neon — SQL エディタでテーブル作成</h2>
+    <p class="muted">Neon は PostgreSQL のクラウド。ここに人生カレンダーのデータを保存します。</p>
+    <div class="panel">
+      <div class="panel-head"><span class="em">neon.tech</span> › プロジェクト › SQL Editor</div>
+      <div class="panel-body">
+        <strong>手順</strong>
+        <ol>
+          <li><a href="https://neon.tech">neon.tech</a> でログイン → <strong>New Project</strong></li>
+          <li>左メニュー <strong>SQL Editor</strong> を開く</li>
+          <li>下の SQL を貼り付け → <strong>Run</strong> をクリック</li>
+          <li>左 <strong>Tables</strong> で <code>app_data</code> ができたか確認</li>
+          <li><strong>Connection details</strong> から接続文字列をコピー → <code>DATABASE_URL</code> に使う</li>
+        </ol>
+      </div>
+      <div class="sql">
+        <div class="c">-- scripts/init-db.sql と同じ</div>
+        <div>CREATE TABLE IF NOT EXISTS app_data (</div>
+        <div class="i">user_id TEXT PRIMARY KEY,</div>
+        <div class="i">payload JSONB NOT NULL,</div>
+        <div class="i">updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()</div>
+        <div>);</div>
+        <div style="margin-top:0.5rem">CREATE INDEX IF NOT EXISTS app_data_updated_at_idx</div>
+        <div class="i">ON app_data (updated_at DESC);</div>
+      </div>
+    </div>
+    <p class="dim" style="margin-bottom:2.5rem;">Run 後に Success が出れば OK。2回目以降は IF NOT EXISTS で安全です。</p>
+
+    <h2><span class="num n2">2</span> Google Cloud — OAuth クライアント</h2>
+    <p class="muted">「Google でログイン」を動かすための鍵を Google 側で発行します。</p>
+    <div class="box-blue">
+      <strong>Google Cloud Console の流れ</strong>
+      <ol>
+        <li><a href="https://console.cloud.google.com/">console.cloud.google.com</a> → プロジェクト作成</li>
+        <li><strong>APIとサービス</strong> → <strong>認証情報</strong> → <strong>OAuth クライアント ID</strong>（ウェブアプリ）</li>
+        <li><strong>承認済みのリダイレクト URI</strong> に追加:
+          <ul>
+            <li><code>http://localhost:3000/api/auth/callback/google</code>（ローカル）</li>
+            <li><code>https://あなたのドメイン.vercel.app/api/auth/callback/google</code>（本番）</li>
+          </ul>
+        </li>
+        <li>クライアント ID → <code>AUTH_GOOGLE_ID</code>、シークレット → <code>AUTH_GOOGLE_CLIENT_SECRET</code></li>
+      </ol>
+    </div>
+
+    <h2><span class="num n3">3</span> 環境変数（.env.local）</h2>
+    <p class="muted"><code>.env.example</code> をコピーして <code>.env.local</code> を作ります。</p>
+    <div class="env">
+      <div class="env-head">.env.local（例）</div>
+      <div class="env-body">
+        <div><span class="k">AUTH_SECRET</span>=<span class="h">（ランダム32文字以上）</span></div>
+        <div><span class="k">AUTH_GOOGLE_ID</span>=<span class="v">xxx.apps.googleusercontent.com</span></div>
+        <div><span class="k">AUTH_GOOGLE_CLIENT_SECRET</span>=<span class="v">GOCSPX-...</span></div>
+        <div><span class="k">ALLOWED_EMAIL</span>=<span class="v">あなた@gmail.com</span></div>
+        <div><span class="k">DATABASE_URL</span>=<span class="v">postgresql://...@ep-xxx.neon.tech/...</span></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="mini"><strong>AUTH_SECRET</strong>PowerShell で長いランダム文字列を作るか、generator を使用</div>
+      <div class="mini"><strong>ALLOWED_EMAIL</strong>ここに書いた Gmail だけがログインできます</div>
+    </div>
+    <div class="term">
+      <strong>ローカルで動作確認</strong>
+      <pre><span class="p">$</span> npm install
+<span class="p">$</span> npm run dev
+→ http://localhost:3000 → Google でログイン</pre>
+    </div>
+
+    <h2><span class="num n4">4</span> Vercel にデプロイ</h2>
+    <p class="muted">GitHub に push 済みなら、Vercel とリポジトリを連携するのが簡単です。</p>
+    <div class="box-amber">
+      <strong style="font-size:0.8rem;color:#92400e;">方法 A: Vercel ダッシュボード（おすすめ）</strong>
+      <ol style="font-size:0.8rem;padding-left:1.25rem;margin-top:0.5rem;">
+        <li><a href="https://vercel.com">vercel.com</a> → <strong>Add New Project</strong></li>
+        <li>GitHub の <strong>komeda-akira/life-schedule</strong> をインポート</li>
+        <li><strong>Environment Variables</strong> にステップ3と同じ5つを追加</li>
+        <li>本番でエラーが出たら <code>AUTH_TRUST_HOST=true</code> も追加</li>
+        <li><strong>Deploy</strong> → 表示された URL が本番アドレス</li>
+        <li>Google のリダイレクト URI に本番 URL を追加</li>
+      </ol>
+    </div>
+    <div class="box-gray">
+      <strong style="font-family:inherit;font-size:0.8rem;">方法 B: CLI</strong><br>
+      npx vercel login<br>
+      npx vercel --prod
+    </div>
+
+    <h2><span class="num n5">5</span> 初回ログインとデータ移行</h2>
+    <div class="grid2" style="margin-bottom:2rem;">
+      <div class="mock">
+        <div class="mock-title">ログイン画面</div>
+        <div class="mock-inner">
+          <strong>人生のカレンダー</strong>
+          <div class="mock-btn">Google でログイン</div>
+        </div>
+      </div>
+      <div class="mock">
+        <div class="mock-title">初回のみ（localStorage がある場合）</div>
+        <div class="mock-warn">
+          <strong>この端末のデータをクラウドに移行</strong><br>
+          <span class="muted">移行する / 移行せず新規開始</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="check-box">
+      <h3>うまくいったかの確認</h3>
+      <ul>
+        <li>ログイン後、予定や目標を編集できる</li>
+        <li>ページをリロードしてもデータが残る</li>
+        <li>Neon の Tables → app_data に行が増える（保存後）</li>
+        <li>別ブラウザでも同じ Google でログインすれば同じデータが見える</li>
+      </ul>
+      <p class="dim" style="margin-top:1rem;margin-bottom:0;">設計の背景: <a href="https://diagram-life-calendar-memory.surge.sh/">記憶を持たせる設計図解</a></p>
+    </div>
+  </main>
+  <footer>life-schedule 講義課題セットアップ手順 · CDN なし・オフライン可</footer>
+</body>
+</html>

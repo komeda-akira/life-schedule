@@ -1,7 +1,24 @@
 "use client";
 
 import { signIn, signOut, useSession } from "next-auth/react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { isLocalDevMode } from "@/lib/auth-config";
+
+function authErrorMessage(code: string | null): string | null {
+  if (!code) return null;
+  switch (code) {
+    case "AccessDenied":
+      return "この Google アカウントはログインできません。.env.local の ALLOWED_EMAIL に、ログインに使う Gmail を正確に書いてください。";
+    case "Configuration":
+      return "認証の設定が不足しています。.env.local の AUTH_SECRET・Google OAuth・ALLOWED_EMAIL を確認し、開発サーバーを再起動してください。";
+    case "OAuthSignin":
+    case "OAuthCallback":
+    case "OAuthCreateAccount":
+      return "Google OAuth の設定を確認してください。AUTH_GOOGLE_ID / AUTH_GOOGLE_CLIENT_SECRET と、リダイレクト URI（http://localhost:3000/api/auth/callback/google）が正しいか見直してください。";
+    default:
+      return `ログインに失敗しました（${code}）。.env.local の設定を確認してください。`;
+  }
+}
 
 function LoadingScreen() {
   return (
@@ -12,6 +29,13 @@ function LoadingScreen() {
 }
 
 function LoginScreen() {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("error");
+    setErrorMessage(authErrorMessage(code));
+  }, []);
+
   return (
     <div className="flex min-h-full flex-1 items-center justify-center bg-white px-6 py-16">
       <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
@@ -22,6 +46,11 @@ function LoginScreen() {
           データは Neon データベースに保存されます。続けるには Google
           アカウントでログインしてください。
         </p>
+        {errorMessage ? (
+          <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs leading-relaxed text-red-800">
+            {errorMessage}
+          </p>
+        ) : null}
         <button
           type="button"
           onClick={() => void signIn("google")}
@@ -40,6 +69,10 @@ function LoginScreen() {
 export function AuthShell({ children }: { children: ReactNode }) {
   const { status } = useSession();
 
+  if (isLocalDevMode) {
+    return <>{children}</>;
+  }
+
   if (status === "loading") {
     return <LoadingScreen />;
   }
@@ -53,6 +86,14 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
 export function UserSessionBar() {
   const { data: session } = useSession();
+
+  if (isLocalDevMode) {
+    return (
+      <span className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900">
+        ローカル開発モード
+      </span>
+    );
+  }
 
   if (!session?.user) return null;
 

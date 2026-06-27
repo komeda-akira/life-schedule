@@ -7,12 +7,25 @@ export const PLAN_ROW_COUNT = PLAN_THEME_ROW_COUNT + 1;
 export const PLAN_SUB_ROW_COUNT = 4;
 export const PLAN_YEAR_COLUMN_COUNT = 10;
 
-/** 表の年列の終端（2025年〜2034年の10年分） */
-export const MLTP_PLAN_END_YEAR = 2034;
+/** 年齢表・テーマ表で年列の位置を揃える列幅（table-fixed 合計 100%） */
+export const MLTP_COL_LEAD = "w-[7%]";
+export const MLTP_COL_SECOND = "w-[10.5%]";
+export const MLTP_COL_YEAR = "w-[8.25%]";
+
+/** 表の年列のデフォルト開始年（2026年〜2035年の10年分） */
+export const MLTP_PLAN_DEFAULT_START_YEAR = 2026;
+
+/** @deprecated 後方互換。新規は MLTP_PLAN_DEFAULT_START_YEAR を使用 */
+export const MLTP_PLAN_END_YEAR =
+  MLTP_PLAN_DEFAULT_START_YEAR + PLAN_YEAR_COLUMN_COUNT - 1;
 
 export function defaultPlanStartYear(): number {
-  return MLTP_PLAN_END_YEAR - PLAN_YEAR_COLUMN_COUNT + 1;
+  return MLTP_PLAN_DEFAULT_START_YEAR;
 }
+
+export const PLAN_FAMILY_MEMBER_MIN = 1;
+export const PLAN_FAMILY_MEMBER_MAX = 8;
+export const DEFAULT_FAMILY_MEMBER_COUNT = 2;
 
 export type PlanCell = [string, string, string, string];
 
@@ -24,12 +37,7 @@ export type PlanFamilyMember = {
   birthYear: number | null;
 };
 
-export type PlanFamilyMembers = [
-  PlanFamilyMember,
-  PlanFamilyMember,
-  PlanFamilyMember,
-  PlanFamilyMember,
-];
+export type PlanFamilyMembers = PlanFamilyMember[];
 
 export type MidLongTermPlanRow = {
   theme: PlanCell;
@@ -54,7 +62,7 @@ export type MidLongTermPlan = {
     string,
     string,
   ];
-  /** 家族①〜④（表上部で入力 → 年列①に満年齢を自動反映） */
+  /** 家族（表上部で入力 → 年齢表の行数と連動） */
   familyMembers: PlanFamilyMembers;
   rows: MidLongTermPlanRow[];
 };
@@ -65,17 +73,57 @@ export function createEmptyCell(): PlanCell {
   return ["", "", "", ""];
 }
 
+/** 年列セルを1つの自由記入テキストとして読み書きする */
+export function planYearCellToText(cell: PlanCell): string {
+  if (!cell.slice(1).some((line) => line.trim())) {
+    return cell[0] ?? "";
+  }
+  return cell
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function textToPlanYearCell(text: string): PlanCell {
+  return [text, "", "", ""];
+}
+
 export function createEmptyFamilyMember(): PlanFamilyMember {
   return { name: "", currentAge: null, birthYear: null };
 }
 
-export function createEmptyFamilyMembers(): PlanFamilyMembers {
-  return [
-    createEmptyFamilyMember(),
-    createEmptyFamilyMember(),
-    createEmptyFamilyMember(),
-    createEmptyFamilyMember(),
-  ];
+export function createEmptyFamilyMembers(
+  count = DEFAULT_FAMILY_MEMBER_COUNT,
+): PlanFamilyMembers {
+  return Array.from({ length: count }, () => createEmptyFamilyMember());
+}
+
+export function clampFamilyMemberCount(count: number): number {
+  return Math.min(
+    PLAN_FAMILY_MEMBER_MAX,
+    Math.max(PLAN_FAMILY_MEMBER_MIN, Math.round(count)),
+  );
+}
+
+export function clampFamilyMembers(
+  members: PlanFamilyMember[],
+): PlanFamilyMembers {
+  const trimmed = members.slice(0, PLAN_FAMILY_MEMBER_MAX);
+  while (trimmed.length < PLAN_FAMILY_MEMBER_MIN) {
+    trimmed.push(createEmptyFamilyMember());
+  }
+  return trimmed;
+}
+
+export function resizeFamilyMembers(
+  members: PlanFamilyMembers,
+  count: number,
+): PlanFamilyMembers {
+  const next = clampFamilyMembers(members.slice(0, clampFamilyMemberCount(count)));
+  while (next.length < clampFamilyMemberCount(count)) {
+    next.push(createEmptyFamilyMember());
+  }
+  return next;
 }
 
 export function planReferenceYear(plan: MidLongTermPlan): number {
@@ -180,58 +228,90 @@ export function resolveSlotIdentity(
   return { name, birthYear };
 }
 
-/** 各年列①に familyMembers から満年齢を入れる（②③④は手入力のまま） */
+/** サマリー行の年列に familyMembers から満年齢を入れる（年ペイン表示用） */
 export function fillAgesForRow(
   row: MidLongTermPlanRow,
   startYear: number,
   endYear: number,
   familyMembers?: PlanFamilyMembers,
   referenceYear?: number,
+  summaryRow = false,
 ): MidLongTermPlanRow {
+  const memberCount = familyMembers?.length ?? 0;
   const years = row.years.map((cell, colIndex) => {
     const calendarYear = startYear + colIndex;
     if (calendarYear > endYear) return cell;
-    const next = [...cell] as PlanCell;
+    const next = textToPlanYearCell("");
 
-    if (familyMembers && referenceYear != null) {
-      for (let slot = 0; slot < PLAN_SUB_ROW_COUNT; slot++) {
+    if (summaryRow && familyMembers && referenceYear != null) {
+      const parts: string[] = [];
+      for (let slot = 0; slot < memberCount; slot++) {
         const member = familyMembers[slot];
         if (!member?.name.trim()) continue;
         const birthYear = resolveBirthYear(member, referenceYear);
         if (birthYear == null) continue;
-        next[slot] = formatAgeInCalendarYear(birthYear, calendarYear);
+        parts.push(formatAgeInCalendarYear(birthYear, calendarYear));
       }
+      next[0] = parts.join("\n");
       return next;
     }
 
-    for (let slot = 0; slot < PLAN_SUB_ROW_COUNT; slot++) {
-      const { name, birthYear } = resolveSlotIdentity(row, slot);
-      if (!name || birthYear == null) continue;
-      next[slot] = formatAgeInCalendarYear(birthYear, calendarYear);
+    if (summaryRow) {
+      for (let slot = 0; slot < PLAN_SUB_ROW_COUNT; slot++) {
+        const { name, birthYear } = resolveSlotIdentity(row, slot);
+        if (!name || birthYear == null) continue;
+        const age = formatAgeInCalendarYear(birthYear, calendarYear);
+        if (next[0]) next[0] += `\n${age}`;
+        else next[0] = age;
+      }
     }
+
     return next;
   });
   return { ...row, years };
+}
+
+/** テーマ行の年列①に残った自動年齢表記を除去 */
+function clearStaleAgesFromThemeRows(
+  plan: MidLongTermPlan,
+): MidLongTermPlan {
+  const rows = plan.rows.map((row, rowIndex) => {
+    if (rowIndex === PLAN_SUMMARY_ROW_INDEX) return row;
+    const years = row.years.map((cell) => {
+      const merged = planYearCellToText(cell);
+      const next = textToPlanYearCell(merged);
+      const t = next[0]?.trim() ?? "";
+      if (/^\d+歳$/.test(t) || t === "未出生") {
+        next[0] = "";
+      }
+      return next;
+    });
+    return { ...row, years };
+  });
+  return { ...plan, rows };
 }
 
 export function applyFamilyMembersToPlan(
   plan: MidLongTermPlan,
   referenceYear: number,
 ): MidLongTermPlan {
-  const members = plan.familyMembers ?? createEmptyFamilyMembers();
+  const members = clampFamilyMembers(plan.familyMembers ?? createEmptyFamilyMembers());
   const rows = plan.rows.map((row, rowIndex) => {
     if (rowIndex !== PLAN_SUMMARY_ROW_INDEX) return row;
     const theme = [...row.theme] as PlanCell;
     const success = [...row.successPoint] as PlanCell;
     for (let slot = 0; slot < PLAN_SUB_ROW_COUNT; slot++) {
-      const member = members[slot]!;
-      theme[slot] = member.name;
-      const birthYear = resolveBirthYear(member, referenceYear);
+      const member = members[slot];
+      theme[slot] = member?.name ?? "";
+      const birthYear = member ? resolveBirthYear(member, referenceYear) : null;
       success[slot] = birthYear != null ? String(birthYear) : "";
     }
     return { ...row, theme, successPoint: success };
   });
-  return fillAgesForPlan({ ...plan, familyMembers: members, rows }, referenceYear);
+  return fillAgesForPlan(
+    clearStaleAgesFromThemeRows({ ...plan, familyMembers: members, rows }),
+    referenceYear,
+  );
 }
 
 export function fillAgesForPlan(
@@ -239,10 +319,17 @@ export function fillAgesForPlan(
   referenceYear?: number,
 ): MidLongTermPlan {
   const ref = referenceYear ?? planReferenceYear(plan);
-  const endYear = Math.min(plan.endYear, MLTP_PLAN_END_YEAR);
-  const members = plan.familyMembers ?? createEmptyFamilyMembers();
-  const rows = plan.rows.map((row) =>
-    fillAgesForRow(row, plan.startYear, endYear, members, ref),
+  const endYear = plan.endYear;
+  const members = clampFamilyMembers(plan.familyMembers ?? createEmptyFamilyMembers());
+  const rows = plan.rows.map((row, rowIndex) =>
+    fillAgesForRow(
+      row,
+      plan.startYear,
+      endYear,
+      members,
+      ref,
+      rowIndex === PLAN_SUMMARY_ROW_INDEX,
+    ),
   );
   return { ...plan, familyMembers: members, endYear, rows };
 }
@@ -277,7 +364,7 @@ export function themeRowIndexFromPlanRow(planRowIndex: number): number {
   return planRowIndex - 1;
 }
 
-/** 年ペイン表示用：サマリー行の「年」列のみ（最大2行） */
+/** 年ペイン表示用：家族の年齢サマリー */
 export function collectYearColumnSummary(
   plan: MidLongTermPlan,
   year: number,
@@ -285,18 +372,28 @@ export function collectYearColumnSummary(
   const colIndex = year - plan.startYear;
   if (colIndex < 0 || colIndex >= PLAN_YEAR_COLUMN_COUNT) return "";
 
+  const members = clampFamilyMembers(
+    plan.familyMembers ?? createEmptyFamilyMembers(),
+  );
+  const refYear = planReferenceYear(plan);
+  const parts: string[] = [];
+  for (const member of members) {
+    const name = member.name.trim();
+    if (!name) continue;
+    const birthYear = resolveBirthYear(member, refYear);
+    if (birthYear == null) {
+      parts.push(name);
+      continue;
+    }
+    parts.push(`${name} ${formatAgeInCalendarYear(birthYear, year)}`);
+  }
+  if (parts.length > 0) return parts.join(" / ");
+
   const summaryRow = plan.rows[PLAN_SUMMARY_ROW_INDEX];
   if (!summaryRow) return "";
-
   const cell = summaryRow.years[colIndex];
   if (!cell) return "";
-
-  const parts: string[] = [];
-  for (const line of cell.slice(0, 2)) {
-    const t = line.trim();
-    if (t) parts.push(t);
-  }
-  return parts.join(" / ");
+  return planYearCellToText(cell).replace(/\n/g, " / ");
 }
 
 export function yearPlanSummaryExcerpt(
@@ -347,25 +444,29 @@ function normalizeFamilyMembers(
   summaryRow: MidLongTermPlanRow | undefined,
   referenceYear: number,
 ): PlanFamilyMembers {
-  const base = createEmptyFamilyMembers();
-  if (Array.isArray(raw)) {
-    return base.map((fallback, i) =>
-      normalizeFamilyMember(raw[i], fallback),
-    ) as PlanFamilyMembers;
+  if (Array.isArray(raw) && raw.length > 0) {
+    return clampFamilyMembers(
+      raw.map((item) =>
+        normalizeFamilyMember(item, createEmptyFamilyMember()),
+      ),
+    );
   }
-  if (!summaryRow) return base;
-  return base.map((fallback, slot) => {
+  if (!summaryRow) return createEmptyFamilyMembers();
+  const fromSummary: PlanFamilyMember[] = [];
+  for (let slot = 0; slot < PLAN_SUB_ROW_COUNT; slot++) {
     const { name, birthYear } = resolveSlotIdentity(summaryRow, slot);
-    if (!name && birthYear == null) return fallback;
-    return {
-      name: name || fallback.name,
+    if (!name && birthYear == null) continue;
+    fromSummary.push({
+      name: name || "",
       birthYear,
       currentAge:
         birthYear != null
           ? currentAgeFromBirthYear(birthYear, referenceYear)
           : null,
-    };
-  }) as PlanFamilyMembers;
+    });
+  }
+  if (fromSummary.length > 0) return clampFamilyMembers(fromSummary);
+  return createEmptyFamilyMembers();
 }
 
 function normalizeRow(raw: unknown): MidLongTermPlanRow {
@@ -506,23 +607,42 @@ export const MLTP_LABELS = {
   goalsHint:
     "\u4e0a\u306e\u6700\u91cd\u70b9\u76ee\u6a19\u3092\u5206\u89e3\u3057\u305f\u5177\u4f53\u76ee\u6a19\uff081\u301c6\uff09",
   boxesRelationHint:
-    "\u2193 \u8868\u3067\u30c6\u30fc\u30de\u00d7\u5e74\u306e\u5b9f\u884c\u8a08\u753b\u3092\u7d44\u307f\u7acb\u3066\u307e\u3059",
-  familySectionTitle: "\u5bb6\u65cf\u306e\u540d\u524d\u3068\u73fe\u5728\u306e\u5e74\u9f62",
+    "↓ 年齢表は家族の人数に連動し、テーマ表では各年の計画を記入します",
+  familySectionTitle: "家族の名前と現在の年齢",
   familySectionHint:
-    "\u540d\u524d\u3068\u73fe\u5728\u306e\u6e80\u5e74\u9f62\u3092\u5165\u529b\u3059\u308b\u3068\u3001\u5404\u5e74\u5217\u2460\u306b\u6e80\u5e74\u9f62\u304c\u81ea\u52d5\u8a08\u7b97\u3055\u308c\u307e\u3059\uff08\u57fa\u6e96\u5e74\uff1d\u4f5c\u6210\u5e74\uff09",
-  familyName: "\u540d\u524d",
-  familyCurrentAge: "\u73fe\u5728\u306e\u6e80\u5e74\u9f62",
-  familyBirthYearAuto: "\u751f\u5e74\uff08\u81ea\u52d5\uff09",
-  familyAgeUnit: "\u6b73",
-  familySyncedHint: "\u2191 \u4e0a\u306e\u30bb\u30af\u30b7\u30e7\u30f3\u3067\u7de8\u96c6\u3057\u305f\u5185\u5bb9\u304c\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059",
-  colRow: "\u30c6\u30fc\u30de",
-  colTheme: "\u5bb6\u65cf\u306e\u540d\u524d",
-  colSuccess: "\u5e74\u9f62",
+    "人数を設定し、名前と現在の満年齢を入力すると、下の年齢表に各年の満年齢が反映されます（基準年＝作成年）",
+  familyCountLabel: "家族の人数",
+  familyAddMember: "家族を追加",
+  familyRemoveMember: "削除",
+  familyName: "名前",
+  familyCurrentAge: "現在の満年齢",
+  familyBirthYearAuto: "生年（自動）",
+  familyAgeUnit: "歳",
+  familySyncedHint: "↑ 上のセクションで編集した内容が表に反映されます",
+  tableSectionFamily: "家族の年齢",
+  tableSectionFamilyHint: "上部で設定した人数分の行が表示され、各年の満年齢が自動計算されます",
+  tableSectionTheme: "テーマ × 年代ごとの計画",
+  tableSectionThemeLead: "各テーマについて、10年間の計画を自由に記入",
+  tableSectionThemeHint: "左のテーマ名を編集し、概要と各年列にその年代の具体的な内容を書きます",
+  colFamilyName: "家族名",
+  colBirthYear: "生年",
+  colThemeName: "テーマ名",
+  colThemeOverview: "テーマ概要",
+  colSuccessPoint: "成功ポイント",
+  colRow: "テーマ",
+  colTheme: "家族名／概要",
+  colSuccess: "生年／成功点",
   colOutcome:
-    "\u9054\u6210\u306b\u3088\u308b\u6210\u679c\u306e\u30a4\u30e1\u30fc\u30b8",
-  colThemeHint: "\u4f8b\uff1a\u592a\u90ce\u30fb\u82b1\u5b50",
-  colSuccessHint: "\u81ea\u52d5\uff08\u4e0a\u90e8\u3067\u5165\u529b\uff09",
-  colYearAgeHint: "\u6e80\u5e74\u9f62\uff08\u81ea\u52d5\u8a08\u7b97\uff09",
+    "達成による成果のイメージ",
+  colThemeHintSummary: "家族の名前（上部で入力）",
+  colThemeHintTheme: "テーマの概要",
+  colSuccessHintSummary: "生年（自動）",
+  colSuccessHintTheme: "成功のポイント",
+  colYearHintSummary: "満年齢（自動）",
+  colYearHintTheme: "自由記入",
+  colThemeHint: "サマリー＝家族名／テーマ行＝概要",
+  colSuccessHint: "サマリー＝生年／テーマ行＝成功点",
+  colYearAgeHint: "サマリー＝満年齢／テーマ行＝年別計画",
   colYearHint: "\u305d\u306e\u5e74\u306e\u30c6\u30fc\u30de\u5225\u306e\u884c\u52d5",
   colYearSummaryHint:
     "\u203b\u30b5\u30de\u30ea\u30fc\u884c\u306e\u5e74\u5217\u2192\u5e74\u30da\u30a4\u30f3\u306b\u8868\u793a",
@@ -538,10 +658,13 @@ export const MLTP_LABELS = {
 type LineSpec = { tag: string; placeholder: string };
 
 function lineSpecs(
-  tags: [string, string, string, string],
-  placeholders: [string, string, string, string],
+  tags: readonly string[],
+  placeholders: readonly string[],
 ): LineSpec[] {
-  return tags.map((tag, i) => ({ tag, placeholder: placeholders[i] }));
+  return tags.map((tag, i) => ({
+    tag,
+    placeholder: placeholders[i] ?? "",
+  }));
 }
 
 export function cellLineSpecs(
@@ -561,13 +684,8 @@ export function cellLineSpecs(
       );
     }
     return lineSpecs(
-      ["\u2460", "\u2461", "\u2462", "\u2463"],
-      [
-        "\u540d\u524d",
-        "\u88dc\u8db3",
-        "",
-        "",
-      ],
+      ["\u2460", "\u2461"],
+      ["\u30c6\u30fc\u30de\u6982\u8981", "\u88dc\u8db3"],
     );
   }
   if (column === "success") {
@@ -583,26 +701,25 @@ export function cellLineSpecs(
       );
     }
     return lineSpecs(
-      ["\u2460", "\u2461", "\u2462", "\u2463"],
-      [
-        "\u751f\u5e74\uff08\u4f8b: 2018\uff09",
-        "\u540d\u524d\u3092\u5165\u529b\u3057\u305f\u5834\u5408\u3082\u53ef",
-        "",
-        "",
-      ],
+      ["\u2460", "\u2461"],
+      ["\u6210\u529f\u306e\u30dd\u30a4\u30f3\u30c8", "\u88dc\u8db3"],
     );
   }
   if (column === "year") {
+    if (isSummaryRow) {
+      return lineSpecs(
+        ["\u2460", "\u2461", "\u2462", "\u2463"],
+        [
+          "\u6e80\u5e74\u9f62\uff08\u81ea\u52d5\uff09",
+          "\u88dc\u8db3\uff082\u884c\u76ee\u307e\u3067\u8868\u793a\uff09",
+          "",
+          "",
+        ],
+      );
+    }
     return lineSpecs(
-      ["\u2460", "\u2461", "\u2462", "\u2463"],
-      [
-        MLTP_LABELS.colYearAgeHint,
-        isSummaryRow
-          ? "\u88dc\u8db3\uff082\u884c\u76ee\u307e\u3067\u8868\u793a\uff09"
-          : "\u9032\u6357\u30fb\u30e1\u30e2",
-        "\u30ea\u30b9\u30af",
-        "",
-      ],
+      ["\u2460", "\u2461", "\u2462"],
+      ["\u305d\u306e\u5e74\u306e\u76ee\u6a19", "\u9032\u6357\u30fb\u30e1\u30e2", "\u30ea\u30b9\u30af"],
     );
   }
   return lineSpecs(

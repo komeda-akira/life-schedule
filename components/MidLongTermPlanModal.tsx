@@ -11,10 +11,20 @@ import {
 import {
   applyFamilyMembersToPlan,
   cellLineSpecs,
+  formatAgeInCalendarYear,
   isSummaryRow,
+  MLTP_COL_LEAD,
+  MLTP_COL_SECOND,
+  MLTP_COL_YEAR,
   MLTP_LABELS,
+  PLAN_FAMILY_MEMBER_MAX,
+  PLAN_FAMILY_MEMBER_MIN,
+  PLAN_YEAR_COLUMN_COUNT,
   planYearLabels,
+  planYearCellToText,
+  resizeFamilyMembers,
   resolveBirthYear,
+  textToPlanYearCell,
   themeRowIndexFromPlanRow,
   withPlanYearRange,
   type CellColumnKind,
@@ -26,6 +36,63 @@ import {
 type MidLongTermPlanModalProps = {
   onClose: () => void;
 };
+
+const FAMILY_INDEX_MARKS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧"] as const;
+
+function MltpAlignedColGroup() {
+  return (
+    <colgroup>
+      <col className={MLTP_COL_LEAD} />
+      <col className={MLTP_COL_SECOND} />
+      {Array.from({ length: PLAN_YEAR_COLUMN_COUNT }, (_, i) => (
+        <col key={i} className={MLTP_COL_YEAR} />
+      ))}
+    </colgroup>
+  );
+}
+
+function PlanYearFreeCellEditor({
+  cell,
+  onChange,
+  compact,
+  readOnly,
+  placeholder = "自由に記入",
+}: {
+  cell: PlanCell;
+  onChange: (cell: PlanCell) => void;
+  compact?: boolean;
+  readOnly?: boolean;
+  placeholder?: string;
+}) {
+  const text = planYearCellToText(cell);
+
+  if (readOnly) {
+    if (!text.trim()) {
+      return (
+        <div
+          className={`px-1 py-1 text-xs text-black/35 ${compact ? "min-h-[5rem]" : "min-h-[7rem]"}`}
+        />
+      );
+    }
+    return (
+      <div
+        className={`whitespace-pre-wrap px-1.5 py-1 text-xs leading-relaxed text-black/75 ${compact ? "min-h-[5rem]" : "min-h-[7rem]"}`}
+      >
+        {text}
+      </div>
+    );
+  }
+
+  return (
+    <textarea
+      value={text}
+      onChange={(e) => onChange(textToPlanYearCell(e.target.value))}
+      placeholder={placeholder}
+      rows={compact ? 4 : 5}
+      className={`block w-full resize-y border-0 bg-transparent px-1.5 py-1 text-xs leading-relaxed text-black outline-none placeholder:text-black/35 focus:bg-zinc-50/80 ${compact ? "min-h-[5rem]" : "min-h-[7rem]"}`}
+    />
+  );
+}
 
 function PlanCellEditor({
   lines,
@@ -47,7 +114,7 @@ function PlanCellEditor({
   if (readOnly) {
     return (
       <div
-        className={`flex h-full flex-col text-[11px] text-black/75 ${compact ? "min-h-[5rem]" : "min-h-[7rem]"}`}
+        className={`flex h-full flex-col text-xs text-black/75 ${compact ? "min-h-[5rem]" : "min-h-[7rem]"}`}
       >
         {lines.map((line, i) => {
           const spec = specs[i];
@@ -82,9 +149,9 @@ function PlanCellEditor({
               i > 0 ? "border-t border-dotted border-zinc-400" : undefined
             }
           >
-            <div className="flex min-h-[1.35rem] items-stretch">
+            <div className="flex min-h-[1.5rem] items-stretch">
               <span
-                className="w-5 shrink-0 pt-1 text-center text-[9px] font-bold text-black/50"
+                className="w-5 shrink-0 pt-1 text-center text-[10px] font-bold text-black/50"
                 title={spec.placeholder}
               >
                 {spec.tag}
@@ -98,7 +165,7 @@ function PlanCellEditor({
                 }}
                 placeholder={spec.placeholder}
                 rows={1}
-                className={`min-h-[1.35rem] w-full flex-1 resize-none overflow-hidden border-0 bg-transparent py-0.5 pr-1 text-[11px] leading-snug text-black outline-none placeholder:text-black/35 focus:bg-zinc-50/80 ${
+                className={`min-h-[1.5rem] w-full flex-1 resize-none overflow-hidden border-0 bg-transparent py-0.5 pr-1 text-xs leading-snug text-black outline-none placeholder:text-black/35 focus:bg-zinc-50/80 ${
                   summaryRow && column === "year" && i === 0
                     ? "font-medium"
                     : ""
@@ -199,8 +266,23 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
         next.birthYear = null;
       }
       return next;
-    }) as MidLongTermPlan["familyMembers"];
+    });
     persist({ ...plan, familyMembers });
+  };
+
+  const setFamilyCount = (count: number) => {
+    persist({
+      ...plan,
+      familyMembers: resizeFamilyMembers(plan.familyMembers, count),
+    });
+  };
+
+  const removeFamilyMember = (index: number) => {
+    if (plan.familyMembers.length <= PLAN_FAMILY_MEMBER_MIN) return;
+    persist({
+      ...plan,
+      familyMembers: plan.familyMembers.filter((_, i) => i !== index),
+    });
   };
 
   const recalcOnCreatedChange = (nextCreated: typeof created) => {
@@ -366,6 +448,35 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
           <p className="mb-3 text-xs text-sky-900/75">
             {MLTP_LABELS.familySectionHint}
           </p>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-sky-950">
+              {MLTP_LABELS.familyCountLabel}
+            </span>
+            <button
+              type="button"
+              onClick={() => setFamilyCount(plan.familyMembers.length - 1)}
+              disabled={plan.familyMembers.length <= PLAN_FAMILY_MEMBER_MIN}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-sky-300 bg-white text-lg font-bold text-sky-900 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="人数を減らす"
+            >
+              −
+            </button>
+            <span className="min-w-[2rem] text-center text-sm font-bold tabular-nums">
+              {plan.familyMembers.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setFamilyCount(plan.familyMembers.length + 1)}
+              disabled={plan.familyMembers.length >= PLAN_FAMILY_MEMBER_MAX}
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-sky-300 bg-white text-lg font-bold text-sky-900 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="人数を増やす"
+            >
+              +
+            </button>
+            <span className="text-[10px] text-sky-900/60">
+              {PLAN_FAMILY_MEMBER_MIN}〜{PLAN_FAMILY_MEMBER_MAX}人
+            </span>
+          </div>
           <div className="grid gap-2 sm:grid-cols-2">
             {plan.familyMembers.map((member, i) => {
               const birthYear = resolveBirthYear(member, referenceYear);
@@ -375,7 +486,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                   className="flex flex-wrap items-center gap-2 rounded-md border border-sky-200/80 bg-white px-2 py-2"
                 >
                   <span className="w-5 shrink-0 text-center text-xs font-bold text-sky-800">
-                    {["①", "②", "③", "④"][i]}
+                    {FAMILY_INDEX_MARKS[i] ?? i + 1}
                   </span>
                   <label className="flex min-w-[5rem] flex-1 flex-col gap-0.5">
                     <span className="text-[10px] font-medium text-black/55">
@@ -427,6 +538,15 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                       <span className="text-black/35">—</span>
                     )}
                   </div>
+                  {plan.familyMembers.length > PLAN_FAMILY_MEMBER_MIN ? (
+                    <button
+                      type="button"
+                      onClick={() => removeFamilyMember(i)}
+                      className="rounded border border-red-200 px-2 py-1 text-[10px] font-medium text-red-700 hover:bg-red-50"
+                    >
+                      {MLTP_LABELS.familyRemoveMember}
+                    </button>
+                  ) : null}
                 </div>
               );
             })}
@@ -469,87 +589,158 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
           </div>
         </div>
 
-        <div className="rounded border border-zinc-400">
-          <table className="w-full table-fixed border-collapse text-[11px]">
-            <colgroup>
-              <col className="w-[7%]" />
-              <col className="w-[5%]" />
-              <col className="w-[5%]" />
-              {yearLabels.map((y) => (
-                <col key={y} className="w-[7.2%]" />
-              ))}
-              <col className="w-[9%]" />
-            </colgroup>
-            <thead>
-              <tr className="bg-zinc-200">
-                <th className="border border-zinc-400 px-1 py-1 text-left font-bold">
-                  {MLTP_LABELS.colRow}
-                </th>
-                <th className="border border-zinc-400 px-1 py-1 text-left font-bold">
-                  {MLTP_LABELS.colTheme}
-                </th>
-                <th className="border border-zinc-400 px-1 py-1 text-left font-bold">
-                  {MLTP_LABELS.colSuccess}
-                </th>
-                {yearLabels.map((y) => (
-                  <th
-                    key={y}
-                    className="border border-zinc-400 px-0.5 py-1 text-center font-bold"
-                  >
-                    {y}
-                    {MLTP_LABELS.yearRange}
+        <div className="space-y-4">
+          {/* 家族の年齢（サマリー） */}
+          <div className="overflow-hidden rounded-lg border border-amber-300">
+            <div className="flex items-center gap-2 border-b border-amber-200 bg-gradient-to-r from-amber-100 to-amber-50 px-3 py-2">
+              <span className="rounded bg-amber-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                年齢
+              </span>
+              <div>
+                <p className="text-xs font-bold text-amber-950">
+                  {MLTP_LABELS.tableSectionFamily}
+                </p>
+                <p className="text-[10px] text-amber-900/70">
+                  {MLTP_LABELS.tableSectionFamilyHint}
+                </p>
+              </div>
+            </div>
+            <table className="w-full table-fixed border-collapse text-xs">
+              <MltpAlignedColGroup />
+              <thead>
+                <tr className="bg-amber-50/80">
+                  <th className="border border-amber-200 px-1 py-1 text-left font-bold">
+                    {MLTP_LABELS.colFamilyName}
                   </th>
-                ))}
-                <th className="border border-zinc-400 px-1 py-1 text-left font-bold">
-                  {MLTP_LABELS.colOutcome}
-                </th>
-              </tr>
-              <tr className="bg-zinc-100 text-[9px] font-normal text-black/70">
-                <th className="border border-zinc-400 px-1 py-0.5" />
-                <th className="border border-zinc-400 px-1 py-0.5 text-left">
-                  {MLTP_LABELS.colThemeHint}
-                </th>
-                <th className="border border-zinc-400 px-1 py-0.5 text-left">
-                  {MLTP_LABELS.colSuccessHint}
-                </th>
-                {yearLabels.map((y) => (
-                  <th
-                    key={y}
-                    className="border border-zinc-400 px-0.5 py-0.5 text-center leading-tight"
-                  >
-                    {MLTP_LABELS.colYearAgeHint}
+                  <th className="border border-amber-200 px-1 py-1 text-left font-bold">
+                    {MLTP_LABELS.colBirthYear}
                   </th>
-                ))}
-                <th className="border border-zinc-400 px-1 py-0.5 text-left">
-                  {MLTP_LABELS.colOutcomeHint}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {plan.rows.map((row, rowIndex) => {
-                const summary = isSummaryRow(rowIndex);
-                const themeIdx = themeRowIndexFromPlanRow(rowIndex);
-                return (
-                  <tr
-                    key={rowIndex}
-                    className={summary ? "bg-amber-50/80" : undefined}
-                  >
-                    <td className="border border-zinc-400 align-top p-1">
-                      {summary ? (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] font-bold leading-tight">
-                            {MLTP_LABELS.summaryRowLabel}
-                          </span>
-                          <span className="rounded bg-amber-200/90 px-1 py-0.5 text-[8px] font-medium leading-tight text-amber-950">
-                            {MLTP_LABELS.summaryRowBadge}
-                          </span>
-                          <span className="mt-1 text-[8px] leading-tight text-black/55">
-                            {MLTP_LABELS.colYearSummaryHint}
-                          </span>
-                        </div>
-                      ) : (
+                  {yearLabels.map((y) => (
+                    <th
+                      key={y}
+                      className="border border-amber-200 px-0.5 py-1 text-center font-bold"
+                    >
+                      {y}
+                      {MLTP_LABELS.yearRange}
+                    </th>
+                  ))}
+                </tr>
+                <tr className="bg-amber-50/40 text-[10px] font-normal text-black/65">
+                  <th className="border border-amber-200 px-1 py-0.5 text-left">
+                    {MLTP_LABELS.colThemeHintSummary}
+                  </th>
+                  <th className="border border-amber-200 px-1 py-0.5 text-left">
+                    {MLTP_LABELS.colSuccessHintSummary}
+                  </th>
+                  {yearLabels.map((y) => (
+                    <th
+                      key={y}
+                      className="border border-amber-200 px-0.5 py-0.5 text-center leading-tight"
+                    >
+                      {MLTP_LABELS.colYearHintSummary}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {plan.familyMembers.map((member, memberIndex) => {
+                  const birthYear = resolveBirthYear(member, referenceYear);
+                  return (
+                    <tr
+                      key={memberIndex}
+                      className="bg-amber-50/60"
+                    >
+                      <td className="border border-amber-200 px-2 py-1.5 align-middle font-medium">
+                        {member.name.trim() || (
+                          <span className="text-black/35">—</span>
+                        )}
+                      </td>
+                      <td className="border border-amber-200 px-2 py-1.5 align-middle text-center tabular-nums">
+                        {birthYear ?? (
+                          <span className="text-black/35">—</span>
+                        )}
+                      </td>
+                      {yearLabels.map((calendarYear) => (
+                        <td
+                          key={calendarYear}
+                          className="border border-amber-200 px-1 py-1.5 text-center align-middle tabular-nums"
+                        >
+                          {birthYear != null ? (
+                            formatAgeInCalendarYear(birthYear, calendarYear)
+                          ) : (
+                            <span className="text-black/35">—</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* テーマ × 年代ごとの計画 */}
+          <div className="overflow-hidden rounded-lg border border-violet-300">
+            <div className="flex items-start gap-3 border-b border-violet-200 bg-gradient-to-r from-violet-100 via-indigo-50 to-sky-50 px-4 py-3">
+              <span className="mt-0.5 shrink-0 rounded-md bg-gradient-to-br from-violet-600 to-indigo-600 px-2.5 py-1 text-[11px] font-black tracking-wide text-white shadow-sm">
+                テーマ
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-violet-950">
+                  {MLTP_LABELS.tableSectionTheme}
+                </p>
+                <p className="mt-0.5 text-xs font-medium text-violet-900/85">
+                  {MLTP_LABELS.tableSectionThemeLead}
+                </p>
+                <p className="mt-1 text-[10px] text-violet-800/65">
+                  {MLTP_LABELS.tableSectionThemeHint}
+                </p>
+              </div>
+            </div>
+            <table className="w-full table-fixed border-collapse text-xs">
+              <MltpAlignedColGroup />
+              <thead>
+                <tr className="bg-violet-50/80">
+                  <th className="border border-violet-200 px-1 py-1 text-left font-bold text-violet-950">
+                    {MLTP_LABELS.colThemeName}
+                  </th>
+                  <th className="border border-violet-200 px-1 py-1 text-left font-bold">
+                    {MLTP_LABELS.colThemeOverview}
+                  </th>
+                  {yearLabels.map((y) => (
+                    <th
+                      key={y}
+                      className="border border-violet-200 px-0.5 py-1 text-center font-bold"
+                    >
+                      {y}
+                      {MLTP_LABELS.yearRange}
+                    </th>
+                  ))}
+                </tr>
+                <tr className="bg-violet-50/40 text-[10px] font-normal text-black/65">
+                  <th className="border border-violet-200 px-1 py-0.5" />
+                  <th className="border border-violet-200 px-1 py-0.5 text-left">
+                    {MLTP_LABELS.colThemeHintTheme}
+                  </th>
+                  {yearLabels.map((y) => (
+                    <th
+                      key={y}
+                      className="border border-violet-200 px-0.5 py-0.5 text-center leading-tight"
+                    >
+                      {MLTP_LABELS.colYearHintTheme}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {plan.rows.map((row, rowIndex) => {
+                  if (isSummaryRow(rowIndex)) return null;
+                  const themeIdx = themeRowIndexFromPlanRow(rowIndex);
+                  return (
+                    <tr key={rowIndex}>
+                      <td className="border border-zinc-300 align-top p-1">
                         <label className="flex flex-col gap-0.5">
-                          <span className="text-[9px] font-bold text-black/50">
+                          <span className="text-[10px] font-bold text-violet-700/70">
                             {themeIdx + 1}
                           </span>
                           <input
@@ -558,68 +749,40 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                             onChange={(e) =>
                               updateThemeRowLabel(themeIdx, e.target.value)
                             }
-                            className="w-full rounded border border-zinc-300 bg-white px-1 py-0.5 text-[10px] font-semibold"
+                            className="w-full rounded border border-violet-200 bg-white px-1 py-0.5 text-xs font-semibold"
                           />
                         </label>
-                      )}
-                    </td>
-                    <td className="border border-zinc-400 align-top p-0">
-                      <PlanCellEditor
-                        compact={summary}
-                        column="theme"
-                        summaryRow={summary}
-                        readOnly={summary}
-                        lines={row.theme}
-                        onChange={(theme) => updateRow(rowIndex, { theme })}
-                      />
-                    </td>
-                    <td className="border border-zinc-400 align-top p-0">
-                      <PlanCellEditor
-                        compact={summary}
-                        column="success"
-                        summaryRow={summary}
-                        readOnly={summary}
-                        lines={row.successPoint}
-                        onChange={(successPoint) =>
-                          updateRow(rowIndex, { successPoint })
-                        }
-                      />
-                    </td>
-                    {row.years.map((cell, colIndex) => (
-                      <td
-                        key={colIndex}
-                        className={`border border-zinc-400 align-top p-0 ${
-                          summary ? "bg-amber-50/50" : ""
-                        }`}
-                      >
+                      </td>
+                      <td className="border border-zinc-300 align-top p-0">
                         <PlanCellEditor
-                          compact={summary}
-                          column="year"
-                          summaryRow={summary}
-                          lines={cell}
-                          onChange={(lines) => {
-                            const years = row.years.map((c, j) =>
-                              j === colIndex ? lines : c,
-                            );
-                            updateRow(rowIndex, { years });
-                          }}
+                          column="theme"
+                          summaryRow={false}
+                          lines={row.theme}
+                          onChange={(theme) => updateRow(rowIndex, { theme })}
                         />
                       </td>
-                    ))}
-                    <td className="border border-zinc-400 align-top p-0">
-                      <PlanCellEditor
-                        compact={summary}
-                        column="outcome"
-                        summaryRow={summary}
-                        lines={row.outcome}
-                        onChange={(outcome) => updateRow(rowIndex, { outcome })}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      {row.years.map((cell, colIndex) => (
+                        <td
+                          key={colIndex}
+                          className="border border-zinc-300 align-top p-0"
+                        >
+                          <PlanYearFreeCellEditor
+                            cell={cell}
+                            onChange={(lines) => {
+                              const years = row.years.map((c, j) =>
+                                j === colIndex ? lines : c,
+                              );
+                              updateRow(rowIndex, { years });
+                            }}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 border-t border-zinc-200 pt-2">

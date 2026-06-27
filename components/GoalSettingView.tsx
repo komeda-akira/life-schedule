@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { ChoiceTheoryView } from "@/components/ChoiceTheoryView";
 import { Modal } from "@/components/Modal";
+import { OpenLayerArrow } from "@/components/OpenLayerArrow";
 import { useAppData } from "@/components/AppDataProvider";
 import {
   CHOICE_THEORY_BUTTON_SUBTITLE,
@@ -135,7 +136,7 @@ export function GoalSettingView() {
             className="shrink-0 text-lg text-zinc-400 transition-transform group-hover:translate-x-0.5"
             aria-hidden
           >
-            ›
+            <OpenLayerArrow className="text-base text-zinc-400" />
           </span>
         </button>
       </div>

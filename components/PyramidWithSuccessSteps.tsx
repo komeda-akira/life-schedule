@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Modal } from "@/components/Modal";
+import { OpenLayerArrow } from "@/components/OpenLayerArrow";
 import { SuccessStepsView } from "@/components/SuccessStepsView";
 import { SUCCESS_STEPS_TITLE } from "@/lib/success-steps-content";
 
@@ -22,9 +23,10 @@ export function PyramidWithSuccessSteps({
           <button
             type="button"
             onClick={() => setStepsOpen(true)}
-            className="rounded-lg border-2 border-zinc-800 bg-white px-3 py-5 text-sm font-bold tracking-wide text-black shadow-sm transition-colors hover:bg-zinc-50 [writing-mode:vertical-rl]"
+            className="inline-flex items-center gap-2 rounded-lg border-2 border-zinc-800 bg-white px-3 py-5 text-sm font-bold tracking-wide text-black shadow-sm transition-colors hover:bg-zinc-50 [writing-mode:vertical-rl]"
           >
             {SUCCESS_STEPS_TITLE}
+            <OpenLayerArrow className="[writing-mode:horizontal-tb]" />
           </button>
           <p className="mt-2 max-w-[5rem] text-center text-[10px] text-black/55">
             クリックで5つの手順を表示

@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { Modal } from "@/components/Modal";
+import { OpenLayerArrow } from "@/components/OpenLayerArrow";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -67,6 +68,7 @@ export function AiAssistantPanel({ buildContext }: AiAssistantPanelProps) {
       >
         <span aria-hidden>✦</span>
         AI に相談
+        <OpenLayerArrow className="text-violet-700/60" />
       </button>
 
       {open ? (

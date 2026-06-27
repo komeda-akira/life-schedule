@@ -30,6 +30,7 @@ import {
   PLAN_GUIDE_TITLE,
   type PlanGuideQuadrant,
 } from "@/lib/plan-achievement-guide-content";
+import { OpenLayerArrow } from "@/components/OpenLayerArrow";
 
 function ParetoDiagram() {
   return (
@@ -222,7 +223,7 @@ export function PlanAchievementGuideView({
               className="inline-flex items-center gap-2 rounded-xl border-2 border-amber-500 bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-2.5 text-base font-bold text-white shadow-md transition-all hover:from-amber-500 hover:to-orange-600 hover:shadow-lg"
             >
               {PLAN_GUIDE_OPEN_PRIME_SHEET}
-              <span aria-hidden>→</span>
+              <OpenLayerArrow className="text-white/85" />
             </button>
           ) : null}
         </div>

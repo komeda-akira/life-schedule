@@ -1,26 +1,50 @@
-import { excerptComment, YEAR_PANE_MIN } from "@/lib/calendar";
+import { excerptComment, YEAR_PANE_MAX, YEAR_PANE_MIN } from "@/lib/calendar";
 
 /** 0 = 年間サマリー行、1〜7 = テーマ行 */
 export const PLAN_SUMMARY_ROW_INDEX = 0;
 export const PLAN_THEME_ROW_COUNT = 7;
 export const PLAN_ROW_COUNT = PLAN_THEME_ROW_COUNT + 1;
 export const PLAN_SUB_ROW_COUNT = 4;
-export const PLAN_YEAR_COLUMN_COUNT = 10;
 
-/** 年齢表・テーマ表で年列の位置を揃える列幅（table-fixed 合計 100%） */
+/** 年ペイン（2026〜2041）と揃えた年列数 */
+export const PLAN_YEAR_COLUMN_COUNT = YEAR_PANE_MAX - YEAR_PANE_MIN + 1;
+
+/** 中長期計画表の1ページあたりの表示年数 */
+export const PLAN_YEARS_PER_PAGE = 5;
+
+/** 年齢表・テーマ表で年列の位置を揃える列幅（横スクロール時は rem 指定） */
 export const MLTP_COL_LEAD = "w-[7%]";
 export const MLTP_COL_SECOND = "w-[10.5%]";
+/** @deprecated 年列が増えたため MidLongTermPlanModal では rem 幅を使用 */
 export const MLTP_COL_YEAR = "w-[8.25%]";
 
-/** 表の年列のデフォルト開始年（2026年〜2035年の10年分） */
-export const MLTP_PLAN_DEFAULT_START_YEAR = 2026;
+export const MLTP_TABLE_LEAD_WIDTH_REM = 3.5;
+export const MLTP_TABLE_SECOND_WIDTH_REM = 4;
+export const MLTP_TABLE_YEAR_WIDTH_REM = 3.25;
+
+/** 表の年列のデフォルト開始年（2026年〜2041年） */
+export const MLTP_PLAN_DEFAULT_START_YEAR = YEAR_PANE_MIN;
 
 /** @deprecated 後方互換。新規は MLTP_PLAN_DEFAULT_START_YEAR を使用 */
-export const MLTP_PLAN_END_YEAR =
-  MLTP_PLAN_DEFAULT_START_YEAR + PLAN_YEAR_COLUMN_COUNT - 1;
+export const MLTP_PLAN_END_YEAR = YEAR_PANE_MAX;
 
 export function defaultPlanStartYear(): number {
   return MLTP_PLAN_DEFAULT_START_YEAR;
+}
+
+export function planYearColumnCount(plan: MidLongTermPlan): number {
+  return plan.endYear - plan.startYear + 1;
+}
+
+export function clampPlanStartYear(startYear: number): number {
+  const rounded = Math.round(startYear);
+  if (!Number.isFinite(rounded)) return defaultPlanStartYear();
+  const maxStart = YEAR_PANE_MAX - PLAN_YEAR_COLUMN_COUNT + 1;
+  return Math.max(YEAR_PANE_MIN, Math.min(rounded, maxStart));
+}
+
+export function planEndYearForStart(startYear: number): number {
+  return clampPlanStartYear(startYear) + PLAN_YEAR_COLUMN_COUNT - 1;
 }
 
 export const PLAN_FAMILY_MEMBER_MIN = 1;
@@ -350,10 +374,45 @@ export function createDefaultPlan(
 }
 
 export function planYearLabels(plan: MidLongTermPlan): number[] {
-  return Array.from(
-    { length: PLAN_YEAR_COLUMN_COUNT },
-    (_, i) => plan.startYear + i,
-  );
+  const count = planYearColumnCount(plan);
+  return Array.from({ length: count }, (_, i) => plan.startYear + i);
+}
+
+export function planYearPageCount(plan: MidLongTermPlan): number {
+  return Math.ceil(planYearColumnCount(plan) / PLAN_YEARS_PER_PAGE);
+}
+
+export function planYearPageStartIndex(pageIndex: number): number {
+  return Math.max(0, pageIndex) * PLAN_YEARS_PER_PAGE;
+}
+
+export function planYearPageLabels(
+  plan: MidLongTermPlan,
+  pageIndex: number,
+): number[] {
+  const start = planYearPageStartIndex(pageIndex);
+  return planYearLabels(plan).slice(start, start + PLAN_YEARS_PER_PAGE);
+}
+
+export function planYearPageRangeLabel(
+  plan: MidLongTermPlan,
+  pageIndex: number,
+): string {
+  const labels = planYearPageLabels(plan, pageIndex);
+  if (labels.length === 0) return "";
+  const first = labels[0];
+  const last = labels[labels.length - 1];
+  return first === last ? `${first}年` : `${first}年〜${last}年`;
+}
+
+export function planYearPageIndexForYear(
+  plan: MidLongTermPlan,
+  year: number,
+): number {
+  const colIndex = year - plan.startYear;
+  if (colIndex < 0) return 0;
+  const page = Math.floor(colIndex / PLAN_YEARS_PER_PAGE);
+  return Math.min(page, planYearPageCount(plan) - 1);
 }
 
 export function isSummaryRow(rowIndex: number): boolean {
@@ -370,7 +429,7 @@ export function collectYearColumnSummary(
   year: number,
 ): string {
   const colIndex = year - plan.startYear;
-  if (colIndex < 0 || colIndex >= PLAN_YEAR_COLUMN_COUNT) return "";
+  if (colIndex < 0 || colIndex >= planYearColumnCount(plan)) return "";
 
   const members = clampFamilyMembers(
     plan.familyMembers ?? createEmptyFamilyMembers(),
@@ -408,8 +467,9 @@ export function withPlanYearRange(
   plan: MidLongTermPlan,
   startYear: number,
 ): MidLongTermPlan {
-  const endYear = startYear + PLAN_YEAR_COLUMN_COUNT - 1;
-  return { ...plan, startYear, endYear };
+  const clampedStart = clampPlanStartYear(startYear);
+  const endYear = planEndYearForStart(clampedStart);
+  return { ...plan, startYear: clampedStart, endYear };
 }
 
 function normalizeCell(raw: unknown): PlanCell {
@@ -553,13 +613,37 @@ function migrateRows(raw: unknown): MidLongTermPlanRow[] {
   return normalized;
 }
 
+/** 開始年の変更に合わせ、年列データを暦年で再配置する */
+function alignPlanRowsToYearRange(
+  rows: MidLongTermPlanRow[],
+  sourceStartYear: number,
+  targetStartYear: number,
+  targetColumnCount: number,
+): MidLongTermPlanRow[] {
+  return rows.map((row) => {
+    const sourceYears = row.years ?? [];
+    const years = Array.from({ length: targetColumnCount }, (_, col) => {
+      const calendarYear = targetStartYear + col;
+      const sourceCol = calendarYear - sourceStartYear;
+      if (sourceCol < 0 || sourceCol >= sourceYears.length) {
+        return createEmptyCell();
+      }
+      return sourceYears[sourceCol];
+    });
+    return { ...row, years };
+  });
+}
+
 export function normalizeMidLongTermPlan(
   input: unknown,
 ): MidLongTermPlan | undefined {
   if (!input || typeof input !== "object") return undefined;
   const p = input as Partial<MidLongTermPlan>;
-  const startYear =
-    typeof p.startYear === "number" ? p.startYear : defaultPlanStartYear();
+  const rawStartYear =
+    typeof p.startYear === "number"
+      ? Math.round(p.startYear)
+      : defaultPlanStartYear();
+  const startYear = clampPlanStartYear(rawStartYear);
   const base = createDefaultPlan(startYear);
   const goals = Array.isArray(p.goals)
     ? p.goals.slice(0, 6).map((g) => (typeof g === "string" ? g : ""))
@@ -568,7 +652,13 @@ export function normalizeMidLongTermPlan(
   const createdAt =
     typeof p.createdAt === "string" ? p.createdAt : base.createdAt;
   const refYear = planReferenceYear({ ...base, createdAt });
-  const rows = migrateRows(p.rows);
+  let rows = migrateRows(p.rows);
+  rows = alignPlanRowsToYearRange(
+    rows,
+    rawStartYear,
+    startYear,
+    PLAN_YEAR_COLUMN_COUNT,
+  );
   const familyMembers = normalizeFamilyMembers(
     p.familyMembers,
     rows[PLAN_SUMMARY_ROW_INDEX],
@@ -577,10 +667,7 @@ export function normalizeMidLongTermPlan(
   return applyFamilyMembersToPlan(
     {
       startYear,
-      endYear:
-        typeof p.endYear === "number"
-          ? p.endYear
-          : startYear + PLAN_YEAR_COLUMN_COUNT - 1,
+      endYear: planEndYearForStart(startYear),
       createdAt,
       priorityGoal: typeof p.priorityGoal === "string" ? p.priorityGoal : "",
       goals: goals as MidLongTermPlan["goals"],
@@ -622,7 +709,8 @@ export const MLTP_LABELS = {
   tableSectionFamily: "家族の年齢",
   tableSectionFamilyHint: "上部で設定した人数分の行が表示され、各年の満年齢が自動計算されます",
   tableSectionTheme: "テーマ × 年代ごとの計画",
-  tableSectionThemeLead: "各テーマについて、10年間の計画を自由に記入",
+  tableSectionThemeLead: "各テーマについて、5年ごとのページで計画を自由に記入",
+  yearPageSection: "表示する期間（5年ごと）",
   tableSectionThemeHint: "左のテーマ名を編集し、概要と各年列にその年代の具体的な内容を書きます",
   colFamilyName: "家族名",
   colBirthYear: "生年",

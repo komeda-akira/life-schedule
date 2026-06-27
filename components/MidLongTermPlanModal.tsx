@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/Modal";
+import { OpenLayerArrow } from "@/components/OpenLayerArrow";
 import { PlanAchievementGuideView } from "@/components/PlanAchievementGuideView";
 import { NorthStarModal } from "@/components/NorthStarModal";
 import { useAppData } from "@/components/AppDataProvider";
@@ -13,14 +14,16 @@ import {
   cellLineSpecs,
   formatAgeInCalendarYear,
   isSummaryRow,
-  MLTP_COL_LEAD,
-  MLTP_COL_SECOND,
-  MLTP_COL_YEAR,
   MLTP_LABELS,
+  MLTP_TABLE_LEAD_WIDTH_REM,
+  MLTP_TABLE_SECOND_WIDTH_REM,
+  MLTP_TABLE_YEAR_WIDTH_REM,
   PLAN_FAMILY_MEMBER_MAX,
   PLAN_FAMILY_MEMBER_MIN,
-  PLAN_YEAR_COLUMN_COUNT,
-  planYearLabels,
+  planYearPageCount,
+  planYearPageIndexForYear,
+  planYearPageLabels,
+  planYearPageRangeLabel,
   planYearCellToText,
   resizeFamilyMembers,
   resolveBirthYear,
@@ -35,19 +38,62 @@ import {
 
 type MidLongTermPlanModalProps = {
   onClose: () => void;
+  /** カレンダーで選択中の年（開いたときに表示する5年ページの決定に使用） */
+  initialYear?: number;
 };
 
 const FAMILY_INDEX_MARKS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧"] as const;
 
-function MltpAlignedColGroup() {
+function mltpTableMinWidthRem(yearColumnCount: number): number {
+  return (
+    MLTP_TABLE_LEAD_WIDTH_REM +
+    MLTP_TABLE_SECOND_WIDTH_REM +
+    yearColumnCount * MLTP_TABLE_YEAR_WIDTH_REM
+  );
+}
+
+function MltpAlignedColGroup({ yearColumnCount }: { yearColumnCount: number }) {
   return (
     <colgroup>
-      <col className={MLTP_COL_LEAD} />
-      <col className={MLTP_COL_SECOND} />
-      {Array.from({ length: PLAN_YEAR_COLUMN_COUNT }, (_, i) => (
-        <col key={i} className={MLTP_COL_YEAR} />
+      <col style={{ width: `${MLTP_TABLE_LEAD_WIDTH_REM}rem` }} />
+      <col style={{ width: `${MLTP_TABLE_SECOND_WIDTH_REM}rem` }} />
+      {Array.from({ length: yearColumnCount }, (_, i) => (
+        <col key={i} style={{ width: `${MLTP_TABLE_YEAR_WIDTH_REM}rem` }} />
       ))}
     </colgroup>
+  );
+}
+
+function PlanYearPageNav({
+  plan,
+  pageIndex,
+  onChange,
+}: {
+  plan: MidLongTermPlan;
+  pageIndex: number;
+  onChange: (index: number) => void;
+}) {
+  const pageCount = planYearPageCount(plan);
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
+      <span className="text-xs font-semibold text-black/60">
+        {MLTP_LABELS.yearPageSection}
+      </span>
+      {Array.from({ length: pageCount }, (_, i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onChange(i)}
+          className={`rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors ${
+            pageIndex === i
+              ? "border-amber-500 bg-amber-100 text-amber-950 shadow-sm"
+              : "border-zinc-200 bg-white text-black/75 hover:border-zinc-300 hover:bg-zinc-100"
+          }`}
+        >
+          {planYearPageRangeLabel(plan, i)}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -204,8 +250,12 @@ function toCreatedIso(year: number, month: number, day: number): string {
   return new Date(year, month - 1, day).toISOString();
 }
 
-export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
+export function MidLongTermPlanModal({
+  onClose,
+  initialYear,
+}: MidLongTermPlanModalProps) {
   const { getMidLongTermPlan, setMidLongTermPlan } = useAppData();
+  const skipNextSyncRef = useRef(false);
   const [plan, setPlan] = useState<MidLongTermPlan>(() =>
     getMidLongTermPlan(),
   );
@@ -214,8 +264,17 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
   );
   const [planGuideOpen, setPlanGuideOpen] = useState(false);
   const [primeSheetOpen, setPrimeSheetOpen] = useState(false);
+  const [yearPageIndex, setYearPageIndex] = useState(() => {
+    const initial = getMidLongTermPlan();
+    const year = initialYear ?? initial.startYear;
+    return planYearPageIndexForYear(initial, year);
+  });
 
   useEffect(() => {
+    if (skipNextSyncRef.current) {
+      skipNextSyncRef.current = false;
+      return;
+    }
     const raw = getMidLongTermPlan();
     const loaded = applyFamilyMembersToPlan(
       raw,
@@ -225,12 +284,21 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
     setCreated(parseCreatedParts(loaded.createdAt));
   }, [getMidLongTermPlan]);
 
-  const yearLabels = planYearLabels(plan);
+  const pageYearLabels = planYearPageLabels(plan, yearPageIndex);
+  const pageCount = planYearPageCount(plan);
+  const tableMinWidthRem = mltpTableMinWidthRem(pageYearLabels.length);
   const referenceYear = created.year;
+
+  useEffect(() => {
+    if (yearPageIndex >= pageCount) {
+      setYearPageIndex(Math.max(0, pageCount - 1));
+    }
+  }, [yearPageIndex, pageCount]);
 
   const persist = useCallback(
     (next: MidLongTermPlan) => {
       const filled = applyFamilyMembersToPlan(next, referenceYear);
+      skipNextSyncRef.current = true;
       setPlan(filled);
       setMidLongTermPlan(filled);
     },
@@ -310,9 +378,8 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
 
   const setStartYear = (startYear: number) => {
     if (!Number.isFinite(startYear)) return;
-    persist(
-      withPlanYearRange(plan, Math.round(startYear)),
-    );
+    persist(withPlanYearRange(plan, Math.round(startYear)));
+    setYearPageIndex(0);
   };
 
   return (
@@ -396,9 +463,10 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
           <button
             type="button"
             onClick={() => setPlanGuideOpen(true)}
-            className="rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 px-4 py-3 text-sm font-bold text-amber-950 shadow-md transition-all hover:border-amber-500 hover:shadow-lg"
+            className="inline-flex items-center gap-2 rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 px-4 py-3 text-sm font-bold text-amber-950 shadow-md transition-all hover:border-amber-500 hover:shadow-lg"
           >
             {PLAN_GUIDE_TITLE}
+            <OpenLayerArrow className="text-amber-700/70" />
           </button>
         </div>
 
@@ -558,6 +626,12 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
         </div>
 
         <div className="space-y-4">
+          <PlanYearPageNav
+            plan={plan}
+            pageIndex={yearPageIndex}
+            onChange={setYearPageIndex}
+          />
+
           {/* 家族の年齢（サマリー） */}
           <div className="overflow-hidden rounded-lg border border-amber-300">
             <div className="flex items-center gap-2 border-b border-amber-200 bg-gradient-to-r from-amber-100 to-amber-50 px-3 py-2">
@@ -573,8 +647,12 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                 </p>
               </div>
             </div>
-            <table className="w-full table-fixed border-collapse text-xs">
-              <MltpAlignedColGroup />
+            <div className="overflow-x-auto">
+            <table
+              className="table-fixed border-collapse text-xs"
+              style={{ minWidth: `${tableMinWidthRem}rem`, width: "100%" }}
+            >
+              <MltpAlignedColGroup yearColumnCount={pageYearLabels.length} />
               <thead>
                 <tr className="bg-amber-50/80">
                   <th className="border border-amber-200 px-1 py-1 text-left font-bold">
@@ -583,7 +661,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                   <th className="border border-amber-200 px-1 py-1 text-left font-bold">
                     {MLTP_LABELS.colBirthYear}
                   </th>
-                  {yearLabels.map((y) => (
+                  {pageYearLabels.map((y) => (
                     <th
                       key={y}
                       className="border border-amber-200 px-0.5 py-1 text-center font-bold"
@@ -600,7 +678,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                   <th className="border border-amber-200 px-1 py-0.5 text-left">
                     {MLTP_LABELS.colSuccessHintSummary}
                   </th>
-                  {yearLabels.map((y) => (
+                  {pageYearLabels.map((y) => (
                     <th
                       key={y}
                       className="border border-amber-200 px-0.5 py-0.5 text-center leading-tight"
@@ -628,7 +706,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                           <span className="text-black/35">—</span>
                         )}
                       </td>
-                      {yearLabels.map((calendarYear) => (
+                      {pageYearLabels.map((calendarYear) => (
                         <td
                           key={calendarYear}
                           className="border border-amber-200 px-1 py-1.5 text-center align-middle tabular-nums"
@@ -645,6 +723,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* テーマ × 年代ごとの計画 */}
@@ -665,8 +744,12 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                 </p>
               </div>
             </div>
-            <table className="w-full table-fixed border-collapse text-xs">
-              <MltpAlignedColGroup />
+            <div className="overflow-x-auto">
+            <table
+              className="table-fixed border-collapse text-xs"
+              style={{ minWidth: `${tableMinWidthRem}rem`, width: "100%" }}
+            >
+              <MltpAlignedColGroup yearColumnCount={pageYearLabels.length} />
               <thead>
                 <tr className="bg-violet-50/80">
                   <th className="border border-violet-200 px-1 py-1 text-left font-bold text-violet-950">
@@ -675,7 +758,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                   <th className="border border-violet-200 px-1 py-1 text-left font-bold">
                     {MLTP_LABELS.colThemeOverview}
                   </th>
-                  {yearLabels.map((y) => (
+                  {pageYearLabels.map((y) => (
                     <th
                       key={y}
                       className="border border-violet-200 px-0.5 py-1 text-center font-bold"
@@ -690,7 +773,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                   <th className="border border-violet-200 px-1 py-0.5 text-left">
                     {MLTP_LABELS.colThemeHintTheme}
                   </th>
-                  {yearLabels.map((y) => (
+                  {pageYearLabels.map((y) => (
                     <th
                       key={y}
                       className="border border-violet-200 px-0.5 py-0.5 text-center leading-tight"
@@ -729,9 +812,12 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                           onChange={(theme) => updateRow(rowIndex, { theme })}
                         />
                       </td>
-                      {row.years.map((cell, colIndex) => (
+                      {pageYearLabels.map((calendarYear) => {
+                        const colIndex = calendarYear - plan.startYear;
+                        const cell = row.years[colIndex] ?? ["", "", "", ""];
+                        return (
                         <td
-                          key={colIndex}
+                          key={calendarYear}
                           className="border border-zinc-300 align-top p-0"
                         >
                           <PlanYearFreeCellEditor
@@ -744,12 +830,14 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                             }}
                           />
                         </td>
-                      ))}
+                        );
+                      })}
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 

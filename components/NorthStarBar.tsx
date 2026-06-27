@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LifeWishList100Modal } from "@/components/LifeWishList100Modal";
 import { My100YearHistoryModal } from "@/components/My100YearHistoryModal";
 import { NorthStarModal } from "@/components/NorthStarModal";
+import { OpenLayerArrow } from "@/components/OpenLayerArrow";
 import { useAppData } from "@/components/AppDataProvider";
 import { excerptComment } from "@/lib/calendar";
 import { LIFE_WISH_LIST_100_LABEL } from "@/lib/life-wish-list-100";
@@ -21,24 +22,32 @@ type NorthStarBarProps = {
 };
 
 const northStarBtnClass =
-  "flex flex-col items-start rounded-md border border-zinc-300 bg-white px-4 py-2 text-left text-sm font-medium text-black shadow-sm hover:bg-zinc-100";
+  "relative flex flex-col items-start rounded-md border border-zinc-300 bg-white px-4 py-2 pr-7 text-left text-sm font-medium text-black shadow-sm hover:bg-zinc-100";
 
 const headerPrimaryBtnClass =
-  "group flex w-full min-h-0 flex-col rounded-lg border border-red-100/90 bg-white/95 px-2.5 py-2 text-left shadow-sm transition hover:border-red-200 hover:bg-red-50/25";
+  "group relative flex w-full min-h-0 flex-col rounded-lg border border-red-100/90 bg-white/95 px-2.5 py-2 pr-6 text-left shadow-sm transition hover:border-red-200 hover:bg-red-50/25";
 
 const headerPrimaryLabelClass =
-  "text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500";
+  "text-[11px] font-extrabold uppercase tracking-[0.1em] text-zinc-900 sm:text-xs";
 
 const compactAuxBtnClass =
-  "flex min-h-0 flex-1 flex-col items-start justify-center rounded-md border border-zinc-300 bg-white px-2 py-0.5 text-left shadow-sm hover:bg-zinc-100";
+  "flex min-h-0 flex-1 items-center justify-between gap-1 rounded-md border border-zinc-300 bg-white px-2 py-0.5 text-left shadow-sm hover:bg-zinc-100";
 
-const compactTitleClass = "text-[11px] font-medium leading-snug text-black";
-
-const compactWishListBtnClass =
-  "flex flex-1 flex-col items-start justify-center overflow-visible rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-left shadow-sm hover:bg-zinc-100";
+const compactTitleClass =
+  "text-[11px] font-bold leading-snug text-zinc-900 sm:text-xs";
 
 const compactWishListTitleClass =
-  "text-[10.5px] font-medium leading-[1.5] tracking-tight text-black";
+  "text-[11px] font-bold leading-[1.5] tracking-tight text-zinc-900 sm:text-xs";
+
+const compactWishListBtnClass =
+  "flex flex-1 items-center justify-between gap-1 overflow-visible rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-left shadow-sm hover:bg-zinc-100";
+
+const headerAuxBtnClass =
+  "flex min-w-0 items-center justify-between gap-1 rounded-md border border-zinc-200 bg-white/90 px-2 py-1.5 text-left hover:bg-zinc-50";
+
+function NorthStarOpenArrow({ className = "" }: { className?: string }) {
+  return <OpenLayerArrow className={`text-[11px] ${className}`} />;
+}
 
 export function NorthStarBar({
   className = "",
@@ -74,7 +83,7 @@ export function NorthStarBar({
             {visionWord}
           </span>
           {visionNote ? (
-            <span className="text-[10px] font-medium leading-none text-zinc-500">
+            <span className="text-[11px] font-bold leading-none text-zinc-900 sm:text-xs">
               （{visionNote}）
             </span>
           ) : null}
@@ -117,7 +126,8 @@ export function NorthStarBar({
                 onClick={() => setOpen("prime")}
                 className={`${northStarBtnClass} max-w-[11rem]`}
               >
-                <span>{NORTH_STAR_LABELS.prime}</span>
+                <NorthStarOpenArrow className="absolute right-2 top-2" />
+                <span className={headerPrimaryLabelClass}>{NORTH_STAR_LABELS.prime}</span>
                 <span className="mt-0.5 line-clamp-2 text-[10px] leading-snug">
                   <span className="font-normal text-black/60">{primeExcerpt}</span>
                 </span>
@@ -131,6 +141,7 @@ export function NorthStarBar({
                   <span className={compactTitleClass}>
                     {MY_100_YEAR_HISTORY_LABEL}
                   </span>
+                  <NorthStarOpenArrow />
                 </button>
                 <button
                   type="button"
@@ -140,6 +151,7 @@ export function NorthStarBar({
                   <span className={compactWishListTitleClass}>
                     {LIFE_WISH_LIST_100_LABEL}
                   </span>
+                  <NorthStarOpenArrow />
                 </button>
               </div>
             </div>
@@ -157,7 +169,8 @@ export function NorthStarBar({
                 : "max-w-[11rem]"
             }`}
           >
-            <span>{NORTH_STAR_LABELS[cat]}</span>
+            <NorthStarOpenArrow className="absolute right-2 top-2" />
+            <span className={headerPrimaryLabelClass}>{NORTH_STAR_LABELS[cat]}</span>
             <span className="mt-0.5 line-clamp-2 leading-snug">
               {cat === "vision" ? (
                 <>
@@ -165,7 +178,7 @@ export function NorthStarBar({
                     {visionWord}
                   </span>
                   {visionNote ? (
-                    <span className="text-[10px] text-black/60">
+                    <span className="text-[10px] font-bold text-zinc-900">
                       （{visionNote}）
                     </span>
                   ) : null}
@@ -200,6 +213,7 @@ export function NorthStarBar({
           onClick={() => setOpen(cat)}
           className={headerPrimaryBtnClass}
         >
+          <NorthStarOpenArrow className="absolute right-2 top-2" />
           <span className={headerPrimaryLabelClass}>
             {NORTH_STAR_LABELS[cat]}
           </span>
@@ -211,30 +225,32 @@ export function NorthStarBar({
         <button
           type="button"
           onClick={() => setOpen("prime")}
-          className="flex min-w-0 flex-1 flex-col rounded-md border border-zinc-200 bg-white/90 px-2 py-1.5 text-left hover:bg-zinc-50 lg:flex-none"
+          className={`${headerAuxBtnClass} flex-1 px-2.5 py-2 lg:flex-none`}
         >
-          <span className="text-[10px] font-semibold leading-none text-zinc-700">
+          <span className="text-sm font-bold leading-tight text-zinc-800 sm:text-base">
             {NORTH_STAR_LABELS.prime}
           </span>
-          {primeExcerpt ? (
-            <span className="mt-0.5 line-clamp-1 text-[9px] leading-snug text-zinc-500">
-              {primeExcerpt}
-            </span>
-          ) : null}
+          <NorthStarOpenArrow />
         </button>
         <button
           type="button"
           onClick={() => setHistoryOpen(true)}
-          className="rounded-md border border-zinc-200 bg-white/90 px-2 py-1.5 text-left text-[10px] font-medium leading-tight text-zinc-700 hover:bg-zinc-50 lg:flex-1"
+          className={`${headerAuxBtnClass} lg:flex-1`}
         >
-          {MY_100_YEAR_HISTORY_LABEL}
+          <span className="text-[11px] font-bold leading-tight text-zinc-900 sm:text-xs">
+            {MY_100_YEAR_HISTORY_LABEL}
+          </span>
+          <NorthStarOpenArrow />
         </button>
         <button
           type="button"
           onClick={() => setWishListOpen(true)}
-          className="rounded-md border border-zinc-200 bg-white/90 px-2 py-1.5 text-left text-[10px] font-medium leading-tight text-zinc-700 hover:bg-zinc-50 lg:flex-1"
+          className={`${headerAuxBtnClass} lg:flex-1`}
         >
-          {LIFE_WISH_LIST_100_LABEL}
+          <span className="text-[11px] font-bold leading-tight text-zinc-900 sm:text-xs">
+            {LIFE_WISH_LIST_100_LABEL}
+          </span>
+          <NorthStarOpenArrow />
         </button>
       </div>
     </div>

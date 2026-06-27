@@ -24,6 +24,10 @@ import {
 } from "@/components/DayScheduleTimeline";
 import { EventQuickCreatePopover } from "@/components/EventQuickCreatePopover";
 import { MonthSelfCounselingPanel } from "@/components/MonthSelfCounselingPanel";
+import {
+  OpenLayerArrow,
+  SheetOpenActionButton,
+} from "@/components/OpenLayerArrow";
 import { dayWorksheetKey } from "@/lib/daily-worksheet";
 import { monthlyWorksheetExcerpt } from "@/lib/monthly-worksheet";
 import { weeklyWorksheetExcerpt } from "@/lib/weekly-worksheet";
@@ -178,6 +182,16 @@ function ScopeExcerpt({ text }: { text: string }) {
   );
 }
 
+function YearScopeCommentExcerpt({ text }: { text: string }) {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  return (
+    <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug break-words whitespace-pre-wrap text-black/55">
+      {trimmed}
+    </p>
+  );
+}
+
 function ScopeLabelButton({
   children,
   onOpenScope,
@@ -248,14 +262,14 @@ function Connector() {
 
 function YearPane({
   cursor,
-  comment,
+  getYearScopeComment,
   planYearExcerpt,
   onSelectYear,
   onOpenYearScope,
   onOpenPlan,
 }: {
   cursor: Date;
-  comment: string;
+  getYearScopeComment: (year: number) => string;
   planYearExcerpt: (year: number) => string;
   onSelectYear: (y: number) => void;
   onOpenYearScope: (y: number) => void;
@@ -281,6 +295,7 @@ function YearPane({
             const selected = year === y;
             const isStart = year === YEAR_PANE_MIN;
             const summary = planYearExcerpt(year);
+            const yearComment = getYearScopeComment(year);
             return (
               <li
                 key={year}
@@ -292,20 +307,24 @@ function YearPane({
                   onClick={() => onSelectYear(year)}
                   className={`min-w-0 flex-1 rounded-md px-2.5 py-2 text-left text-sm font-medium text-black transition-colors ${selectClass(selected)}`}
                 >
-                  <span className="flex min-w-0 items-baseline gap-1.5">
-                    <span className="shrink-0 tabular-nums">{year}</span>
+                  <span className="block min-w-0">
+                    <span className="flex min-w-0 items-baseline gap-1.5">
+                      <span className="shrink-0 tabular-nums">{year}年</span>
+                      {isStart ? (
+                        <span className="shrink-0 text-[10px] font-normal text-black/60">
+                          {YEAR_START_LABEL}
+                        </span>
+                      ) : null}
+                    </span>
                     {summary ? (
-                      <span className="min-w-0 truncate text-[10px] font-normal text-black/60">
+                      <span className="mt-0.5 block truncate text-[10px] font-normal text-black/60">
                         {summary}
                       </span>
                     ) : null}
-                    {isStart ? (
-                      <span className="shrink-0 text-[10px] font-normal text-black/60">
-                        {YEAR_START_LABEL}
-                      </span>
+                    {yearComment ? (
+                      <YearScopeCommentExcerpt text={yearComment} />
                     ) : null}
                   </span>
-                  {selected && comment ? <ScopeExcerpt text={comment} /> : null}
                 </button>
                 {selected ? <Connector /> : null}
               </li>
@@ -315,26 +334,18 @@ function YearPane({
         <p className="mt-2 text-[9px] leading-snug text-black/45">
           {YEAR_SWITCH_HINT}
         </p>
-        <button
-          type="button"
+        <SheetOpenActionButton
           onClick={onOpenPlan}
-          className="mt-2 w-full rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
-        >
-          <span className="font-semibold">{OPEN_MLTP_ACTION}</span>
-          <span className="mt-0.5 block text-[10px] text-black/55">
-            {scopeHeadingYear(y)}
-          </span>
-        </button>
-        <button
-          type="button"
+          title={OPEN_MLTP_ACTION}
+          subtitle={scopeHeadingYear(y)}
+          className="mt-2"
+        />
+        <SheetOpenActionButton
           onClick={() => onOpenYearScope(y)}
-          className="mt-2 w-full rounded-md border border-dashed border-zinc-200 bg-white px-2 py-2 text-left text-xs text-black hover:bg-zinc-50"
-        >
-          <span className="font-semibold">{OPEN_YEAR_SCOPE_ACTION}</span>
-          <span className="mt-0.5 block text-[10px] text-black/55">
-            {scopeCommentTitle(y)}
-          </span>
-        </button>
+          title={OPEN_YEAR_SCOPE_ACTION}
+          subtitle={scopeCommentTitle(y)}
+          className="mt-2 border-zinc-200 bg-white hover:bg-zinc-50"
+        />
       </div>
     </div>
   );
@@ -396,19 +407,15 @@ function MonthPane({
         <p className="mt-2 shrink-0 text-[9px] leading-snug text-black/45">
           {MONTH_SWITCH_HINT}
         </p>
-        <button
-          type="button"
+        <SheetOpenActionButton
           onClick={onOpenScope}
-          className="mt-2 w-full shrink-0 rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
-        >
-          <span className="font-semibold">{OPEN_MONTHLY_SHEET_ACTION}</span>
-          <span className="mt-0.5 block text-[10px] text-black/55">
-            {scopeHeadingYearMonth(
-              cursor.getFullYear(),
-              cursor.getMonth() + 1,
-            )}
-          </span>
-        </button>
+          title={OPEN_MONTHLY_SHEET_ACTION}
+          subtitle={scopeHeadingYearMonth(
+            cursor.getFullYear(),
+            cursor.getMonth() + 1,
+          )}
+          className="mt-2 shrink-0"
+        />
         <div className="mt-2 min-h-0 flex-1">
           <MonthSelfCounselingPanel />
         </div>
@@ -492,16 +499,12 @@ function WeekPane({
           })}
         </ul>
         {selectedWeek ? (
-          <button
-            type="button"
+          <SheetOpenActionButton
             onClick={onOpenWeeklySheet}
-            className="mb-3 w-full rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
-          >
-            <span className="font-semibold">{OPEN_WEEKLY_SHEET_ACTION}</span>
-            <span className="mt-0.5 block text-[10px] text-black/55">
-              {weekInMonthLabel(selectedWeek)}
-            </span>
-          </button>
+            title={OPEN_WEEKLY_SHEET_ACTION}
+            subtitle={weekInMonthLabel(selectedWeek)}
+            className="mb-3"
+          />
         ) : null}
         <p className="mb-1 text-[10px] font-medium text-black/60">
           {WEEK_DAY_SECTION}
@@ -530,14 +533,17 @@ function WeekPane({
         <button
           type="button"
           onClick={onOpenDailySheet}
-          className="w-full rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
+          className="flex w-full items-start justify-between gap-2 rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
         >
-          <span className="font-semibold">{OPEN_DAILY_SHEET_ACTION}</span>
-          <span
-            className={`mt-0.5 block text-[10px] text-black/55 ${weekdayTextClass(cursor)}`}
-          >
-            {formatDayHeader(cursor)}
+          <span className="min-w-0">
+            <span className="font-semibold">{OPEN_DAILY_SHEET_ACTION}</span>
+            <span
+              className={`mt-0.5 block text-[10px] text-black/55 ${weekdayTextClass(cursor)}`}
+            >
+              {formatDayHeader(cursor)}
+            </span>
           </span>
+          <OpenLayerArrow className="mt-0.5" />
         </button>
       </div>
     </div>
@@ -628,7 +634,6 @@ export function CalendarPanes() {
 
   useRegisterCalendarJump(jumpToDateKey);
 
-  const yComment = getScopeComment(yearKey(cursor.getFullYear()));
   const mComment = getScopeComment(monthKey(cursor));
   const wComment = getScopeComment(weekKey(cursor));
 
@@ -784,7 +789,7 @@ export function CalendarPanes() {
     <>
       <YearPane
         cursor={cursor}
-        comment={yComment}
+        getYearScopeComment={(year) => getScopeComment(yearKey(year))}
         planYearExcerpt={planYearExcerpt}
         onSelectYear={onSelectYear}
         onOpenYearScope={openYearScope}
@@ -861,7 +866,7 @@ export function CalendarPanes() {
         {mobileTab === 0 ? (
           <YearPane
             cursor={cursor}
-            comment={yComment}
+            getYearScopeComment={(year) => getScopeComment(yearKey(year))}
             planYearExcerpt={planYearExcerpt}
             onSelectYear={onSelectYear}
             onOpenYearScope={openYearScope}
@@ -946,7 +951,10 @@ export function CalendarPanes() {
       ) : null}
 
       {mltpOpen ? (
-        <MidLongTermPlanModal onClose={() => setMltpOpen(false)} />
+        <MidLongTermPlanModal
+          initialYear={cursor.getFullYear()}
+          onClose={() => setMltpOpen(false)}
+        />
       ) : null}
 
       {quickCreate ? (

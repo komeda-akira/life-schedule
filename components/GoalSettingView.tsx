@@ -9,6 +9,7 @@ import {
   CHOICE_THEORY_MODAL_TITLE,
   CHOICE_THEORY_NEED_COLORS,
   CHOICE_THEORY_TITLE,
+  getChoiceTheoryNeedStyle,
 } from "@/lib/choice-theory-content";
 import type { GoalDomainRow, GoalNeedGroup, GoalSetting } from "@/lib/goal-setting";
 import {
@@ -96,26 +97,31 @@ export function GoalSettingView() {
         <button
           type="button"
           onClick={() => setChoiceTheoryOpen(true)}
-          className="group flex max-w-md items-center gap-3 rounded-xl border-2 border-indigo-300 bg-gradient-to-r from-indigo-50 via-violet-50 to-rose-50 px-4 py-3 text-left shadow-md transition-all hover:border-indigo-400 hover:shadow-lg"
+          className="group flex max-w-md items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-zinc-300 hover:shadow-md"
         >
           <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 text-sm font-black text-white shadow-sm"
+            className="flex h-11 w-11 shrink-0 flex-col gap-0.5 rounded-lg border border-zinc-200 bg-zinc-50 p-1.5"
             aria-hidden
           >
-            5
+            {CHOICE_THEORY_NEED_COLORS.map((need) => (
+              <span
+                key={need.label}
+                className={`min-h-0 flex-1 rounded-sm ${need.className}`}
+              />
+            ))}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold text-indigo-950">
+            <span className="block text-sm font-bold text-black">
               {CHOICE_THEORY_TITLE}
             </span>
-            <span className="mt-0.5 block text-[11px] font-medium text-indigo-800/80">
+            <span className="mt-0.5 block text-[11px] font-medium text-black/65">
               {CHOICE_THEORY_BUTTON_SUBTITLE}
             </span>
             <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
               {CHOICE_THEORY_NEED_COLORS.map((need) => (
                 <span
                   key={need.label}
-                  className="inline-flex items-center gap-1 rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold text-black/75 shadow-sm"
+                  className="inline-flex items-center gap-1 rounded-full bg-zinc-50 px-1.5 py-0.5 text-[10px] font-semibold text-black/75"
                 >
                   <span
                     className={`h-2 w-2 shrink-0 rounded-full ${need.className}`}
@@ -126,7 +132,7 @@ export function GoalSettingView() {
             </span>
           </span>
           <span
-            className="shrink-0 text-lg text-indigo-400 transition-transform group-hover:translate-x-0.5"
+            className="shrink-0 text-lg text-zinc-400 transition-transform group-hover:translate-x-0.5"
             aria-hidden
           >
             ›
@@ -181,31 +187,32 @@ export function GoalSettingView() {
             </tr>
           </thead>
           <tbody>
-            {data.groups.map((needGroup, groupIndex) =>
-              needGroup.domains.map((domain, domainIndex) => {
+            {data.groups.map((needGroup, groupIndex) => {
+              const needStyle = getChoiceTheoryNeedStyle(groupIndex);
+
+              return needGroup.domains.map((domain, domainIndex) => {
                 const isFirstInGroup = domainIndex === 0;
                 const rowSpan = needGroup.domains.length;
                 const rowKey = `${groupIndex}-${domainIndex}`;
 
                 return (
-                  <tr
-                    key={rowKey}
-                    className={
-                      groupIndex % 2 === 0 ? "bg-white" : "bg-zinc-50/80"
-                    }
-                  >
+                  <tr key={rowKey} className={needStyle.rowBgClass}>
                     {isFirstInGroup ? (
                       <th
                         rowSpan={rowSpan}
-                        className="border-b border-r border-zinc-200 bg-zinc-100/90 px-1.5 py-2 align-middle text-center text-[10px] font-bold leading-snug text-black/90"
+                        className={`border-b border-r px-1.5 py-2 align-middle text-center text-[10px] font-bold leading-snug text-black/90 ${needStyle.borderClass} ${needStyle.bgClass}`}
                       >
+                        <span
+                          className={`mx-auto mb-1.5 block h-1 w-10 rounded-full ${needStyle.colorClass}`}
+                          aria-hidden
+                        />
                         {needGroup.needLabel}
                       </th>
                     ) : null}
-                    <th className="border-b border-r border-zinc-200 px-1.5 py-2 align-top text-left text-[10px] font-semibold leading-snug text-black/85">
+                    <th className="border-b border-r border-zinc-200 bg-white/70 px-1.5 py-2 align-top text-left text-[10px] font-semibold leading-snug text-black/85">
                       {domain.domainLabel}
                     </th>
-                    <td className="border-b border-r border-zinc-200 p-1 align-top">
+                    <td className="border-b border-r border-zinc-200 bg-white/60 p-1 align-top">
                       <textarea
                         value={domain.goals.shortTerm}
                         onChange={(e) =>
@@ -218,7 +225,7 @@ export function GoalSettingView() {
                         aria-label={`${domain.domainLabel} ${GS_COL_SHORT}`}
                       />
                     </td>
-                    <td className="border-b border-r border-zinc-200 p-1 align-top">
+                    <td className="border-b border-r border-zinc-200 bg-white/60 p-1 align-top">
                       <textarea
                         value={domain.goals.mediumTerm}
                         onChange={(e) =>
@@ -231,7 +238,7 @@ export function GoalSettingView() {
                         aria-label={`${domain.domainLabel} ${GS_COL_MEDIUM}`}
                       />
                     </td>
-                    <td className="border-b border-zinc-200 p-1 align-top">
+                    <td className="border-b border-zinc-200 bg-white/60 p-1 align-top">
                       <textarea
                         value={domain.goals.longTerm}
                         onChange={(e) =>
@@ -246,8 +253,8 @@ export function GoalSettingView() {
                     </td>
                   </tr>
                 );
-              }),
-            )}
+              });
+            })}
           </tbody>
         </table>
       </div>

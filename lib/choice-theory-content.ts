@@ -13,6 +13,7 @@ export type ChoiceTheoryNeed = {
   colorClass: string;
   borderClass: string;
   bgClass: string;
+  rowBgClass: string;
 };
 
 export const CHOICE_THEORY_NEEDS: ChoiceTheoryNeed[] = [
@@ -22,6 +23,7 @@ export const CHOICE_THEORY_NEEDS: ChoiceTheoryNeed[] = [
     colorClass: "bg-emerald-500",
     borderClass: "border-emerald-200",
     bgClass: "bg-emerald-50/80",
+    rowBgClass: "bg-emerald-50/35",
   },
   {
     needLabel: "愛・所属の欲求",
@@ -29,6 +31,7 @@ export const CHOICE_THEORY_NEEDS: ChoiceTheoryNeed[] = [
     colorClass: "bg-rose-500",
     borderClass: "border-rose-200",
     bgClass: "bg-rose-50/80",
+    rowBgClass: "bg-rose-50/35",
   },
   {
     needLabel: "力の欲求",
@@ -36,6 +39,7 @@ export const CHOICE_THEORY_NEEDS: ChoiceTheoryNeed[] = [
     colorClass: "bg-amber-500",
     borderClass: "border-amber-200",
     bgClass: "bg-amber-50/80",
+    rowBgClass: "bg-amber-50/35",
   },
   {
     needLabel: "自由の欲求",
@@ -43,6 +47,7 @@ export const CHOICE_THEORY_NEEDS: ChoiceTheoryNeed[] = [
     colorClass: "bg-sky-500",
     borderClass: "border-sky-200",
     bgClass: "bg-sky-50/80",
+    rowBgClass: "bg-sky-50/35",
   },
   {
     needLabel: "楽しみの欲求",
@@ -50,6 +55,7 @@ export const CHOICE_THEORY_NEEDS: ChoiceTheoryNeed[] = [
     colorClass: "bg-violet-500",
     borderClass: "border-violet-200",
     bgClass: "bg-violet-50/80",
+    rowBgClass: "bg-violet-50/35",
   },
 ];
 
@@ -65,3 +71,7 @@ export const CHOICE_THEORY_NEED_COLORS = CHOICE_THEORY_NEEDS.map((need) => ({
   label: need.needLabel.replace(/の欲求$/, ""),
   className: need.colorClass,
 }));
+
+export function getChoiceTheoryNeedStyle(groupIndex: number): ChoiceTheoryNeed {
+  return CHOICE_THEORY_NEEDS[groupIndex] ?? CHOICE_THEORY_NEEDS[0];
+}

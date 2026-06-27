@@ -33,6 +33,7 @@ import { normalizeLifePhilosophy } from "@/lib/life-philosophy";
 import { normalizePurposeVision } from "@/lib/purpose-vision";
 import { normalizeMidLongTermPlan } from "@/lib/mid-long-term-plan";
 import { STORAGE_KEY } from "@/lib/local-storage";
+import { normalizeRecurrenceRule } from "@/lib/recurrence";
 import {
   createEmptyAppData,
   DATA_VERSION,
@@ -91,7 +92,9 @@ export function normalizeAppData(input: Partial<AppData>): AppData {
   return {
     version: DATA_VERSION,
     events: Array.isArray(input.events)
-      ? input.events.filter(isValidEvent)
+      ? input.events
+          .map(normalizeEvent)
+          .filter((e): e is CalendarEvent => e !== null)
       : base.events,
     northStar: Array.isArray(input.northStar) ? input.northStar : base.northStar,
     scopeComments:
@@ -111,16 +114,45 @@ export function normalizeAppData(input: Partial<AppData>): AppData {
   };
 }
 
+function normalizeEvent(raw: unknown): CalendarEvent | null {
+  if (!raw || typeof raw !== "object") return null;
+  const x = raw as Partial<CalendarEvent>;
+  if (
+    typeof x.id !== "string" ||
+    typeof x.title !== "string" ||
+    typeof x.date !== "string" ||
+    (x.kind !== "timed" && x.kind !== "allDay") ||
+    typeof x.createdAt !== "string"
+  ) {
+    return null;
+  }
+  const recurrence = normalizeRecurrenceRule(x.recurrence);
+  const recurrenceSkipDates = Array.isArray(x.recurrenceSkipDates)
+    ? x.recurrenceSkipDates.filter(
+        (d): d is string => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d),
+      )
+    : undefined;
+  return {
+    id: x.id,
+    title: x.title,
+    memo: typeof x.memo === "string" ? x.memo : undefined,
+    date: x.date,
+    kind: x.kind,
+    startMin: typeof x.startMin === "number" ? x.startMin : undefined,
+    endMin: typeof x.endMin === "number" ? x.endMin : undefined,
+    createdAt: x.createdAt,
+    recurrence,
+    recurrenceSkipDates:
+      recurrenceSkipDates && recurrenceSkipDates.length > 0
+        ? recurrenceSkipDates
+        : undefined,
+    recurrenceId:
+      typeof x.recurrenceId === "string" ? x.recurrenceId : undefined,
+  };
+}
+
 function isValidEvent(e: unknown): e is CalendarEvent {
-  if (!e || typeof e !== "object") return false;
-  const x = e as CalendarEvent;
-  return (
-    typeof x.id === "string" &&
-    typeof x.title === "string" &&
-    typeof x.date === "string" &&
-    (x.kind === "timed" || x.kind === "allDay") &&
-    typeof x.createdAt === "string"
-  );
+  return normalizeEvent(e) !== null;
 }
 
 /** インポート: ID 一致は更新、無ければ追加 */

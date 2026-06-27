@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Modal } from "@/components/Modal";
 import { PlanAchievementGuideView } from "@/components/PlanAchievementGuideView";
+import { NorthStarModal } from "@/components/NorthStarModal";
 import { useAppData } from "@/components/AppDataProvider";
 import {
-  PLAN_GUIDE_BUTTON_SUBTITLE,
   PLAN_GUIDE_TITLE,
 } from "@/lib/plan-achievement-guide-content";
 import {
@@ -213,6 +213,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
     parseCreatedParts(plan.createdAt),
   );
   const [planGuideOpen, setPlanGuideOpen] = useState(false);
+  const [primeSheetOpen, setPrimeSheetOpen] = useState(false);
 
   useEffect(() => {
     const raw = getMidLongTermPlan();
@@ -395,42 +396,9 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
           <button
             type="button"
             onClick={() => setPlanGuideOpen(true)}
-            className="group flex max-w-lg items-center gap-3 rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 px-4 py-3 text-left shadow-md transition-all hover:border-amber-500 hover:shadow-lg"
+            className="rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 px-4 py-3 text-sm font-bold text-amber-950 shadow-md transition-all hover:border-amber-500 hover:shadow-lg"
           >
-            <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-lg font-black text-white shadow-sm"
-              aria-hidden
-            >
-              Q2
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-bold text-amber-950">
-                {PLAN_GUIDE_TITLE}
-              </span>
-              <span className="mt-0.5 block text-[11px] font-medium text-amber-900/80">
-                {PLAN_GUIDE_BUTTON_SUBTITLE}
-              </span>
-              <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-amber-900 shadow-sm">
-                  <span className="h-2 w-2 rounded-full bg-amber-500" />
-                  80/20
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-sky-900 shadow-sm">
-                  <span className="h-2 w-2 rounded-full bg-sky-500" />
-                  第2象限
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-emerald-900 shadow-sm">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  書き方
-                </span>
-              </span>
-            </span>
-            <span
-              className="shrink-0 text-lg text-amber-500 transition-transform group-hover:translate-x-0.5"
-              aria-hidden
-            >
-              ›
-            </span>
+            {PLAN_GUIDE_TITLE}
           </button>
         </div>
 
@@ -804,8 +772,17 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
         wide
         plan
       >
-        <PlanAchievementGuideView />
+        <PlanAchievementGuideView
+          onOpenPrimeTimeSheet={() => setPrimeSheetOpen(true)}
+        />
       </Modal>
+    ) : null}
+
+    {primeSheetOpen ? (
+      <NorthStarModal
+        category="prime"
+        onClose={() => setPrimeSheetOpen(false)}
+      />
     ) : null}
     </>
   );

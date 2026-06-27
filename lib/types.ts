@@ -13,6 +13,16 @@ export const DATA_VERSION = 1 as const;
 
 export type EventKind = "timed" | "allDay";
 
+export type RecurrenceFreq = "daily" | "weekly" | "monthly" | "yearly";
+
+export type RecurrenceRule = {
+  freq: RecurrenceFreq;
+  /** 間隔（1=毎回、2=隔週など） */
+  interval?: number;
+  /** 繰り返し終了日 YYYY-MM-DD（含む） */
+  until?: string;
+};
+
 export type CalendarEvent = {
   id: string;
   title: string;
@@ -23,6 +33,12 @@ export type CalendarEvent = {
   startMin?: number;
   endMin?: number;
   createdAt: string;
+  /** 繰り返しルール（マスター予定のみ） */
+  recurrence?: RecurrenceRule;
+  /** この日をスキップ（マスター予定） */
+  recurrenceSkipDates?: string[];
+  /** 例外予定が属するマスター ID */
+  recurrenceId?: string;
 };
 
 export type NorthStarCategory = "vision" | "purpose" | "goal" | "prime";

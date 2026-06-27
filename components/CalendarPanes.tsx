@@ -10,6 +10,8 @@ import {
   type RefObject,
 } from "react";
 import { useAppData } from "@/components/AppDataProvider";
+import { useRegisterCalendarJump } from "@/components/CalendarNavigation";
+import { parseInstanceEventId } from "@/lib/recurrence";
 import { EventModal } from "@/components/EventModal";
 import { MidLongTermPlanModal } from "@/components/MidLongTermPlanModal";
 import { DailyWorksheetModal } from "@/components/DailyWorksheetModal";
@@ -617,6 +619,15 @@ export function CalendarPanes() {
   const dateKey = formatDateKey(cursor);
   const dayEvents = eventsForDate(dateKey);
 
+  const jumpToDateKey = useCallback((key: string) => {
+    const [y, m, d] = key.split("-").map(Number);
+    if (!y || !m || !d) return;
+    setCursor(new Date(y, m - 1, d));
+    setMobileTab(3);
+  }, []);
+
+  useRegisterCalendarJump(jumpToDateKey);
+
   const yComment = getScopeComment(yearKey(cursor.getFullYear()));
   const mComment = getScopeComment(monthKey(cursor));
   const wComment = getScopeComment(weekKey(cursor));
@@ -691,7 +702,8 @@ export function CalendarPanes() {
     (id: string, startMin: number, endMin: number) => {
       const ev = dayEvents.find((e) => e.id === id);
       if (!ev || ev.kind !== "timed") return;
-      upsertEvent({ ...ev, startMin, endMin });
+      const scope = parseInstanceEventId(ev.id) ? "single" : "all";
+      upsertEvent({ ...ev, startMin, endMin }, scope);
     },
     [dayEvents, upsertEvent],
   );

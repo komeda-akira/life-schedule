@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import { isEmailAllowedForSignIn } from "@/lib/auth-policy";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [Google],
@@ -9,10 +10,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     signIn({ profile }) {
-      const allowed = process.env.ALLOWED_EMAIL?.trim().toLowerCase();
       const email = profile?.email?.trim().toLowerCase();
-      if (!allowed || !email) return false;
-      return email === allowed;
+      if (!email) return false;
+      return isEmailAllowedForSignIn(email);
     },
   },
 });

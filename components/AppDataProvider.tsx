@@ -79,12 +79,20 @@ import type {
   NorthStarCategory,
   NorthStarItem,
 } from "@/lib/types";
+import {
+  eventsForDateExpanded,
+  parseInstanceEventId,
+  searchEventsInStore,
+} from "@/lib/recurrence";
+
+export type EventEditScope = "single" | "all";
 
 type AppDataContextValue = {
   data: AppData;
   eventsForDate: (dateKey: string) => CalendarEvent[];
-  upsertEvent: (event: CalendarEvent) => void;
-  deleteEvent: (id: string) => void;
+  searchEvents: (query: string) => CalendarEvent[];
+  upsertEvent: (event: CalendarEvent, scope?: EventEditScope) => void;
+  deleteEvent: (id: string, scope?: EventEditScope) => void;
   upsertNorthStar: (item: NorthStarItem) => void;
   deleteNorthStar: (id: string) => void;
   northStarFor: (category: NorthStarCategory) => NorthStarItem[];
@@ -270,23 +278,104 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const eventsForDate = useCallback(
     (dateKey: string) =>
-      data.events.filter((e) => e.date === dateKey).sort(compareEvents),
+      eventsForDateExpanded(data.events, dateKey).sort(compareEvents),
     [data.events],
   );
 
-  const upsertEvent = useCallback((event: CalendarEvent) => {
-    update((prev) => {
-      const rest = prev.events.filter((e) => e.id !== event.id);
-      return { ...prev, events: [...rest, event] };
-    });
-  }, [update]);
+  const searchEvents = useCallback(
+    (query: string) => searchEventsInStore(data.events, query),
+    [data.events],
+  );
+
+  const upsertEvent = useCallback(
+    (event: CalendarEvent, scope: EventEditScope = "all") => {
+      update((prev) => {
+        const parsed = parseInstanceEventId(event.id);
+        if (parsed && scope === "single") {
+          const exception: CalendarEvent = {
+            ...event,
+            id: crypto.randomUUID(),
+            recurrenceId: parsed.masterId,
+            recurrence: undefined,
+            recurrenceSkipDates: undefined,
+            date: parsed.dateKey,
+          };
+          const rest = prev.events.filter(
+            (e) =>
+              e.id !== event.id &&
+              !(
+                e.recurrenceId === parsed.masterId &&
+                e.date === parsed.dateKey
+              ),
+          );
+          return { ...prev, events: [...rest, exception] };
+        }
+
+        if (parsed && scope === "all") {
+          const masterId = parsed.masterId;
+          const rest = prev.events.filter(
+            (e) =>
+              e.id !== masterId &&
+              e.recurrenceId !== masterId &&
+              e.id !== event.id,
+          );
+          const master: CalendarEvent = {
+            ...event,
+            id: masterId,
+            date: prev.events.find((e) => e.id === masterId)?.date ?? event.date,
+            recurrenceId: undefined,
+          };
+          return { ...prev, events: [...rest, master] };
+        }
+
+        const rest = prev.events.filter((e) => e.id !== event.id);
+        return { ...prev, events: [...rest, event] };
+      });
+    },
+    [update],
+  );
 
   const deleteEvent = useCallback(
-    (id: string) => {
-      update((prev) => ({
-        ...prev,
-        events: prev.events.filter((e) => e.id !== id),
-      }));
+    (id: string, scope: EventEditScope = "all") => {
+      update((prev) => {
+        const parsed = parseInstanceEventId(id);
+        if (parsed && scope === "single") {
+          const master = prev.events.find((e) => e.id === parsed.masterId);
+          if (!master) {
+            return {
+              ...prev,
+              events: prev.events.filter((e) => e.id !== id),
+            };
+          }
+          const skips = new Set(master.recurrenceSkipDates ?? []);
+          skips.add(parsed.dateKey);
+          const nextMaster: CalendarEvent = {
+            ...master,
+            recurrenceSkipDates: [...skips],
+          };
+          return {
+            ...prev,
+            events: prev.events
+              .filter(
+                (e) =>
+                  e.id !== id &&
+                  !(
+                    e.recurrenceId === parsed.masterId &&
+                    e.date === parsed.dateKey
+                  ),
+              )
+              .map((e) => (e.id === parsed.masterId ? nextMaster : e)),
+          };
+        }
+
+        const masterId = parsed?.masterId ?? id;
+        return {
+          ...prev,
+          events: prev.events.filter(
+            (e) => e.id !== masterId && e.recurrenceId !== masterId && e.id !== id,
+          ),
+        };
+      });
     },
     [update],
   );
@@ -699,6 +788,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     () => ({
       data,
       eventsForDate,
+      searchEvents,
       upsertEvent,
       deleteEvent,
       upsertNorthStar,
@@ -736,6 +826,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [
       data,
       eventsForDate,
+      searchEvents,
       upsertEvent,
       deleteEvent,
       upsertNorthStar,

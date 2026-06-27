@@ -42,6 +42,8 @@ export const PLAN_GUIDE_SHEET_STEPS = [
 
 export const PLAN_GUIDE_EXAMPLE_TITLE = "記入例";
 
+export const PLAN_GUIDE_OPEN_PRIME_SHEET = "プライムタイムシートを開く";
+
 export type PlanGuideExampleField = {
   label: string;
   value: string;

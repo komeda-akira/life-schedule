@@ -1,50 +1,30 @@
 import { AppDataProvider } from "@/components/AppDataProvider";
+import { AppHeaderTools } from "@/components/AppHeaderTools";
+import { AppHeroHeader } from "@/components/AppHeroHeader";
 import { AuthShell, UserSessionBar } from "@/components/AuthShell";
+import { CalendarNavigationProvider } from "@/components/CalendarNavigation";
 import { CalendarPanes } from "@/components/CalendarPanes";
-import { DataMenu } from "@/components/DataMenu";
 import { NorthStarBar } from "@/components/NorthStarBar";
 import { Providers } from "@/components/Providers";
-import { DIAGRAM_IMPROVEMENTS_URL, DIAGRAM_PUBLIC_URL } from "@/lib/constants";
 
 export default function Home() {
   return (
     <Providers>
       <AuthShell>
+        <CalendarNavigationProvider>
         <AppDataProvider>
-      <div className="min-h-full bg-white px-3 py-4 text-black sm:px-6 sm:py-8">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-black">
-                人生のカレンダー
-              </h1>
-              <p className="text-sm text-black/70">
-                Life Calendar — 年・月・週・日で実行スケジュールを俯瞰し未来を創造し思考を現実化させる
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <UserSessionBar />
-              <DataMenu />
-              <a
-                href={DIAGRAM_IMPROVEMENTS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-black hover:bg-zinc-50"
-              >
-                設計図解
-              </a>
-              <a
-                href={DIAGRAM_PUBLIC_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-black/75 hover:bg-zinc-100"
-              >
-                画面図解
-              </a>
-            </div>
-          </div>
+      <div className="min-h-full bg-gradient-to-b from-zinc-100/80 via-zinc-50/40 to-white px-3 py-4 text-black sm:px-6 sm:py-8">
+        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4">
+          <AppHeroHeader
+            toolbar={
+              <>
+                <AppHeaderTools />
+                <UserSessionBar />
+              </>
+            }
+          />
 
-          <article className="rounded-xl border border-zinc-300 bg-white shadow-sm">
+          <article className="overflow-hidden rounded-2xl border border-zinc-300/90 bg-white shadow-md">
             <NorthStarBar />
             <CalendarPanes />
             <footer className="flex items-center justify-center gap-2 border-t border-zinc-200 bg-white px-4 py-2.5 text-xs text-black/60">
@@ -57,6 +37,7 @@ export default function Home() {
         </div>
       </div>
         </AppDataProvider>
+        </CalendarNavigationProvider>
       </AuthShell>
     </Providers>
   );

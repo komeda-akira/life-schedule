@@ -6,6 +6,7 @@ import { EventModal } from "@/components/EventModal";
 import { EventQuickCreatePopover } from "@/components/EventQuickCreatePopover";
 import { WeekDayTimelineColumn } from "@/components/WeekDayTimelineColumn";
 import { addDays, weekdayTextClass } from "@/lib/calendar";
+import { parseInstanceEventId } from "@/lib/recurrence";
 import type { CalendarEvent, EventKind } from "@/lib/types";
 import { formatDateKey } from "@/lib/scope-keys";
 import type { WeeklyWorksheet } from "@/lib/weekly-worksheet";
@@ -273,7 +274,8 @@ export function WeeklyWorksheetView({
     ) => {
       const ev = eventsForDate(dateKey).find((e) => e.id === id);
       if (!ev || ev.kind !== "timed") return;
-      upsertEvent({ ...ev, startMin, endMin });
+      const scope = parseInstanceEventId(ev.id) ? "single" : "all";
+      upsertEvent({ ...ev, startMin, endMin }, scope);
     },
     [eventsForDate, upsertEvent],
   );

@@ -8,7 +8,7 @@ function authErrorMessage(code: string | null): string | null {
   if (!code) return null;
   switch (code) {
     case "AccessDenied":
-      return "この Google アカウントはログインできません。.env.local の ALLOWED_EMAIL に、ログインに使う Gmail を正確に書いてください。";
+      return "この Google アカウントはログインできません。管理者が ALLOWED_EMAIL にメールを登録している場合は、そのアドレスでログインしてください。";
     case "Configuration":
       return "認証の設定が不足しています。.env.local の AUTH_SECRET・Google OAuth・ALLOWED_EMAIL を確認し、開発サーバーを再起動してください。";
     case "OAuthSignin":
@@ -43,8 +43,8 @@ function LoginScreen() {
           人生のカレンダー
         </h1>
         <p className="mt-3 text-center text-sm leading-relaxed text-black/70">
-          データは Neon データベースに保存されます。続けるには Google
-          アカウントでログインしてください。
+          データは Neon データベースに保存されます。Google
+          アカウントでログインすると、あなた専用のデータがクラウドに同期されます。
         </p>
         {errorMessage ? (
           <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs leading-relaxed text-red-800">
@@ -59,7 +59,7 @@ function LoginScreen() {
           Google でログイン
         </button>
         <p className="mt-4 text-center text-[11px] text-black/50">
-          許可されたメールアドレスのみログインできます。
+          Google アカウントをお持ちの方なら誰でも利用できます（管理者がメール制限を設定している場合を除く）。
         </p>
       </div>
     </div>
@@ -88,11 +88,7 @@ export function UserSessionBar() {
   const { data: session } = useSession();
 
   if (isLocalDevMode) {
-    return (
-      <span className="rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900">
-        ローカル開発モード
-      </span>
-    );
+    return null;
   }
 
   if (!session?.user) return null;

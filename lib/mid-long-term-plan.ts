@@ -16,6 +16,21 @@ export function defaultPlanStartYear(): number {
 
 export type PlanCell = [string, string, string, string];
 
+export type PlanFamilyMember = {
+  name: string;
+  /** 基準年時点の満年齢（入力用） */
+  currentAge: number | null;
+  /** 生年（currentAge から自動、または legacy データ） */
+  birthYear: number | null;
+};
+
+export type PlanFamilyMembers = [
+  PlanFamilyMember,
+  PlanFamilyMember,
+  PlanFamilyMember,
+  PlanFamilyMember,
+];
+
 export type MidLongTermPlanRow = {
   theme: PlanCell;
   successPoint: PlanCell;
@@ -39,6 +54,8 @@ export type MidLongTermPlan = {
     string,
     string,
   ];
+  /** 家族①〜④（表上部で入力 → 年列①に満年齢を自動反映） */
+  familyMembers: PlanFamilyMembers;
   rows: MidLongTermPlanRow[];
 };
 
@@ -46,6 +63,46 @@ export type CellColumnKind = "theme" | "success" | "year" | "outcome";
 
 export function createEmptyCell(): PlanCell {
   return ["", "", "", ""];
+}
+
+export function createEmptyFamilyMember(): PlanFamilyMember {
+  return { name: "", currentAge: null, birthYear: null };
+}
+
+export function createEmptyFamilyMembers(): PlanFamilyMembers {
+  return [
+    createEmptyFamilyMember(),
+    createEmptyFamilyMember(),
+    createEmptyFamilyMember(),
+    createEmptyFamilyMember(),
+  ];
+}
+
+export function planReferenceYear(plan: MidLongTermPlan): number {
+  const d = new Date(plan.createdAt);
+  if (Number.isNaN(d.getTime())) return new Date().getFullYear();
+  return d.getFullYear();
+}
+
+/** 基準年と currentAge / birthYear から生年を決める */
+export function resolveBirthYear(
+  member: PlanFamilyMember,
+  referenceYear: number,
+): number | null {
+  if (member.birthYear != null && member.birthYear >= 1900 && member.birthYear <= 2100) {
+    return member.birthYear;
+  }
+  if (member.currentAge != null && member.currentAge >= 0 && member.currentAge <= 150) {
+    return referenceYear - member.currentAge;
+  }
+  return null;
+}
+
+export function currentAgeFromBirthYear(
+  birthYear: number,
+  referenceYear: number,
+): number {
+  return referenceYear - birthYear;
 }
 
 export function createEmptyRow(): MidLongTermPlanRow {
@@ -123,16 +180,30 @@ export function resolveSlotIdentity(
   return { name, birthYear };
 }
 
-/** 名前＋生年がそろっているスロットについて、各年列①に満年齢を入れる */
+/** 各年列①に familyMembers から満年齢を入れる（②③④は手入力のまま） */
 export function fillAgesForRow(
   row: MidLongTermPlanRow,
   startYear: number,
   endYear: number,
+  familyMembers?: PlanFamilyMembers,
+  referenceYear?: number,
 ): MidLongTermPlanRow {
   const years = row.years.map((cell, colIndex) => {
     const calendarYear = startYear + colIndex;
     if (calendarYear > endYear) return cell;
     const next = [...cell] as PlanCell;
+
+    if (familyMembers && referenceYear != null) {
+      for (let slot = 0; slot < PLAN_SUB_ROW_COUNT; slot++) {
+        const member = familyMembers[slot];
+        if (!member?.name.trim()) continue;
+        const birthYear = resolveBirthYear(member, referenceYear);
+        if (birthYear == null) continue;
+        next[slot] = formatAgeInCalendarYear(birthYear, calendarYear);
+      }
+      return next;
+    }
+
     for (let slot = 0; slot < PLAN_SUB_ROW_COUNT; slot++) {
       const { name, birthYear } = resolveSlotIdentity(row, slot);
       if (!name || birthYear == null) continue;
@@ -143,12 +214,37 @@ export function fillAgesForRow(
   return { ...row, years };
 }
 
-export function fillAgesForPlan(plan: MidLongTermPlan): MidLongTermPlan {
+export function applyFamilyMembersToPlan(
+  plan: MidLongTermPlan,
+  referenceYear: number,
+): MidLongTermPlan {
+  const members = plan.familyMembers ?? createEmptyFamilyMembers();
+  const rows = plan.rows.map((row, rowIndex) => {
+    if (rowIndex !== PLAN_SUMMARY_ROW_INDEX) return row;
+    const theme = [...row.theme] as PlanCell;
+    const success = [...row.successPoint] as PlanCell;
+    for (let slot = 0; slot < PLAN_SUB_ROW_COUNT; slot++) {
+      const member = members[slot]!;
+      theme[slot] = member.name;
+      const birthYear = resolveBirthYear(member, referenceYear);
+      success[slot] = birthYear != null ? String(birthYear) : "";
+    }
+    return { ...row, theme, successPoint: success };
+  });
+  return fillAgesForPlan({ ...plan, familyMembers: members, rows }, referenceYear);
+}
+
+export function fillAgesForPlan(
+  plan: MidLongTermPlan,
+  referenceYear?: number,
+): MidLongTermPlan {
+  const ref = referenceYear ?? planReferenceYear(plan);
   const endYear = Math.min(plan.endYear, MLTP_PLAN_END_YEAR);
+  const members = plan.familyMembers ?? createEmptyFamilyMembers();
   const rows = plan.rows.map((row) =>
-    fillAgesForRow(row, plan.startYear, endYear),
+    fillAgesForRow(row, plan.startYear, endYear, members, ref),
   );
-  return { ...plan, endYear, rows };
+  return { ...plan, familyMembers: members, endYear, rows };
 }
 
 export function createDefaultPlan(
@@ -161,6 +257,7 @@ export function createDefaultPlan(
     priorityGoal: "",
     goals: ["", "", "", "", "", ""],
     themeRowLabels: defaultThemeRowLabels(),
+    familyMembers: createEmptyFamilyMembers(),
     rows: Array.from({ length: PLAN_ROW_COUNT }, () => createEmptyRow()),
   };
 }
@@ -225,6 +322,50 @@ function normalizeCell(raw: unknown): PlanCell {
   );
   while (lines.length < PLAN_SUB_ROW_COUNT) lines.push("");
   return lines as PlanCell;
+}
+
+function normalizeFamilyMember(
+  raw: unknown,
+  fallback: PlanFamilyMember,
+): PlanFamilyMember {
+  if (!raw || typeof raw !== "object") return fallback;
+  const r = raw as Partial<PlanFamilyMember>;
+  const name = typeof r.name === "string" ? r.name : fallback.name;
+  const currentAge =
+    typeof r.currentAge === "number" && r.currentAge >= 0 && r.currentAge <= 150
+      ? Math.round(r.currentAge)
+      : fallback.currentAge;
+  const birthYear =
+    typeof r.birthYear === "number" && r.birthYear >= 1900 && r.birthYear <= 2100
+      ? Math.round(r.birthYear)
+      : fallback.birthYear;
+  return { name, currentAge, birthYear };
+}
+
+function normalizeFamilyMembers(
+  raw: unknown,
+  summaryRow: MidLongTermPlanRow | undefined,
+  referenceYear: number,
+): PlanFamilyMembers {
+  const base = createEmptyFamilyMembers();
+  if (Array.isArray(raw)) {
+    return base.map((fallback, i) =>
+      normalizeFamilyMember(raw[i], fallback),
+    ) as PlanFamilyMembers;
+  }
+  if (!summaryRow) return base;
+  return base.map((fallback, slot) => {
+    const { name, birthYear } = resolveSlotIdentity(summaryRow, slot);
+    if (!name && birthYear == null) return fallback;
+    return {
+      name: name || fallback.name,
+      birthYear,
+      currentAge:
+        birthYear != null
+          ? currentAgeFromBirthYear(birthYear, referenceYear)
+          : null,
+    };
+  }) as PlanFamilyMembers;
 }
 
 function normalizeRow(raw: unknown): MidLongTermPlanRow {
@@ -323,19 +464,31 @@ export function normalizeMidLongTermPlan(
     ? p.goals.slice(0, 6).map((g) => (typeof g === "string" ? g : ""))
     : [];
   while (goals.length < 6) goals.push("");
-  return fillAgesForPlan({
-    startYear,
-    endYear:
-      typeof p.endYear === "number"
-        ? p.endYear
-        : startYear + PLAN_YEAR_COLUMN_COUNT - 1,
-    createdAt:
-      typeof p.createdAt === "string" ? p.createdAt : base.createdAt,
-    priorityGoal: typeof p.priorityGoal === "string" ? p.priorityGoal : "",
-    goals: goals as MidLongTermPlan["goals"],
-    themeRowLabels: normalizeThemeRowLabels(p.themeRowLabels),
-    rows: migrateRows(p.rows),
-  });
+  const createdAt =
+    typeof p.createdAt === "string" ? p.createdAt : base.createdAt;
+  const refYear = planReferenceYear({ ...base, createdAt });
+  const rows = migrateRows(p.rows);
+  const familyMembers = normalizeFamilyMembers(
+    p.familyMembers,
+    rows[PLAN_SUMMARY_ROW_INDEX],
+    refYear,
+  );
+  return applyFamilyMembersToPlan(
+    {
+      startYear,
+      endYear:
+        typeof p.endYear === "number"
+          ? p.endYear
+          : startYear + PLAN_YEAR_COLUMN_COUNT - 1,
+      createdAt,
+      priorityGoal: typeof p.priorityGoal === "string" ? p.priorityGoal : "",
+      goals: goals as MidLongTermPlan["goals"],
+      themeRowLabels: normalizeThemeRowLabels(p.themeRowLabels),
+      familyMembers,
+      rows,
+    },
+    refYear,
+  );
 }
 
 export const MLTP_LABELS = {
@@ -354,13 +507,21 @@ export const MLTP_LABELS = {
     "\u4e0a\u306e\u6700\u91cd\u70b9\u76ee\u6a19\u3092\u5206\u89e3\u3057\u305f\u5177\u4f53\u76ee\u6a19\uff081\u301c6\uff09",
   boxesRelationHint:
     "\u2193 \u8868\u3067\u30c6\u30fc\u30de\u00d7\u5e74\u306e\u5b9f\u884c\u8a08\u753b\u3092\u7d44\u307f\u7acb\u3066\u307e\u3059",
+  familySectionTitle: "\u5bb6\u65cf\u306e\u540d\u524d\u3068\u73fe\u5728\u306e\u5e74\u9f62",
+  familySectionHint:
+    "\u540d\u524d\u3068\u73fe\u5728\u306e\u6e80\u5e74\u9f62\u3092\u5165\u529b\u3059\u308b\u3068\u3001\u5404\u5e74\u5217\u2460\u306b\u6e80\u5e74\u9f62\u304c\u81ea\u52d5\u8a08\u7b97\u3055\u308c\u307e\u3059\uff08\u57fa\u6e96\u5e74\uff1d\u4f5c\u6210\u5e74\uff09",
+  familyName: "\u540d\u524d",
+  familyCurrentAge: "\u73fe\u5728\u306e\u6e80\u5e74\u9f62",
+  familyBirthYearAuto: "\u751f\u5e74\uff08\u81ea\u52d5\uff09",
+  familyAgeUnit: "\u6b73",
+  familySyncedHint: "\u2191 \u4e0a\u306e\u30bb\u30af\u30b7\u30e7\u30f3\u3067\u7de8\u96c6\u3057\u305f\u5185\u5bb9\u304c\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059",
   colRow: "\u30c6\u30fc\u30de",
   colTheme: "\u5bb6\u65cf\u306e\u540d\u524d",
   colSuccess: "\u5e74\u9f62",
   colOutcome:
     "\u9054\u6210\u306b\u3088\u308b\u6210\u679c\u306e\u30a4\u30e1\u30fc\u30b8",
   colThemeHint: "\u4f8b\uff1a\u592a\u90ce\u30fb\u82b1\u5b50",
-  colSuccessHint: "\u751f\u5e74\uff08\u4f8b: 2018\uff09\u2192\u5e74\u5217\u306b\u81ea\u52d5",
+  colSuccessHint: "\u81ea\u52d5\uff08\u4e0a\u90e8\u3067\u5165\u529b\uff09",
   colYearAgeHint: "\u6e80\u5e74\u9f62\uff08\u81ea\u52d5\u8a08\u7b97\uff09",
   colYearHint: "\u305d\u306e\u5e74\u306e\u30c6\u30fc\u30de\u5225\u306e\u884c\u52d5",
   colYearSummaryHint:
@@ -392,10 +553,10 @@ export function cellLineSpecs(
       return lineSpecs(
         ["\u2460", "\u2461", "\u2462", "\u2463"],
         [
-          "\u5bb6\u65cf\u2460 \u540d\u524d",
-          "\u5bb6\u65cf\u2461 \u540d\u524d",
-          "\u5bb6\u65cf\u2462 \u540d\u524d",
-          "\u5bb6\u65cf\u2463 \u540d\u524d",
+          "\u2191 \u4e0a\u90e8\u3067\u5165\u529b",
+          "",
+          "",
+          "",
         ],
       );
     }
@@ -410,6 +571,17 @@ export function cellLineSpecs(
     );
   }
   if (column === "success") {
+    if (isSummaryRow) {
+      return lineSpecs(
+        ["\u2460", "\u2461", "\u2462", "\u2463"],
+        [
+          "\u751f\u5e74\uff08\u81ea\u52d5\uff09",
+          "",
+          "",
+          "",
+        ],
+      );
+    }
     return lineSpecs(
       ["\u2460", "\u2461", "\u2462", "\u2463"],
       [

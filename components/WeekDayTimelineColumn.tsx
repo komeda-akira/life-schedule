@@ -7,30 +7,27 @@ import {
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
-  type RefObject,
 } from "react";
 import {
   computeManipulatedRange,
-  currentMinutesOfDay,
   eventTimelineColorClass,
   formatMinutesRange,
-  minutesFromTimelineY,
+  minutesFromTimelineYWithOffset,
   normalizeCreateRange,
   TIMELINE_DEFAULT_DURATION_MIN,
   TIMELINE_SNAP_MINUTES,
   type EventManipMode,
 } from "@/lib/day-schedule";
+import { isToday, layoutDayEvents, toTimedForLayout, type PlacedEvent } from "@/lib/calendar";
 import {
-  isToday,
-  layoutDayEvents,
-  toTimedForLayout,
-  type PlacedEvent,
-} from "@/lib/calendar";
+  WEEKLY_SCHEDULE_START_HOUR,
+  WEEKLY_TIMELINE_HEIGHT,
+  WEEKLY_TIMELINE_ROW_PX,
+  WEEKLY_TIMELINE_START_MIN,
+} from "@/lib/weekly-worksheet";
 import type { CalendarEvent } from "@/lib/types";
 
-const HOUR_PX = 48;
-const DAY_HEIGHT = 24 * HOUR_PX;
-const RESIZE_HANDLE_PX = 8;
+const RESIZE_HANDLE_PX = 6;
 const DRAG_THRESHOLD_PX = 4;
 
 type CreateDragState = {
@@ -51,14 +48,12 @@ type EventDragState = {
   currentEndMin: number;
 };
 
-type DayScheduleTimelineProps = {
+type WeekDayTimelineColumnProps = {
   date: Date;
   events: CalendarEvent[];
-  scrollRef: RefObject<HTMLDivElement | null>;
   onCreateRange: (startMin: number, endMin: number) => void;
-  onCreateAllDay: () => void;
-  onEdit: (id: string) => void;
   onUpdateRange: (id: string, startMin: number, endMin: number) => void;
+  onEdit: (id: string) => void;
 };
 
 function pointerMinFromGrid(
@@ -67,7 +62,23 @@ function pointerMinFromGrid(
 ): number {
   const rect = grid.getBoundingClientRect();
   const y = Math.min(rect.height, Math.max(0, clientY - rect.top));
-  return minutesFromTimelineY(y, HOUR_PX);
+  return minutesFromTimelineYWithOffset(
+    y,
+    WEEKLY_TIMELINE_ROW_PX,
+    WEEKLY_SCHEDULE_START_HOUR,
+  );
+}
+
+function eventBlockStyle(startMin: number, endMin: number) {
+  const visibleStart = Math.max(startMin, WEEKLY_TIMELINE_START_MIN);
+  const visibleEnd = Math.min(endMin, 24 * 60);
+  const top =
+    ((visibleStart - WEEKLY_TIMELINE_START_MIN) / 60) * WEEKLY_TIMELINE_ROW_PX;
+  const height = Math.max(
+    ((visibleEnd - visibleStart) / 60) * WEEKLY_TIMELINE_ROW_PX,
+    16,
+  );
+  return { top, height };
 }
 
 function TimelineEventBlock({
@@ -84,8 +95,7 @@ function TimelineEventBlock({
     mode: EventManipMode,
   ) => void;
 }) {
-  const top = (ev.startMin / 60) * HOUR_PX;
-  const height = Math.max(((ev.endMin - ev.startMin) / 60) * HOUR_PX, 22);
+  const { top, height } = eventBlockStyle(ev.startMin, ev.endMin);
   const widthPct = 100 / ev.laneCount;
   const leftPct = (ev.lane / ev.laneCount) * 100;
   const colorClass = eventTimelineColorClass(ev.id);
@@ -110,7 +120,7 @@ function TimelineEventBlock({
         else if (localY >= rect.height - RESIZE_HANDLE_PX) mode = "resize-end";
         onInteractStart(e, mode);
       }}
-      className={`absolute box-border overflow-hidden rounded-r border border-zinc-200/80 px-1.5 py-0.5 text-left shadow-sm touch-none select-none ${colorClass} ${
+      className={`absolute box-border overflow-hidden rounded-r border border-zinc-200/80 px-0.5 py-px text-left shadow-sm touch-none select-none ${colorClass} ${
         dragging
           ? "z-40 cursor-grabbing shadow-md ring-2 ring-blue-400/60"
           : "z-20 cursor-grab hover:brightness-[0.98]"
@@ -118,22 +128,14 @@ function TimelineEventBlock({
       style={{
         top,
         height,
-        left: `calc(${leftPct}% + 2px)`,
-        width: `calc(${widthPct}% - 4px)`,
+        left: `calc(${leftPct}% + 1px)`,
+        width: `calc(${widthPct}% - 2px)`,
       }}
     >
-      <div
-        className="absolute inset-x-0 top-0 z-10 h-2 cursor-ns-resize"
-        aria-hidden
-      />
-      <div
-        className="absolute inset-x-0 bottom-0 z-10 h-2 cursor-ns-resize"
-        aria-hidden
-      />
       <div className="pointer-events-none truncate text-[11px] leading-tight font-semibold">
         {ev.title}
       </div>
-      {height >= 36 ? (
+      {height >= 30 ? (
         <div className="pointer-events-none truncate text-[10px] leading-tight opacity-80">
           {formatMinutesRange(ev.startMin, ev.endMin)}
         </div>
@@ -142,23 +144,25 @@ function TimelineEventBlock({
   );
 }
 
-export function DayScheduleTimeline({
+export function WeekDayTimelineColumn({
   date,
   events,
-  scrollRef,
   onCreateRange,
-  onCreateAllDay,
-  onEdit,
   onUpdateRange,
-}: DayScheduleTimelineProps) {
+  onEdit,
+}: WeekDayTimelineColumnProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [createDrag, setCreateDrag] = useState<CreateDragState | null>(null);
   const [eventDrag, setEventDrag] = useState<EventDragState | null>(null);
-  const [nowMin, setNowMin] = useState(() => currentMinutesOfDay());
 
-  const timed = useMemo(() => toTimedForLayout(events), [events]);
+  const timed = useMemo(
+    () =>
+      toTimedForLayout(events).filter(
+        (e) => e.endMin > WEEKLY_TIMELINE_START_MIN,
+      ),
+    [events],
+  );
   const placed = useMemo(() => layoutDayEvents(timed), [timed]);
-  const allDay = events.filter((e) => e.kind === "allDay");
   const showNowLine = isToday(date);
 
   const displayed = useMemo(() => {
@@ -172,15 +176,6 @@ export function DayScheduleTimeline({
       };
     });
   }, [placed, eventDrag]);
-
-  useEffect(() => {
-    if (!showNowLine) return;
-    const id = window.setInterval(
-      () => setNowMin(currentMinutesOfDay()),
-      60_000,
-    );
-    return () => clearInterval(id);
-  }, [showNowLine]);
 
   const finishCreateDrag = useCallback(
     (state: CreateDragState) => {
@@ -327,140 +322,61 @@ export function DayScheduleTimeline({
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
+  const nowTop = showNowLine
+    ? ((new Date().getHours() * 60 +
+        new Date().getMinutes() -
+        WEEKLY_TIMELINE_START_MIN) /
+        60) *
+      WEEKLY_TIMELINE_ROW_PX
+    : null;
+
   return (
     <div
-      ref={scrollRef}
-      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
+      ref={gridRef}
+      className={`relative h-full min-h-[20rem] w-full touch-none select-none bg-white ${
+        eventDrag ? "cursor-grabbing" : "cursor-crosshair"
+      }`}
+      style={{ height: WEEKLY_TIMELINE_HEIGHT }}
+      onPointerDown={onGridPointerDown}
+      aria-label="週次スケジュール。ドラッグで追加・移動・上下端で時間変更"
     >
-      <div className="shrink-0 border-b border-zinc-200 bg-zinc-50/80 px-2 py-2">
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-black/50">
-            終日
-          </span>
-          <button
-            type="button"
-            onClick={onCreateAllDay}
-            className="rounded-md border border-dashed border-zinc-300 bg-white px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-50"
-          >
-            + 予定
-          </button>
-        </div>
-        {allDay.length === 0 ? (
-          <button
-            type="button"
-            onClick={onCreateAllDay}
-            className="w-full rounded-md border border-dashed border-zinc-200 bg-white px-2 py-2 text-left text-sm text-black/45 hover:border-zinc-300 hover:bg-zinc-50"
-          >
-            終日の予定を追加
-          </button>
-        ) : (
-          <ul className="flex flex-wrap gap-1.5">
-            {allDay.map((ev) => (
-              <li key={ev.id}>
-                <button
-                  type="button"
-                  onClick={() => onEdit(ev.id)}
-                  className="max-w-full truncate rounded-md border border-blue-200 bg-blue-100 px-2 py-1 text-left text-sm font-medium text-blue-900 hover:bg-blue-200"
-                >
-                  {ev.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="flex min-h-0 flex-1">
+      {Array.from({ length: WEEKLY_TIMELINE_HEIGHT / WEEKLY_TIMELINE_ROW_PX }, (_, h) => (
         <div
-          className="flex w-11 shrink-0 flex-col border-r border-zinc-200 bg-white"
-          style={{ height: DAY_HEIGHT }}
+          key={h}
+          className="pointer-events-none absolute right-0 left-0 border-t border-zinc-200"
+          style={{ top: h * WEEKLY_TIMELINE_ROW_PX, height: WEEKLY_TIMELINE_ROW_PX }}
         >
-          {Array.from({ length: 24 }, (_, h) => (
-            <div
-              key={h}
-              className="relative shrink-0 pr-1.5 text-right text-xs text-black/55"
-              style={{ height: HOUR_PX }}
-            >
-              <span className="absolute -top-2 right-1.5 tabular-nums">
-                {h === 0 ? "" : `${h}:00`}
-              </span>
-            </div>
-          ))}
+          <div
+            className="absolute right-0 left-0 top-1/2 border-t border-dashed border-zinc-100"
+            aria-hidden
+          />
         </div>
+      ))}
 
+      {nowTop != null && nowTop >= 0 && nowTop <= WEEKLY_TIMELINE_HEIGHT ? (
         <div
-          ref={gridRef}
-          className={`relative min-w-0 flex-1 touch-none select-none bg-white ${
-            eventDrag ? "cursor-grabbing" : "cursor-crosshair"
-          }`}
-          style={{ height: DAY_HEIGHT }}
-          onPointerDown={onGridPointerDown}
-          role="grid"
-          aria-label="時間割。空きをドラッグで追加、予定をドラッグで移動、上下端で時間変更"
-        >
-          {Array.from({ length: 24 }, (_, h) => (
-            <div key={h} className="pointer-events-none absolute right-0 left-0">
-              <div
-                className="absolute right-0 left-0 border-t border-zinc-200"
-                style={{ top: h * HOUR_PX, height: HOUR_PX }}
-              />
-              <div
-                className="absolute right-0 left-0 border-t border-dashed border-zinc-100"
-                style={{ top: h * HOUR_PX + HOUR_PX / 2 }}
-              />
-            </div>
-          ))}
+          className="pointer-events-none absolute right-0 left-0 z-30 h-px bg-red-500"
+          style={{ top: nowTop }}
+          aria-hidden
+        />
+      ) : null}
 
-          {showNowLine ? (
-            <div
-              className="pointer-events-none absolute right-0 left-0 z-30 flex items-center"
-              style={{ top: (nowMin / 60) * HOUR_PX }}
-              aria-hidden
-            >
-              <span className="-ml-[5px] h-2.5 w-2.5 shrink-0 rounded-full bg-red-500" />
-              <span className="h-[2px] flex-1 bg-red-500" />
-            </div>
-          ) : null}
+      {createPreview ? (
+        <div
+          className="pointer-events-none absolute right-0.5 left-0.5 z-10 rounded border-2 border-blue-500 bg-blue-400/25"
+          style={eventBlockStyle(createPreview.startMin, createPreview.endMin)}
+        />
+      ) : null}
 
-          {createPreview ? (
-            <div
-              className="pointer-events-none absolute right-1 left-1 z-10 rounded-md border-2 border-blue-500 bg-blue-400/25"
-              style={{
-                top: (createPreview.startMin / 60) * HOUR_PX,
-                height: Math.max(
-                  ((createPreview.endMin - createPreview.startMin) / 60) *
-                    HOUR_PX,
-                  4,
-                ),
-              }}
-            >
-              <span className="absolute top-0.5 left-1.5 text-xs font-semibold text-blue-800">
-                {formatMinutesRange(
-                  createPreview.startMin,
-                  createPreview.endMin,
-                )}
-              </span>
-            </div>
-          ) : null}
-
-          {displayed.map((ev) => (
-            <TimelineEventBlock
-              key={ev.id}
-              ev={ev}
-              dragging={eventDrag?.eventId === ev.id}
-              onEdit={onEdit}
-              onInteractStart={(e, mode) => onEventInteractStart(e, ev, mode)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <p className="shrink-0 border-t border-zinc-100 bg-zinc-50/50 px-2 py-1.5 text-center text-xs text-black/40">
-        {TIMELINE_SNAP_MINUTES}分 · 空きをドラッグで追加 · 予定をドラッグで移動 ·
-        上下端を引っ張って時間変更 · クリックで編集
-      </p>
+      {displayed.map((ev) => (
+        <TimelineEventBlock
+          key={ev.id}
+          ev={ev}
+          dragging={eventDrag?.eventId === ev.id}
+          onEdit={onEdit}
+          onInteractStart={(e, mode) => onEventInteractStart(e, ev, mode)}
+        />
+      ))}
     </div>
   );
 }
-
-export { HOUR_PX as DAY_TIMELINE_HOUR_PX };

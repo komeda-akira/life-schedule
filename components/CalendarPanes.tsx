@@ -147,17 +147,17 @@ function PaneHeader({
           type="button"
           onClick={onTitleClick}
           title={titleClickHint}
-          className="mx-auto block w-full text-center text-sm font-semibold text-black underline decoration-zinc-400 underline-offset-2 hover:bg-zinc-50"
+          className="mx-auto block w-full text-center text-base font-semibold text-black underline decoration-zinc-400 underline-offset-2 hover:bg-zinc-50"
         >
           {title}
         </button>
       ) : (
-        <div className="text-center text-sm font-semibold text-black">
+        <div className="text-center text-base font-semibold text-black">
           {title}
         </div>
       )}
       {hint ? (
-        <p className="mt-0.5 text-center text-[10px] leading-snug text-black/60">
+        <p className="mt-0.5 text-center text-xs leading-snug text-black/60">
           {hint}
         </p>
       ) : null}
@@ -550,6 +550,7 @@ function DayPane({
   onCreateRange,
   onCreateAllDay,
   onEdit,
+  onUpdateRange,
   scrollRef,
 }: {
   cursor: Date;
@@ -559,6 +560,7 @@ function DayPane({
   onCreateRange: (startMin: number, endMin: number) => void;
   onCreateAllDay: () => void;
   onEdit: (id: string) => void;
+  onUpdateRange: (id: string, startMin: number, endMin: number) => void;
   scrollRef: RefObject<HTMLDivElement | null>;
 }) {
   return (
@@ -583,6 +585,7 @@ function DayPane({
         onCreateRange={onCreateRange}
         onCreateAllDay={onCreateAllDay}
         onEdit={onEdit}
+        onUpdateRange={onUpdateRange}
       />
     </div>
   );
@@ -591,6 +594,7 @@ function DayPane({
 export function CalendarPanes() {
   const {
     eventsForDate,
+    upsertEvent,
     getScopeComment,
     getMidLongTermPlan,
     getMonthlyWorksheet,
@@ -682,6 +686,15 @@ export function CalendarPanes() {
     const ev = dayEvents.find((e) => e.id === id);
     if (ev) openEvent({ event: ev });
   };
+
+  const onUpdateEventRange = useCallback(
+    (id: string, startMin: number, endMin: number) => {
+      const ev = dayEvents.find((e) => e.id === id);
+      if (!ev || ev.kind !== "timed") return;
+      upsertEvent({ ...ev, startMin, endMin });
+    },
+    [dayEvents, upsertEvent],
+  );
 
   const onCreateRange = useCallback((startMin: number, endMin: number) => {
     setQuickCreate({ startMin, endMin });
@@ -796,6 +809,7 @@ export function CalendarPanes() {
         onCreateRange={onCreateRange}
         onCreateAllDay={onCreateAllDay}
         onEdit={onEditEvent}
+        onUpdateRange={onUpdateEventRange}
         scrollRef={dayScrollRef}
       />
     </>
@@ -878,6 +892,7 @@ export function CalendarPanes() {
             onCreateRange={onCreateRange}
             onCreateAllDay={onCreateAllDay}
             onEdit={onEditEvent}
+            onUpdateRange={onUpdateEventRange}
             scrollRef={dayScrollRef}
           />
         ) : null}

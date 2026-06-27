@@ -9,17 +9,18 @@ import {
   PLAN_GUIDE_TITLE,
 } from "@/lib/plan-achievement-guide-content";
 import {
+  applyFamilyMembersToPlan,
   cellLineSpecs,
-  fillAgesForPlan,
-  fillAgesForRow,
   isSummaryRow,
   MLTP_LABELS,
   planYearLabels,
+  resolveBirthYear,
   themeRowIndexFromPlanRow,
   withPlanYearRange,
   type CellColumnKind,
   type MidLongTermPlan,
   type PlanCell,
+  type PlanFamilyMember,
 } from "@/lib/mid-long-term-plan";
 
 type MidLongTermPlanModalProps = {
@@ -32,14 +33,40 @@ function PlanCellEditor({
   column,
   summaryRow,
   compact,
+  readOnly,
 }: {
   lines: PlanCell;
   onChange: (lines: PlanCell) => void;
   column: CellColumnKind;
   summaryRow: boolean;
   compact?: boolean;
+  readOnly?: boolean;
 }) {
   const specs = cellLineSpecs(column, summaryRow);
+
+  if (readOnly) {
+    return (
+      <div
+        className={`flex h-full flex-col text-[11px] text-black/75 ${compact ? "min-h-[5rem]" : "min-h-[7rem]"}`}
+      >
+        {lines.map((line, i) => {
+          const spec = specs[i];
+          if (!spec || !line.trim()) return null;
+          return (
+            <div
+              key={i}
+              className={
+                i > 0 ? "border-t border-dotted border-zinc-300 py-0.5" : "py-0.5"
+              }
+            >
+              <span className="mr-1 font-bold text-black/45">{spec.tag}</span>
+              {line}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -121,19 +148,25 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
   const [planGuideOpen, setPlanGuideOpen] = useState(false);
 
   useEffect(() => {
-    const loaded = fillAgesForPlan(getMidLongTermPlan());
+    const raw = getMidLongTermPlan();
+    const loaded = applyFamilyMembersToPlan(
+      raw,
+      parseCreatedParts(raw.createdAt).year,
+    );
     setPlan(loaded);
     setCreated(parseCreatedParts(loaded.createdAt));
   }, [getMidLongTermPlan]);
 
   const yearLabels = planYearLabels(plan);
+  const referenceYear = created.year;
 
   const persist = useCallback(
     (next: MidLongTermPlan) => {
-      setPlan(next);
-      setMidLongTermPlan(next);
+      const filled = applyFamilyMembersToPlan(next, referenceYear);
+      setPlan(filled);
+      setMidLongTermPlan(filled);
     },
-    [setMidLongTermPlan],
+    [referenceYear, setMidLongTermPlan],
   );
 
   const saveAndClose = () => {
@@ -150,10 +183,32 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
   ) => {
     const rows = plan.rows.map((row, i) => {
       if (i !== rowIndex) return row;
-      const merged = { ...row, ...patch };
-      return fillAgesForRow(merged, plan.startYear, plan.endYear);
+      return { ...row, ...patch };
     });
     persist({ ...plan, rows });
+  };
+
+  const updateFamilyMember = (
+    index: number,
+    patch: Partial<PlanFamilyMember>,
+  ) => {
+    const familyMembers = plan.familyMembers.map((member, i) => {
+      if (i !== index) return member;
+      const next = { ...member, ...patch };
+      if ("currentAge" in patch) {
+        next.birthYear = null;
+      }
+      return next;
+    }) as MidLongTermPlan["familyMembers"];
+    persist({ ...plan, familyMembers });
+  };
+
+  const recalcOnCreatedChange = (nextCreated: typeof created) => {
+    setCreated(nextCreated);
+    persist({
+      ...plan,
+      createdAt: toCreatedIso(nextCreated.year, nextCreated.month, nextCreated.day),
+    });
   };
 
   const updateThemeRowLabel = (themeIndex: number, value: string) => {
@@ -172,7 +227,9 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
 
   const setStartYear = (startYear: number) => {
     if (!Number.isFinite(startYear)) return;
-    persist(fillAgesForPlan(withPlanYearRange(plan, Math.round(startYear))));
+    persist(
+      withPlanYearRange(plan, Math.round(startYear)),
+    );
   };
 
   return (
@@ -213,7 +270,10 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
               type="number"
               value={created.year}
               onChange={(e) =>
-                setCreated((c) => ({ ...c, year: Number(e.target.value) }))
+                recalcOnCreatedChange({
+                  ...created,
+                  year: Number(e.target.value),
+                })
               }
               className="w-14 rounded border border-zinc-300 px-1 py-0.5 text-center"
               aria-label="\u4f5c\u6210\u5e74"
@@ -293,6 +353,85 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
         </div>
 
         <p className="text-[11px] text-black/65">{MLTP_LABELS.boxesRelationHint}</p>
+
+        <section className="rounded-lg border border-sky-200 bg-sky-50/40 p-3">
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h4 className="text-sm font-bold text-sky-950">
+              {MLTP_LABELS.familySectionTitle}
+            </h4>
+            <span className="text-[11px] text-sky-900/70">
+              基準年: {referenceYear}年（作成年）
+            </span>
+          </div>
+          <p className="mb-3 text-xs text-sky-900/75">
+            {MLTP_LABELS.familySectionHint}
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {plan.familyMembers.map((member, i) => {
+              const birthYear = resolveBirthYear(member, referenceYear);
+              return (
+                <div
+                  key={i}
+                  className="flex flex-wrap items-center gap-2 rounded-md border border-sky-200/80 bg-white px-2 py-2"
+                >
+                  <span className="w-5 shrink-0 text-center text-xs font-bold text-sky-800">
+                    {["①", "②", "③", "④"][i]}
+                  </span>
+                  <label className="flex min-w-[5rem] flex-1 flex-col gap-0.5">
+                    <span className="text-[10px] font-medium text-black/55">
+                      {MLTP_LABELS.familyName}
+                    </span>
+                    <input
+                      type="text"
+                      value={member.name}
+                      onChange={(e) =>
+                        updateFamilyMember(i, { name: e.target.value })
+                      }
+                      placeholder="例：太郎"
+                      className="rounded border border-zinc-300 px-2 py-1 text-sm"
+                    />
+                  </label>
+                  <label className="flex w-24 flex-col gap-0.5">
+                    <span className="text-[10px] font-medium text-black/55">
+                      {MLTP_LABELS.familyCurrentAge}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={150}
+                        value={member.currentAge ?? ""}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          updateFamilyMember(i, {
+                            currentAge:
+                              raw === "" ? null : Number(raw),
+                          });
+                        }}
+                        className="w-full rounded border border-zinc-300 px-2 py-1 text-sm text-center"
+                      />
+                      <span className="text-xs text-black/60">
+                        {MLTP_LABELS.familyAgeUnit}
+                      </span>
+                    </div>
+                  </label>
+                  <div className="min-w-[4.5rem] text-[11px] text-black/55">
+                    {birthYear != null ? (
+                      <>
+                        {MLTP_LABELS.familyBirthYearAuto}
+                        <span className="ml-1 font-semibold text-black/75">
+                          {birthYear}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-black/35">—</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         <div className="grid gap-2 md:grid-cols-[1fr_1fr]">
           <label className="flex flex-col gap-1">
@@ -429,6 +568,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                         compact={summary}
                         column="theme"
                         summaryRow={summary}
+                        readOnly={summary}
                         lines={row.theme}
                         onChange={(theme) => updateRow(rowIndex, { theme })}
                       />
@@ -438,6 +578,7 @@ export function MidLongTermPlanModal({ onClose }: MidLongTermPlanModalProps) {
                         compact={summary}
                         column="success"
                         summaryRow={summary}
+                        readOnly={summary}
                         lines={row.successPoint}
                         onChange={(successPoint) =>
                           updateRow(rowIndex, { successPoint })

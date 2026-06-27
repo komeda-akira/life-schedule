@@ -27,6 +27,15 @@ export function minutesFromTimelineY(
   return snapTimelineMinutes((y / hourPx) * 60);
 }
 
+/** 開始時刻オフセット付き（例: 週次 5:00 始まり） */
+export function minutesFromTimelineYWithOffset(
+  y: number,
+  hourPx: number,
+  startHour: number,
+): number {
+  return snapTimelineMinutes(startHour * 60 + (y / hourPx) * 60);
+}
+
 export function normalizeCreateRange(
   startMin: number,
   endMin: number,
@@ -40,6 +49,37 @@ export function normalizeCreateRange(
     b = Math.min(24 * 60, a + TIMELINE_MIN_DURATION_MIN);
   }
   return { startMin: a, endMin: b };
+}
+
+export type EventManipMode = "move" | "resize-start" | "resize-end";
+
+/** ドラッグ移動・上下端リサイズ後の開始・終了（分） */
+export function computeManipulatedRange(
+  mode: EventManipMode,
+  pointerMin: number,
+  originStartMin: number,
+  originEndMin: number,
+  grabOffsetMin: number,
+): { startMin: number; endMin: number } {
+  const duration = originEndMin - originStartMin;
+
+  if (mode === "move") {
+    let startMin = snapTimelineMinutes(pointerMin - grabOffsetMin);
+    startMin = Math.max(0, Math.min(24 * 60 - duration, startMin));
+    return { startMin, endMin: startMin + duration };
+  }
+
+  if (mode === "resize-start") {
+    let startMin = snapTimelineMinutes(pointerMin);
+    startMin = Math.min(startMin, originEndMin - TIMELINE_MIN_DURATION_MIN);
+    startMin = Math.max(0, startMin);
+    return { startMin, endMin: originEndMin };
+  }
+
+  let endMin = snapTimelineMinutes(pointerMin);
+  endMin = Math.max(endMin, originStartMin + TIMELINE_MIN_DURATION_MIN);
+  endMin = Math.min(24 * 60, endMin);
+  return { startMin: originStartMin, endMin };
 }
 
 export function formatMinutesClock(minutes: number): string {

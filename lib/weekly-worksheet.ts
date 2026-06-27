@@ -70,6 +70,15 @@ export function mondayFromWeekKey(key: string): Date | null {
   return mondayFromISOWeek(parsed.year, parsed.week);
 }
 
+export const WEEKLY_TIMELINE_ROW_PX = 32;
+
+export const WEEKLY_TIMELINE_HEIGHT =
+  WEEKLY_HOUR_ROW_COUNT * WEEKLY_TIMELINE_ROW_PX;
+
+export const WEEKLY_TIMELINE_START_MIN = WEEKLY_SCHEDULE_START_HOUR * 60;
+
+export const WEEKLY_TIMELINE_END_MIN = WEEKLY_SCHEDULE_END_HOUR * 60;
+
 export function scheduleHourLabel(rowIndex: number): number {
   return WEEKLY_SCHEDULE_START_HOUR + rowIndex;
 }

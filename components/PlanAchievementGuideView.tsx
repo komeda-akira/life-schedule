@@ -221,12 +221,6 @@ export function PlanAchievementGuideView({
               onClick={onOpenPrimeTimeSheet}
               className="inline-flex items-center gap-2 rounded-xl border-2 border-amber-500 bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-2.5 text-base font-bold text-white shadow-md transition-all hover:from-amber-500 hover:to-orange-600 hover:shadow-lg"
             >
-              <span
-                className="flex h-7 w-7 items-center justify-center rounded-md bg-white/25 text-sm font-black"
-                aria-hidden
-              >
-                Q2
-              </span>
               {PLAN_GUIDE_OPEN_PRIME_SHEET}
               <span aria-hidden>→</span>
             </button>

@@ -10,23 +10,24 @@ import { LIFE_WISH_LIST_100_LABEL } from "@/lib/life-wish-list-100";
 import { MY_100_YEAR_HISTORY_LABEL } from "@/lib/my-100-year-history";
 import { goalSettingBarExcerpt } from "@/lib/goal-setting";
 import { primeTimeSheetDataExcerpt } from "@/lib/prime-time-sheet";
-import { defaultNorthStarTitle } from "@/lib/north-star-seeds";
 import { purposeVisionBarLines } from "@/lib/purpose-vision";
 import { NORTH_STAR_LABELS, type NorthStarCategory } from "@/lib/types";
 
-const CATEGORIES: NorthStarCategory[] = [
-  "vision",
-  "purpose",
-  "goal",
-  "prime",
-];
+const PRIMARY_CATEGORIES: NorthStarCategory[] = ["vision", "purpose", "goal"];
 
 type NorthStarBarProps = {
   className?: string;
+  variant?: "bar" | "header";
 };
 
 const northStarBtnClass =
   "flex flex-col items-start rounded-md border border-zinc-300 bg-white px-4 py-2 text-left text-sm font-medium text-black shadow-sm hover:bg-zinc-100";
+
+const headerPrimaryBtnClass =
+  "group flex w-full min-h-0 flex-col rounded-lg border border-red-100/90 bg-white/95 px-2.5 py-2 text-left shadow-sm transition hover:border-red-200 hover:bg-red-50/25";
+
+const headerPrimaryLabelClass =
+  "text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500";
 
 const compactAuxBtnClass =
   "flex min-h-0 flex-1 flex-col items-start justify-center rounded-md border border-zinc-300 bg-white px-2 py-0.5 text-left shadow-sm hover:bg-zinc-100";
@@ -39,12 +40,15 @@ const compactWishListBtnClass =
 const compactWishListTitleClass =
   "text-[10.5px] font-medium leading-[1.5] tracking-tight text-black";
 
-export function NorthStarBar({ className = "" }: NorthStarBarProps) {
+export function NorthStarBar({
+  className = "",
+  variant = "bar",
+}: NorthStarBarProps) {
+  const isHeader = variant === "header";
   const [open, setOpen] = useState<NorthStarCategory | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [wishListOpen, setWishListOpen] = useState(false);
   const {
-    northStarFor,
     getLifePhilosophy,
     getPurposeVision,
     getGoalSetting,
@@ -52,129 +56,202 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
   } = useAppData();
 
   const purposeBarLines = purposeVisionBarLines(getPurposeVision());
-
-  const excerptFor = (cat: NorthStarCategory) => {
-    if (cat === "vision") return null;
-    if (cat === "purpose") return null;
-    if (cat === "goal") {
-      return goalSettingBarExcerpt(getGoalSetting());
-    }
-    if (cat === "prime") {
-      const ex = primeTimeSheetDataExcerpt(getPrimeTimeSheetData());
-      return ex ? excerptComment(ex, 32) : "";
-    }
-    return excerptComment(
-      northStarFor(cat)[0]?.title.trim() || defaultNorthStarTitle(cat),
-      32,
-    );
-  };
+  const goalBarText = goalSettingBarExcerpt(getGoalSetting());
+  const primeExcerpt = (() => {
+    const ex = primeTimeSheetDataExcerpt(getPrimeTimeSheetData());
+    return ex ? excerptComment(ex, 32) : "";
+  })();
 
   const philosophy = getLifePhilosophy();
   const visionWord = excerptComment(philosophy.coreWord.trim() || "利他", 14);
   const visionNote = philosophy.coreNote.trim();
 
+  const renderPrimaryContent = (cat: NorthStarCategory) => {
+    if (cat === "vision") {
+      return (
+        <span className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
+          <span className="text-xl font-black leading-none text-red-700 sm:text-2xl">
+            {visionWord}
+          </span>
+          {visionNote ? (
+            <span className="text-[10px] font-medium leading-none text-zinc-500">
+              （{visionNote}）
+            </span>
+          ) : null}
+        </span>
+      );
+    }
+
+    if (cat === "purpose") {
+      return (
+        <span className="mt-0.5 flex w-full flex-col gap-0.5 text-[11px] font-bold leading-[1.4] text-red-700 sm:text-xs">
+          {purposeBarLines.line1 ? (
+            <span className="line-clamp-2">{purposeBarLines.line1}</span>
+          ) : null}
+          {purposeBarLines.line2 ? (
+            <span className="line-clamp-1">{purposeBarLines.line2}</span>
+          ) : null}
+        </span>
+      );
+    }
+
+    if (cat === "goal") {
+      return goalBarText ? (
+        <span className="mt-0.5 text-[11px] font-bold leading-[1.4] text-red-700 sm:text-xs">
+          <span className="line-clamp-2">{goalBarText}</span>
+        </span>
+      ) : null;
+    }
+
+    return null;
+  };
+
+  const renderBarVariant = () => (
+    <div className="flex flex-wrap gap-2">
+      {(["vision", "purpose", "goal", "prime"] as const).map((cat) => {
+        if (cat === "prime") {
+          return (
+            <div key="prime-group" className="flex items-stretch gap-1.5">
+              <button
+                type="button"
+                onClick={() => setOpen("prime")}
+                className={`${northStarBtnClass} max-w-[11rem]`}
+              >
+                <span>{NORTH_STAR_LABELS.prime}</span>
+                <span className="mt-0.5 line-clamp-2 text-[10px] leading-snug">
+                  <span className="font-normal text-black/60">{primeExcerpt}</span>
+                </span>
+              </button>
+              <div className="flex w-[11.25rem] min-w-0 flex-col gap-1 self-stretch overflow-visible">
+                <button
+                  type="button"
+                  onClick={() => setHistoryOpen(true)}
+                  className={compactAuxBtnClass}
+                >
+                  <span className={compactTitleClass}>
+                    {MY_100_YEAR_HISTORY_LABEL}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWishListOpen(true)}
+                  className={compactWishListBtnClass}
+                >
+                  <span className={compactWishListTitleClass}>
+                    {LIFE_WISH_LIST_100_LABEL}
+                  </span>
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => setOpen(cat)}
+            className={`${northStarBtnClass} ${
+              cat === "purpose" || cat === "goal"
+                ? "max-w-[14.5rem] min-w-[11.5rem]"
+                : "max-w-[11rem]"
+            }`}
+          >
+            <span>{NORTH_STAR_LABELS[cat]}</span>
+            <span className="mt-0.5 line-clamp-2 leading-snug">
+              {cat === "vision" ? (
+                <>
+                  <span className="text-base font-bold text-red-700">
+                    {visionWord}
+                  </span>
+                  {visionNote ? (
+                    <span className="text-[10px] text-black/60">
+                      （{visionNote}）
+                    </span>
+                  ) : null}
+                </>
+              ) : cat === "purpose" ? (
+                <span className="flex w-full flex-col gap-0.5 text-[10px] font-bold leading-[1.4] text-red-700">
+                  {purposeBarLines.line1 ? (
+                    <span className="line-clamp-2">{purposeBarLines.line1}</span>
+                  ) : null}
+                  {purposeBarLines.line2 ? (
+                    <span className="line-clamp-2">{purposeBarLines.line2}</span>
+                  ) : null}
+                </span>
+              ) : goalBarText ? (
+                <span className="flex w-full flex-col text-[10px] font-bold leading-[1.35] text-red-700">
+                  <span className="line-clamp-3">{goalBarText}</span>
+                </span>
+              ) : null}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderHeaderVariant = () => (
+    <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)_minmax(0,0.85fr)_auto] lg:items-stretch lg:gap-1.5">
+      {PRIMARY_CATEGORIES.map((cat) => (
+        <button
+          key={cat}
+          type="button"
+          onClick={() => setOpen(cat)}
+          className={headerPrimaryBtnClass}
+        >
+          <span className={headerPrimaryLabelClass}>
+            {NORTH_STAR_LABELS[cat]}
+          </span>
+          {renderPrimaryContent(cat)}
+        </button>
+      ))}
+
+      <div className="flex flex-wrap gap-1 sm:col-span-3 lg:col-span-1 lg:flex-col lg:justify-stretch">
+        <button
+          type="button"
+          onClick={() => setOpen("prime")}
+          className="flex min-w-0 flex-1 flex-col rounded-md border border-zinc-200 bg-white/90 px-2 py-1.5 text-left hover:bg-zinc-50 lg:flex-none"
+        >
+          <span className="text-[10px] font-semibold leading-none text-zinc-700">
+            {NORTH_STAR_LABELS.prime}
+          </span>
+          {primeExcerpt ? (
+            <span className="mt-0.5 line-clamp-1 text-[9px] leading-snug text-zinc-500">
+              {primeExcerpt}
+            </span>
+          ) : null}
+        </button>
+        <button
+          type="button"
+          onClick={() => setHistoryOpen(true)}
+          className="rounded-md border border-zinc-200 bg-white/90 px-2 py-1.5 text-left text-[10px] font-medium leading-tight text-zinc-700 hover:bg-zinc-50 lg:flex-1"
+        >
+          {MY_100_YEAR_HISTORY_LABEL}
+        </button>
+        <button
+          type="button"
+          onClick={() => setWishListOpen(true)}
+          className="rounded-md border border-zinc-200 bg-white/90 px-2 py-1.5 text-left text-[10px] font-medium leading-tight text-zinc-700 hover:bg-zinc-50 lg:flex-1"
+        >
+          {LIFE_WISH_LIST_100_LABEL}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <div
-        className={`border-b border-zinc-200 bg-white px-3 py-2.5 ${className}`}
+        className={`${
+          isHeader
+            ? "bg-transparent px-0 py-0"
+            : "border-b border-zinc-200 bg-white px-3 py-2.5"
+        } ${className}`}
         role="toolbar"
         aria-label="北極星（理念・目的・ビジョン・目標・プライムシート・自分100年史・やりたいこと100）"
       >
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => {
-            const goalBarText = cat === "goal" ? excerptFor("goal") : "";
-
-            if (cat === "prime") {
-              return (
-                <div
-                  key="prime-group"
-                  className="flex items-stretch gap-1.5"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpen("prime")}
-                    className={`${northStarBtnClass} max-w-[11rem]`}
-                  >
-                    <span>{NORTH_STAR_LABELS.prime}</span>
-                    <span className="mt-0.5 line-clamp-2 text-[10px] leading-snug">
-                      <span className="font-normal text-black/60">
-                        {excerptFor("prime")}
-                      </span>
-                    </span>
-                  </button>
-                  <div className="flex w-[11.25rem] min-w-0 flex-col gap-1 self-stretch overflow-visible">
-                    <button
-                      type="button"
-                      onClick={() => setHistoryOpen(true)}
-                      className={compactAuxBtnClass}
-                    >
-                      <span className={compactTitleClass}>
-                        {MY_100_YEAR_HISTORY_LABEL}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setWishListOpen(true)}
-                      className={compactWishListBtnClass}
-                    >
-                      <span className={compactWishListTitleClass}>
-                        {LIFE_WISH_LIST_100_LABEL}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              );
-            }
-
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setOpen(cat)}
-                className={`${northStarBtnClass} ${
-                  cat === "purpose" || cat === "goal"
-                    ? "max-w-[14.5rem] min-w-[11.5rem]"
-                    : "max-w-[11rem]"
-                }`}
-              >
-                <span>{NORTH_STAR_LABELS[cat]}</span>
-                <span className="mt-0.5 line-clamp-2 leading-snug">
-                  {cat === "vision" ? (
-                    <>
-                      <span className="text-base font-bold text-red-700">
-                        {visionWord}
-                      </span>
-                      {visionNote ? (
-                        <span className="text-[10px] text-black/60">
-                          （{visionNote}）
-                        </span>
-                      ) : null}
-                    </>
-                  ) : cat === "purpose" ? (
-                    <span className="flex w-full flex-col gap-0.5 text-[10px] font-bold leading-[1.4] text-red-700">
-                      {purposeBarLines.line1 ? (
-                        <span className="line-clamp-2">{purposeBarLines.line1}</span>
-                      ) : null}
-                      {purposeBarLines.line2 ? (
-                        <span className="line-clamp-2">{purposeBarLines.line2}</span>
-                      ) : null}
-                    </span>
-                  ) : cat === "goal" ? (
-                    goalBarText ? (
-                      <span className="flex w-full flex-col text-[10px] font-bold leading-[1.35] text-red-700">
-                        <span className="line-clamp-3">{goalBarText}</span>
-                      </span>
-                    ) : null
-                  ) : (
-                    <span className="text-[10px] font-normal text-black/60">
-                      {excerptFor(cat)}
-                    </span>
-                  )}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        {isHeader ? renderHeaderVariant() : renderBarVariant()}
       </div>
       {open ? (
         <NorthStarModal category={open} onClose={() => setOpen(null)} />
@@ -188,4 +265,3 @@ export function NorthStarBar({ className = "" }: NorthStarBarProps) {
     </>
   );
 }
-

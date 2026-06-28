@@ -230,6 +230,15 @@ export function getActivePrimeTimeSheetPage(
   );
 }
 
+export function displayPageTitle(
+  page: PrimeTimeSheetContent & { title?: string },
+  index: number,
+): string {
+  const trimmed = page.title?.trim() ?? "";
+  if (trimmed) return trimmed;
+  return suggestPageTitle(page, index);
+}
+
 export function primeTimeSheetExcerpt(
   sheet: PrimeTimeSheetContent | PrimeTimeSheetPage,
 ): string {
@@ -242,12 +251,18 @@ export function primeTimeSheetExcerpt(
 
 export function primeTimeSheetDataExcerpt(data: PrimeTimeSheetData): string {
   const active = getActivePrimeTimeSheetPage(data);
+  const index = Math.max(
+    0,
+    data.pages.findIndex((p) => p.id === active.id),
+  );
+  const title = displayPageTitle(active, index + 1);
+  if (title && !/^ページ \d+$/.test(title)) return title;
   const fromContent = primeTimeSheetExcerpt(active);
   if (fromContent) return fromContent;
   if (data.pages.length > 1) {
-    return `${active.title} ほか${data.pages.length - 1}件`;
+    return `${displayPageTitle(active, index + 1)} ほか${data.pages.length - 1}件`;
   }
-  return active.title;
+  return displayPageTitle(active, index + 1);
 }
 
 export function applyPrimeTimeSheetDefaults(data: AppData): AppData {

@@ -627,18 +627,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           return {
             ...page,
             ...content,
-            title:
-              title !== undefined
-                ? title.trim() || suggestPageTitle(content, 1)
-                : page.title,
+            title: title !== undefined ? title : page.title,
           };
         });
         return {
           ...prev,
-          primeTimeSheet: normalizePrimeTimeSheetData({
+          primeTimeSheet: {
             ...current,
             pages,
-          }),
+          },
         };
       });
     },
@@ -653,10 +650,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         typeof crypto !== "undefined" && crypto.randomUUID
           ? crypto.randomUUID()
           : `page-${Date.now()}`;
-      const index = current.pages.length + 1;
       const page: PrimeTimeSheetPage = {
         id,
-        title: suggestPageTitle(content, index),
+        title: "",
         ...content,
       };
       return {

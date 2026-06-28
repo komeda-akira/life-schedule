@@ -22,9 +22,9 @@ export function HeroBrandLockup() {
       </span>
 
       <h1 className={heroBrandKeyPhraseClass}>
-        <span className={heroBrandColors.body}>思考は</span>
-        <span className={heroBrandColors.accentGradient}>現実化</span>
-        <span className={heroBrandColors.body}>する</span>
+        <span className={heroBrandColors.keyPhraseLead}>思考は</span>
+        <span className={heroBrandColors.keyPhraseAccent}>現実化</span>
+        <span className={heroBrandColors.keyPhraseLead}>する</span>
       </h1>
 
       <div className="self-center sm:self-auto sm:translate-y-px">

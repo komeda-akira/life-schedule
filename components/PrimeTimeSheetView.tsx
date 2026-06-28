@@ -1,9 +1,13 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAppData } from "@/components/AppDataProvider";
 import type { PrimeTimeSheetContent, PrimeTimeSheetPage } from "@/lib/prime-time-sheet";
-import { PRIME_ACTION_ITEM_COUNT } from "@/lib/prime-time-sheet";
+import {
+  displayPageTitle,
+  PRIME_ACTION_ITEM_COUNT,
+  suggestPageTitle,
+} from "@/lib/prime-time-sheet";
 import {
   PTS_ADD_PAGE,
   PTS_CREATED,
@@ -12,6 +16,8 @@ import {
   PTS_IMPORTANCE,
   PTS_LOW,
   PTS_PAGE_TITLE,
+  PTS_PAGE_TITLE_HINT,
+  PTS_PAGE_TITLE_PLACEHOLDER,
   PTS_PAGES,
   PTS_Q2_HINT,
   PTS_Q2_LABEL,
@@ -27,6 +33,7 @@ import {
   PTS_S6,
   PTS_SAVE_HINT,
   PTS_SUBTITLE,
+  PTS_SYNC_TITLE_FROM_GOAL,
   PTS_TITLE,
   PTS_URGENCY,
 } from "@/lib/prime-time-sheet-labels";
@@ -43,14 +50,71 @@ const sectionTitleClass =
 const numberedBoxClass =
   "rounded border-2 border-zinc-800 bg-white p-2.5";
 
+function PageTitleEditor({
+  page,
+  pageIndex,
+  onCommit,
+}: {
+  page: PrimeTimeSheetPage;
+  pageIndex: number;
+  onCommit: (title: string) => void;
+}) {
+  const [draft, setDraft] = useState(page.title);
+
+  useEffect(() => {
+    setDraft(page.title);
+  }, [page.id, page.title]);
+
+  const commit = useCallback(() => {
+    onCommit(draft);
+  }, [draft, onCommit]);
+
+  const suggested = suggestPageTitle(page, pageIndex);
+
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2.5">
+      <label className="block">
+        <span className="mb-1 block text-xs font-bold text-black/80">
+          {PTS_PAGE_TITLE}
+        </span>
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+          placeholder={suggested || PTS_PAGE_TITLE_PLACEHOLDER}
+          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-black placeholder:font-normal placeholder:text-black/40 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+        />
+      </label>
+      <p className="mt-1.5 text-[10px] leading-snug text-black/55">
+        {PTS_PAGE_TITLE_HINT}
+      </p>
+      {page.achieveGoal.trim() ? (
+        <button
+          type="button"
+          onClick={() => {
+            const next = suggestPageTitle(page, pageIndex);
+            setDraft(next);
+            onCommit(next);
+          }}
+          className="mt-2 text-[11px] font-medium text-black/70 underline underline-offset-2 hover:text-black"
+        >
+          {PTS_SYNC_TITLE_FROM_GOAL}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function PrimeTimeSheetPageEditor({
   page,
   onPatch,
 }: {
   page: PrimeTimeSheetPage;
-  onPatch: (
-    partial: Partial<PrimeTimeSheetContent> & { title?: string },
-  ) => void;
+  onPatch: (partial: Partial<PrimeTimeSheetContent>) => void;
 }) {
   const patch = useCallback(
     (partial: Partial<PrimeTimeSheetContent>) => {
@@ -99,18 +163,6 @@ function PrimeTimeSheetPageEditor({
           <span>日{PTS_CREATED}</span>
         </div>
       </div>
-
-      <label className="block">
-        <span className="mb-1 block text-xs font-bold text-black/80">
-          {PTS_PAGE_TITLE}
-        </span>
-        <input
-          type="text"
-          value={page.title}
-          onChange={(e) => onPatch({ title: e.target.value })}
-          className={inputClass}
-        />
-      </label>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div className="space-y-3">
@@ -300,11 +352,18 @@ export function PrimeTimeSheetView() {
 
   if (!activePage) return null;
 
+  const activeIndex =
+    data.pages.findIndex((p) => p.id === activePage.id) + 1 || 1;
+
+  const commitPageTitle = (title: string) => {
+    updatePrimeTimeSheetPage(activePage.id, { title });
+  };
+
   return (
     <div className="space-y-4 text-black">
       <p className="text-[10px] text-black/50">{PTS_SAVE_HINT}</p>
 
-      <div className="space-y-2 border-b border-zinc-200 pb-3">
+      <div className="space-y-3 border-b border-zinc-200 pb-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold text-black/70">{PTS_PAGES}</span>
           <button
@@ -320,26 +379,36 @@ export function PrimeTimeSheetView() {
           role="tablist"
           aria-label={PTS_PAGES}
         >
-          {data.pages.map((page) => {
+          {data.pages.map((page, index) => {
             const selected = page.id === data.activePageId;
+            const label = displayPageTitle(page, index + 1);
             return (
               <button
                 key={page.id}
                 type="button"
                 role="tab"
                 aria-selected={selected}
+                title={label}
                 onClick={() => setActivePrimeTimeSheetPage(page.id)}
-                className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                className={`max-w-[12rem] shrink-0 truncate rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   selected
                     ? "border-zinc-500 bg-zinc-200 text-black"
                     : "border-zinc-300 bg-white text-black/80 hover:bg-zinc-50"
                 }`}
               >
-                {page.title || "（無題）"}
+                {label}
               </button>
             );
           })}
         </div>
+
+        <PageTitleEditor
+          key={activePage.id}
+          page={activePage}
+          pageIndex={activeIndex}
+          onCommit={commitPageTitle}
+        />
+
         {data.pages.length > 1 ? (
           <button
             type="button"
@@ -352,7 +421,7 @@ export function PrimeTimeSheetView() {
       </div>
 
       <PrimeTimeSheetPageEditor
-        key={activePage.id}
+        key={`${activePage.id}-sheet`}
         page={activePage}
         onPatch={(partial) => updatePrimeTimeSheetPage(activePage.id, partial)}
       />

@@ -5,6 +5,10 @@ export const PTS_SAVE_HINT = "入力内容は自動保存されます。";
 export const PTS_ADD_PAGE = "ページを追加";
 export const PTS_DELETE_PAGE = "このページを削除";
 export const PTS_PAGE_TITLE = "ページ名";
+export const PTS_PAGE_TITLE_HINT =
+  "タブの表示名になります。空のままにすると①の内容から自動で付けます。";
+export const PTS_PAGE_TITLE_PLACEHOLDER = "例：CPA合格プラン";
+export const PTS_SYNC_TITLE_FROM_GOAL = "①の内容からページ名を設定";
 export const PTS_PAGES = "ページ";
 
 export const PTS_S1 = "① 実現したいこと";

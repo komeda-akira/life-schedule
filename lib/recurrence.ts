@@ -1,4 +1,10 @@
 import type { CalendarEvent, RecurrenceFreq, RecurrenceRule } from "@/lib/types";
+import {
+  isDateInEventSpan,
+  materializeSpanDay,
+  occurrenceStartForDate,
+  spanLengthDays,
+} from "@/lib/event-span";
 
 export const RECURRENCE_FREQ_LABELS: Record<RecurrenceFreq, string> = {
   daily: "毎日",
@@ -158,9 +164,27 @@ export function eventsForDateExpanded(
     if (event.recurrence) {
       const skips = new Set(event.recurrenceSkipDates ?? []);
       if (skips.has(dateKey)) continue;
-      if (!occursOnDate(event, dateKey)) continue;
+
+      const spanLen = spanLengthDays(event);
+      if (spanLen === 0) {
+        if (!occursOnDate(event, dateKey)) continue;
+        const override = exceptionByMasterDate.get(`${event.id}:${dateKey}`);
+        results.push(override ?? materializeInstance(event, dateKey));
+        continue;
+      }
+
+      const occStart = occurrenceStartForDate(event, dateKey);
+      if (!occStart || skips.has(occStart)) continue;
       const override = exceptionByMasterDate.get(`${event.id}:${dateKey}`);
-      results.push(override ?? materializeInstance(event, dateKey));
+      results.push(
+        override ??
+          materializeSpanDay(event, dateKey, occStart),
+      );
+      continue;
+    }
+
+    if (isDateInEventSpan(event, dateKey)) {
+      results.push(materializeSpanDay(event, dateKey, event.date));
       continue;
     }
 
@@ -195,16 +219,28 @@ export function searchEventsInStore(
     if (!hay.includes(q)) continue;
 
     if (event.recurrence && !event.recurrenceId) {
+      const spanLen = spanLengthDays(event);
       const start = parseDateKey(event.date);
-      const end = addDays(start, 365);
+      const end = addDays(start, 365 + spanLen);
       for (let d = new Date(start); d <= end && hits.length < limit; d = addDays(d, 1)) {
         const dk = formatDateKeyLocal(d);
-        if (occursOnDate(event, dk)) {
-          push(materializeInstance(event, dk), dk);
+        if (spanLen === 0) {
+          if (occursOnDate(event, dk)) {
+            push(materializeInstance(event, dk), dk);
+          }
+          continue;
+        }
+        const occStart = occurrenceStartForDate(event, dk);
+        if (occStart) {
+          push(materializeSpanDay(event, dk, occStart), dk);
         }
       }
     } else {
-      push(event, event.date);
+      if (isDateInEventSpan(event, event.date)) {
+        push(materializeSpanDay(event, event.date, event.date), event.date);
+      } else {
+        push(event, event.date);
+      }
     }
   }
 

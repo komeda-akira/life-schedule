@@ -96,6 +96,7 @@ import {
   YEAR_SWITCH_HINT,
 } from "@/lib/pane-labels";
 import { yearPlanSummaryExcerpt } from "@/lib/mid-long-term-plan";
+import { isMultiDayEvent } from "@/lib/event-span";
 import type { CalendarEvent, EventKind } from "@/lib/types";
 
 /** 月・週・日ペインのナビ日付（年／年月／年月日） */
@@ -706,7 +707,7 @@ export function CalendarPanes() {
   const onUpdateEventRange = useCallback(
     (id: string, startMin: number, endMin: number) => {
       const ev = dayEvents.find((e) => e.id === id);
-      if (!ev || ev.kind !== "timed") return;
+      if (!ev || ev.kind !== "timed" || isMultiDayEvent(ev)) return;
       const scope = parseInstanceEventId(ev.id) ? "single" : "all";
       upsertEvent({ ...ev, startMin, endMin }, scope);
     },

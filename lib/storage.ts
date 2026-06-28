@@ -127,6 +127,12 @@ function normalizeEvent(raw: unknown): CalendarEvent | null {
     return null;
   }
   const recurrence = normalizeRecurrenceRule(x.recurrence);
+  const endDate =
+    typeof x.endDate === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(x.endDate) &&
+    x.endDate > x.date
+      ? x.endDate
+      : undefined;
   const recurrenceSkipDates = Array.isArray(x.recurrenceSkipDates)
     ? x.recurrenceSkipDates.filter(
         (d): d is string => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d),
@@ -137,6 +143,7 @@ function normalizeEvent(raw: unknown): CalendarEvent | null {
     title: x.title,
     memo: typeof x.memo === "string" ? x.memo : undefined,
     date: x.date,
+    endDate,
     kind: x.kind,
     startMin: typeof x.startMin === "number" ? x.startMin : undefined,
     endMin: typeof x.endMin === "number" ? x.endMin : undefined,

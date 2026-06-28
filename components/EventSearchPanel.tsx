@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppData } from "@/components/AppDataProvider";
 import type { CalendarEvent } from "@/lib/types";
+import { formatEventDateRange, isMultiDayEvent } from "@/lib/event-span";
 import { parseInstanceEventId } from "@/lib/recurrence";
 
 type EventSearchPanelProps = {
@@ -10,12 +11,15 @@ type EventSearchPanelProps = {
 };
 
 function formatEventWhen(event: CalendarEvent): string {
-  if (event.kind === "allDay") return "終日";
+  const dateLabel = isMultiDayEvent(event)
+    ? formatEventDateRange(event)
+    : event.date;
+  if (event.kind === "allDay") return `${dateLabel} · 終日`;
   const s = event.startMin ?? 0;
   const e = event.endMin ?? s + 60;
   const fmt = (m: number) =>
     `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-  return `${fmt(s)}–${fmt(e)}`;
+  return `${dateLabel} · ${fmt(s)}–${fmt(e)}`;
 }
 
 export function EventSearchPanel({ onJumpToDate }: EventSearchPanelProps) {

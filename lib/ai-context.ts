@@ -1,4 +1,5 @@
 import type { AppData } from "@/lib/types";
+import { formatEventDateRange, isMultiDayEvent } from "@/lib/event-span";
 
 /** Gemini 用にアプリデータの要約テキストを生成 */
 export function buildAiContext(data: AppData): string {
@@ -10,12 +11,15 @@ export function buildAiContext(data: AppData): string {
       .slice(0, 30);
     lines.push("【直近の予定（最大30件）】");
     for (const e of upcoming) {
+      const dateLabel = isMultiDayEvent(e)
+        ? formatEventDateRange(e)
+        : e.date;
       const time =
         e.kind === "allDay"
           ? "終日"
           : `${Math.floor((e.startMin ?? 0) / 60)}:${String((e.startMin ?? 0) % 60).padStart(2, "0")}`;
       const recur = e.recurrence ? `（繰り返し:${e.recurrence.freq}）` : "";
-      lines.push(`- ${e.date} ${time} ${e.title}${recur}`);
+      lines.push(`- ${dateLabel} ${time} ${e.title}${recur}`);
       if (e.memo) lines.push(`  メモ: ${e.memo.slice(0, 120)}`);
     }
   }

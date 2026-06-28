@@ -27,8 +27,10 @@ export type CalendarEvent = {
   id: string;
   title: string;
   memo?: string;
-  /** YYYY-MM-DD（ローカル日） */
+  /** YYYY-MM-DD（ローカル日・開始日） */
   date: string;
+  /** 複数日予定の終了日 YYYY-MM-DD（含む。省略時は単日） */
+  endDate?: string;
   kind: EventKind;
   startMin?: number;
   endMin?: number;

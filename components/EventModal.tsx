@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "@/components/Modal";
 import { useAppData, type EventEditScope } from "@/components/AppDataProvider";
+import {
+  normalizeEventEndDate,
+  resolveEventSpanBounds,
+} from "@/lib/event-span";
 import {
   defaultRecurrenceUntil,
   parseInstanceEventId,
@@ -44,15 +48,19 @@ export function EventModal({
   prefilledTitle = "",
   onClose,
 }: EventModalProps) {
-  const { upsertEvent, deleteEvent } = useAppData();
+  const { data, upsertEvent, deleteEvent } = useAppData();
   const isNew = !event;
   const instance = event ? parseInstanceEventId(event.id) : null;
   const isRecurringInstance = Boolean(instance);
   const isRecurringMaster = Boolean(event?.recurrence && !event.recurrenceId);
 
+  const initialBounds = resolveEventSpanBounds(event, data.events, dateKey);
+
   const [title, setTitle] = useState(event?.title ?? prefilledTitle);
   const [memo, setMemo] = useState(event?.memo ?? "");
   const [kind, setKind] = useState<EventKind>(event?.kind ?? defaultKind);
+  const [startDate, setStartDate] = useState(initialBounds.startDate);
+  const [endDate, setEndDate] = useState(initialBounds.endDate);
   const [startStr, setStartStr] = useState(
     minutesToInput(event?.startMin ?? defaultStartMin),
   );
@@ -73,7 +81,14 @@ export function EventModal({
   const [deleteScope, setDeleteScope] = useState<EventEditScope>("all");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  useEffect(() => {
+    const bounds = resolveEventSpanBounds(event, data.events, dateKey);
+    setStartDate(bounds.startDate);
+    setEndDate(bounds.endDate);
+  }, [event, data.events, dateKey]);
+
   const showScopeChoice = isRecurringInstance || isRecurringMaster;
+  const spanEditable = !isRecurringInstance || editScope === "all";
 
   const buildPayload = (): CalendarEvent | null => {
     const trimmed = title.trim();
@@ -88,11 +103,21 @@ export function EventModal({
       endMin = e;
     }
     const now = new Date().toISOString();
+    const eventStartDate =
+      isRecurringInstance && editScope === "single"
+        ? instance!.dateKey
+        : startDate;
+    const eventEndDate =
+      isRecurringInstance && editScope === "single"
+        ? undefined
+        : normalizeEventEndDate(startDate, endDate);
+
     const base: CalendarEvent = {
       id: event?.id ?? crypto.randomUUID(),
       title: trimmed,
       memo: memo.trim() || undefined,
-      date: isRecurringInstance ? (instance!.dateKey) : dateKey,
+      date: eventStartDate,
+      endDate: eventEndDate,
       kind,
       startMin,
       endMin,
@@ -151,6 +176,40 @@ export function EventModal({
             className="rounded-lg border border-zinc-300 px-3 py-2"
           />
         </label>
+
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <label className="flex flex-col gap-1">
+            <span className="font-medium text-black">開始日</span>
+            <input
+              type="date"
+              value={startDate}
+              disabled={!spanEditable}
+              onChange={(e) => {
+                const next = e.target.value;
+                setStartDate(next);
+                if (endDate < next) setEndDate(next);
+              }}
+              className="rounded-lg border border-zinc-300 px-3 py-2 disabled:bg-zinc-100"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="font-medium text-black">終了日</span>
+            <input
+              type="date"
+              value={endDate}
+              min={startDate}
+              disabled={!spanEditable}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="rounded-lg border border-zinc-300 px-3 py-2 disabled:bg-zinc-100"
+            />
+          </label>
+        </div>
+        {endDate > startDate ? (
+          <p className="text-[11px] leading-snug text-black/55">
+            複数日の予定は期間中の各日に表示されます。時刻付きの場合、初日・最終日は時刻を表示し、途中の日は終日として表示します。
+          </p>
+        ) : null}
+
         <fieldset className="text-sm">
           <legend className="mb-1 font-medium text-black">種類</legend>
           <div className="flex gap-4">

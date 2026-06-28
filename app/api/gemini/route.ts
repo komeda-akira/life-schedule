@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type { Session } from "next-auth";
 import { auth } from "@/auth";
 import { isLocalDevMode } from "@/lib/auth-config";
+import { generateGeminiReply } from "@/lib/gemini-client";
+import { getGeminiApiKey, getGeminiModelCandidates } from "@/lib/gemini-config";
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,7 +20,7 @@ export async function POST(request: Request) {
   const userId = requireUserId(session);
   if (!userId) return unauthorized();
 
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const apiKey = getGeminiApiKey();
   if (!apiKey) {
     return NextResponse.json(
       {
@@ -40,7 +42,6 @@ export async function POST(request: Request) {
     }
 
     const context = body.context?.trim() ?? "";
-    const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
 
     const prompt = `あなたは「人生のカレンダー」アプリの計画アシスタントです。
 ユーザーの人生設計・予定・ワークシートを支援してください。
@@ -52,49 +53,20 @@ ${context.slice(0, 12_000)}
 --- ユーザーの質問 ---
 ${message}`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const result = await generateGeminiReply(
+      apiKey,
+      getGeminiModelCandidates(),
+      prompt,
+    );
 
-    const geminiRes = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2048,
-        },
-      }),
-    });
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error("Gemini API error", geminiRes.status, errText);
+    if (!result.ok) {
       return NextResponse.json(
-        { error: "Gemini API の呼び出しに失敗しました" },
-        { status: 502 },
+        { error: result.message },
+        { status: result.status >= 400 && result.status < 600 ? result.status : 502 },
       );
     }
 
-    const data = (await geminiRes.json()) as {
-      candidates?: Array<{
-        content?: { parts?: Array<{ text?: string }> };
-      }>;
-    };
-
-    const reply =
-      data.candidates?.[0]?.content?.parts
-        ?.map((p) => p.text ?? "")
-        .join("")
-        .trim() ?? "";
-
-    if (!reply) {
-      return NextResponse.json(
-        { error: "AI から応答がありませんでした" },
-        { status: 502 },
-      );
-    }
-
-    return NextResponse.json({ reply });
+    return NextResponse.json({ reply: result.reply });
   } catch (error) {
     console.error("POST /api/gemini", error);
     return NextResponse.json(

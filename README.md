@@ -59,5 +59,5 @@ ALLOW_ANY_GOOGLE_USER=true
 | 変数 | 用途 |
 |------|------|
 | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/apikey) の API キー |
-| `GEMINI_MODEL` | 任意（既定 `gemini-2.0-flash`） |
+| `GEMINI_MODEL` | 任意（既定 `gemini-2.5-flash`） |
 | `ALLOW_ANY_GOOGLE_USER` | `true` で全 Google ユーザー許可 |

@@ -180,6 +180,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [migrateOpen, setMigrateOpen] = useState(false);
   const [migrateBusy, setMigrateBusy] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
+  const flushVaultSave = useCallback(async () => {
+    if (!isLocalVaultStorageMode() || !vault) return;
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    await vault.saveEncrypted(dataRef.current);
+  }, [vault]);
 
   useEffect(() => {
     let cancelled = false;
@@ -233,6 +244,28 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, [vault]);
 
   useEffect(() => {
+    if (!isLocalVaultStorageMode() || !vault) return;
+    return vault.registerFlushSave(flushVaultSave);
+  }, [vault, flushVaultSave]);
+
+  useEffect(() => {
+    if (!isLocalVaultStorageMode() || !vault) return;
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        void flushVaultSave().catch(() => {
+          setLoadError("このPCへの保存に失敗しました。");
+        });
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [vault, flushVaultSave]);
+
+  useEffect(() => {
     if (!hydrated || migrateOpen) return;
 
     if (isLocalVaultStorageMode()) {
@@ -241,6 +274,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         clearTimeout(saveTimerRef.current);
       }
       saveTimerRef.current = setTimeout(() => {
+        saveTimerRef.current = null;
         void vault.saveEncrypted(data).catch(() => {
           setLoadError("このPCへの保存に失敗しました。");
         });
@@ -248,6 +282,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       return () => {
         if (saveTimerRef.current) {
           clearTimeout(saveTimerRef.current);
+          saveTimerRef.current = null;
         }
       };
     }

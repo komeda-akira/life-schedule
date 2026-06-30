@@ -11,7 +11,7 @@ import {
 import { LocalVaultContextProvider } from "@/components/LocalVaultContext";
 import {
   changeVaultPassword,
-  hasLegacyPlainStorage,
+  hasMigratableLegacyPlainStorage,
   hasVault,
   saveVault,
   setupVault,
@@ -92,13 +92,26 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
   const [busy, setBusy] = useState(false);
   const [bootData, setBootData] = useState<AppData | null>(null);
   const passwordRef = useRef("");
+  const flushSaveRef = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
     if (!isLocalVaultStorageMode()) return;
     setPhase(hasVault() ? "login" : "setup");
   }, []);
 
-  const lock = useCallback(() => {
+  const registerFlushSave = useCallback((fn: () => Promise<void>) => {
+    flushSaveRef.current = fn;
+    return () => {
+      if (flushSaveRef.current === fn) {
+        flushSaveRef.current = null;
+      }
+    };
+  }, []);
+
+  const lock = useCallback(async () => {
+    if (flushSaveRef.current) {
+      await flushSaveRef.current();
+    }
     passwordRef.current = "";
     setPassword("");
     setConfirm("");
@@ -183,7 +196,7 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
   }
 
   if (!bootData) {
-    const legacyHint = hasLegacyPlainStorage()
+    const legacyHint = hasMigratableLegacyPlainStorage()
       ? "以前のブラウザ保存データがある場合、初回設定時にこのパスワードで暗号化して引き継ぎます。"
       : "データはこのPCのブラウザ内にのみ保存されます。別のPCやブラウザでは共有されません。";
 
@@ -272,6 +285,7 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
       onLock={lock}
       saveEncrypted={saveEncrypted}
       changePassword={changePassword}
+      registerFlushSave={registerFlushSave}
     >
       {children}
     </LocalVaultContextProvider>

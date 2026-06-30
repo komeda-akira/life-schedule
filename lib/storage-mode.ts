@@ -31,8 +31,7 @@ export function isLocalVaultStorageMode(): boolean {
   return getStorageBackend() === "local-vault";
 }
 
-/** Gemini API などサーバー側でログイン不要にするローカル系モード */
+/** 開発用 local-plain のみ（本番 local-vault ではサーバー API を無認証にしない） */
 export function isLocalFirstMode(): boolean {
-  const backend = getStorageBackend();
-  return backend === "local-plain" || backend === "local-vault";
+  return getStorageBackend() === "local-plain";
 }

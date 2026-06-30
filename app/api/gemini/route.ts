@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { Session } from "next-auth";
 import { auth } from "@/auth";
-import { isLocalFirstMode } from "@/lib/storage-mode";
+import { isLocalPlainStorageMode } from "@/lib/storage-mode";
 import { generateGeminiReply } from "@/lib/gemini-client";
 import { getGeminiApiKey, getGeminiModelCandidates } from "@/lib/gemini-config";
 
@@ -10,7 +10,7 @@ function unauthorized() {
 }
 
 function requireUserId(session: Session | null): string | null {
-  if (isLocalFirstMode()) return "local-user";
+  if (isLocalPlainStorageMode()) return "local-user";
   const email = session?.user?.email;
   return email ?? null;
 }

@@ -11,9 +11,10 @@ import type { AppData } from "@/lib/types";
 
 export type LocalVaultContextValue = {
   bootData: AppData;
-  lock: () => void;
+  lock: () => Promise<void>;
   saveEncrypted: (data: AppData) => Promise<void>;
   changePassword: (currentPassword: string, nextPassword: string, data: AppData) => Promise<void>;
+  registerFlushSave: (fn: () => Promise<void>) => () => void;
 };
 
 const LocalVaultContext = createContext<LocalVaultContextValue | null>(null);
@@ -23,16 +24,18 @@ export function LocalVaultContextProvider({
   onLock,
   saveEncrypted,
   changePassword,
+  registerFlushSave,
   children,
 }: {
   bootData: AppData;
-  onLock: () => void;
+  onLock: () => Promise<void>;
   saveEncrypted: (data: AppData) => Promise<void>;
   changePassword: (
     currentPassword: string,
     nextPassword: string,
     data: AppData,
   ) => Promise<void>;
+  registerFlushSave: (fn: () => Promise<void>) => () => void;
   children: ReactNode;
 }) {
   const value = useMemo<LocalVaultContextValue>(
@@ -41,8 +44,9 @@ export function LocalVaultContextProvider({
       lock: onLock,
       saveEncrypted,
       changePassword,
+      registerFlushSave,
     }),
-    [bootData, onLock, saveEncrypted, changePassword],
+    [bootData, onLock, saveEncrypted, changePassword, registerFlushSave],
   );
 
   return (

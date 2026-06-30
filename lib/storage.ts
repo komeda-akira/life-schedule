@@ -73,6 +73,24 @@ export function bootstrapFreshAppData(): AppData {
   return normalizeAppData({});
 }
 
+function stableAppDataFingerprint(data: AppData): string {
+  const normalized = normalizeAppData(data);
+  const stripped = {
+    ...normalized,
+    events: normalized.events.map(({ createdAt: _c, ...event }) => event),
+    northStar: normalized.northStar.map(({ createdAt: _c, ...item }) => item),
+  };
+  return JSON.stringify(stripped);
+}
+
+/** 開発デモの初回保存データか（実利用者の平文データと区別） */
+export function isBootstrapDemoData(data: AppData): boolean {
+  return (
+    stableAppDataFingerprint(data) ===
+    stableAppDataFingerprint(bootstrapAppData())
+  );
+}
+
 /** 初回表示用・開発デモ（作者のサンプル文付き） */
 export function bootstrapAppData(): AppData {
   return withAllDefaults(createEmptyAppData());

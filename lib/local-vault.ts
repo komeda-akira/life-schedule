@@ -1,5 +1,9 @@
 import { STORAGE_KEY, readRawLocalAppData } from "@/lib/local-storage";
-import { bootstrapAppData, bootstrapFreshAppData, normalizeAppData } from "@/lib/storage";
+import {
+  bootstrapFreshAppData,
+  isBootstrapDemoData,
+  normalizeAppData,
+} from "@/lib/storage";
 import type { AppData } from "@/lib/types";
 
 const VAULT_META_KEY = "life-schedule:vault-meta:v1";
@@ -157,12 +161,24 @@ export function hasLegacyPlainStorage(): boolean {
   return localStorage.getItem(STORAGE_KEY) != null;
 }
 
+export function hasMigratableLegacyPlainStorage(): boolean {
+  const legacy = readLegacyPlainData();
+  return legacy != null && !isBootstrapDemoData(legacy);
+}
+
+function resolveInitialVaultData(initialData?: AppData): AppData {
+  if (initialData) return initialData;
+  const legacy = readLegacyPlainData();
+  if (legacy && !isBootstrapDemoData(legacy)) return legacy;
+  return bootstrapFreshAppData();
+}
+
 export async function setupVault(
   password: string,
   initialData?: AppData,
 ): Promise<void> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const data = initialData ?? readLegacyPlainData() ?? bootstrapFreshAppData();
+  const data = resolveInitialVaultData(initialData);
   const meta: VaultMeta = {
     version: 1,
     salt: bytesToBase64(salt),

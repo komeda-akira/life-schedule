@@ -18,7 +18,7 @@ export function SuccessStepsButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        title="5つの手順を表示"
+        title={`${SUCCESS_STEPS_TITLE}を表示`}
         className={heroSuccessStepsButtonClass}
       >
         {SUCCESS_STEPS_TITLE}

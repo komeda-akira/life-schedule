@@ -302,6 +302,7 @@ function YearPane({
           title={OPEN_MLTP_ACTION}
           subtitle={scopeHeadingYear(y)}
           className="mt-2"
+          successStep={SUCCESS_STEP_NUMBERS.plan}
         />
         <SheetOpenActionButton
           onClick={() => onOpenYearScope(y)}

@@ -1,4 +1,4 @@
-import { getSuccessStepTitle } from "@/lib/success-steps-content";
+import { getSuccessStepTitle, SUCCESS_STEPS_TITLE } from "@/lib/success-steps-content";
 
 type SuccessStepBadgeProps = {
   step: number;
@@ -21,7 +21,7 @@ export function SuccessStepBadge({
   return (
     <span
       title={title || undefined}
-      aria-label={title ? `成功のステップ ${step}: ${title}` : `成功のステップ ${step}`}
+      aria-label={title ? `${SUCCESS_STEPS_TITLE} ${step}: ${title}` : `${SUCCESS_STEPS_TITLE} ${step}`}
       className={`inline-flex shrink-0 items-center justify-center rounded-full bg-zinc-800 font-bold text-white ${sizeClass[size]} ${className}`}
     >
       {step}

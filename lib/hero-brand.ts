@@ -20,7 +20,7 @@ export const heroBrandEnglishClass =
 export const heroBrandKeyPhraseClass =
   "min-w-0 text-base font-semibold leading-snug tracking-wide sm:text-lg";
 
-/** ヘッダー横の「成功のステップ」— キーフレーズと同系のティール */
+/** ヘッダー横の「成功の5ステップ」— キーフレーズと同系のティール */
 export const heroSuccessStepsButtonClass =
   "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-teal-200/90 bg-white/95 px-2.5 py-1.5 text-xs font-semibold text-teal-800 shadow-sm transition hover:border-teal-300 hover:bg-teal-50/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500 sm:px-3 sm:text-sm";
 

@@ -4,7 +4,7 @@ export type SuccessStep = {
   body: string;
 };
 
-export const SUCCESS_STEPS_TITLE = "\u6210\u529f\u306e\u30b9\u30c6\u30c3\u30d7";
+export const SUCCESS_STEPS_TITLE = "\u6210\u529f\u306e5\u30b9\u30c6\u30c3\u30d7";
 
 /** UI 上の導線と成功のステップ番号の対応 */
 export const SUCCESS_STEP_NUMBERS = {

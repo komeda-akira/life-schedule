@@ -66,7 +66,6 @@ import {
 } from "@/lib/local-storage";
 import { useLocalVault } from "@/components/LocalVaultContext";
 import { isCloudStorageMode, isLocalPlainStorageMode, isLocalVaultStorageMode } from "@/lib/storage-mode";
-import { unlockVault } from "@/lib/local-vault";
 import {
   bootstrapAppData,
   loadAppData,
@@ -188,16 +187,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     async function load() {
       if (isLocalVaultStorageMode()) {
         if (!vault) return;
-        try {
-          const unlocked = await unlockVault(vault.password);
-          if (cancelled) return;
-          setData(applyNorthStarScreenshotDefaults(normalizeAppData(unlocked)));
-          setHydrated(true);
-        } catch {
-          if (!cancelled) {
-            setLoadError("データを復号できませんでした。ロックして再度ログインしてください。");
-          }
-        }
+        setData(applyNorthStarScreenshotDefaults(normalizeAppData(vault.bootData)));
+        setHydrated(true);
         return;
       }
 

@@ -32,11 +32,13 @@ function PasswordField({
   value,
   onChange,
   autoFocus,
+  autoComplete,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   autoFocus?: boolean;
+  autoComplete?: string;
 }) {
   return (
     <label className="flex flex-col gap-1.5 text-sm">
@@ -46,7 +48,7 @@ function PasswordField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         autoFocus={autoFocus}
-        autoComplete={label.includes("確認") ? "new-password" : "current-password"}
+        autoComplete={autoComplete ?? "current-password"}
         className="rounded-lg border border-zinc-300 px-3 py-2.5 text-base outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
       />
     </label>
@@ -88,7 +90,7 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
+  const [bootData, setBootData] = useState<AppData | null>(null);
   const passwordRef = useRef("");
 
   useEffect(() => {
@@ -100,7 +102,7 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
     passwordRef.current = "";
     setPassword("");
     setConfirm("");
-    setUnlocked(false);
+    setBootData(null);
     setError(null);
     setPhase(hasVault() ? "login" : "setup");
   }, []);
@@ -118,6 +120,14 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
     [],
   );
 
+  const finishUnlock = (nextPassword: string, data: AppData) => {
+    passwordRef.current = nextPassword;
+    setBootData(data);
+    setPassword("");
+    setConfirm("");
+    setError(null);
+  };
+
   const onSetup = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -132,9 +142,10 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
     setBusy(true);
     try {
       await setupVault(password);
-      passwordRef.current = password;
-      setUnlocked(true);
+      const data = await unlockVault(password);
+      finishUnlock(password, data);
     } catch {
+      wipeVault();
       setError("初期設定に失敗しました。もう一度お試しください。");
     } finally {
       setBusy(false);
@@ -146,14 +157,13 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
     setError(null);
     setBusy(true);
     try {
-      await unlockVault(password);
-      passwordRef.current = password;
-      setUnlocked(true);
+      const data = await unlockVault(password);
+      finishUnlock(password, data);
     } catch (e) {
       if (e instanceof Error && e.message === "INVALID_PASSWORD") {
         setError("パスワードが正しくありません。");
       } else {
-        setError("データを開けませんでした。");
+        setError("データを開けませんでした。パスワードを忘れた場合は下のリンクから再設定してください。");
       }
     } finally {
       setBusy(false);
@@ -172,10 +182,10 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
     );
   }
 
-  if (!unlocked) {
-  const legacyHint = hasLegacyPlainStorage()
-    ? "以前のブラウザ保存データがある場合、初回設定時にこのパスワードで暗号化して引き継ぎます。"
-    : "データはこのPCのブラウザ内にのみ保存されます。別のPCやブラウザでは共有されません。";
+  if (!bootData) {
+    const legacyHint = hasLegacyPlainStorage()
+      ? "以前のブラウザ保存データがある場合、初回設定時にこのパスワードで暗号化して引き継ぎます。"
+      : "データはこのPCのブラウザ内にのみ保存されます。別のPCやブラウザでは共有されません。";
 
     if (phase === "setup") {
       return (
@@ -190,11 +200,13 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
               value={password}
               onChange={setPassword}
               autoFocus
+              autoComplete="new-password"
             />
             <PasswordField
               label="パスワード（確認）"
               value={confirm}
               onChange={setConfirm}
+              autoComplete="new-password"
             />
             <button
               type="submit"
@@ -220,6 +232,7 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
             value={password}
             onChange={setPassword}
             autoFocus
+            autoComplete="current-password"
           />
           <button
             type="submit"
@@ -255,7 +268,7 @@ export function LocalVaultGate({ children }: LocalVaultGateProps) {
 
   return (
     <LocalVaultContextProvider
-      password={passwordRef.current}
+      bootData={bootData}
       onLock={lock}
       saveEncrypted={saveEncrypted}
       changePassword={changePassword}

@@ -83,10 +83,29 @@ async function deriveKey(
   );
 }
 
-async function createVerifier(password: string, salt: Uint8Array<ArrayBuffer>): Promise<string> {
-  const key = await deriveKey(password, salt);
-  const raw = new Uint8Array(await crypto.subtle.exportKey("raw", key));
-  return bytesToBase64(raw.slice(0, 16));
+async function createVerifier(
+  password: string,
+  salt: Uint8Array<ArrayBuffer>,
+): Promise<string> {
+  const encoder = new TextEncoder();
+  const baseKey = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations: PBKDF2_ITERATIONS,
+      hash: "SHA-256",
+    },
+    baseKey,
+    128,
+  );
+  return bytesToBase64(new Uint8Array(bits));
 }
 
 async function encryptAppData(

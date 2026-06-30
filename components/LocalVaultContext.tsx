@@ -10,7 +10,7 @@ import {
 import type { AppData } from "@/lib/types";
 
 export type LocalVaultContextValue = {
-  password: string;
+  bootData: AppData;
   lock: () => void;
   saveEncrypted: (data: AppData) => Promise<void>;
   changePassword: (currentPassword: string, nextPassword: string, data: AppData) => Promise<void>;
@@ -19,13 +19,13 @@ export type LocalVaultContextValue = {
 const LocalVaultContext = createContext<LocalVaultContextValue | null>(null);
 
 export function LocalVaultContextProvider({
-  password,
+  bootData,
   onLock,
   saveEncrypted,
   changePassword,
   children,
 }: {
-  password: string;
+  bootData: AppData;
   onLock: () => void;
   saveEncrypted: (data: AppData) => Promise<void>;
   changePassword: (
@@ -37,12 +37,12 @@ export function LocalVaultContextProvider({
 }) {
   const value = useMemo<LocalVaultContextValue>(
     () => ({
-      password,
+      bootData,
       lock: onLock,
       saveEncrypted,
       changePassword,
     }),
-    [password, onLock, saveEncrypted, changePassword],
+    [bootData, onLock, saveEncrypted, changePassword],
   );
 
   return (

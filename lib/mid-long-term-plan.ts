@@ -265,6 +265,8 @@ export function fillAgesForRow(
   const years = row.years.map((cell, colIndex) => {
     const calendarYear = startYear + colIndex;
     if (calendarYear > endYear) return cell;
+    // テーマ行の年列はユーザーが自由記入するため、年齢の自動反映対象外
+    if (!summaryRow) return cell;
     const next = textToPlanYearCell("");
 
     if (summaryRow && familyMembers && referenceYear != null) {

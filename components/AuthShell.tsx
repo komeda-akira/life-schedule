@@ -2,7 +2,8 @@
 
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState, type ReactNode } from "react";
-import { isLocalDevMode } from "@/lib/auth-config";
+import { isCloudStorageMode, isLocalVaultStorageMode } from "@/lib/storage-mode";
+import { useLocalVault } from "@/components/LocalVaultContext";
 
 function authErrorMessage(code: string | null): string | null {
   if (!code) return null;
@@ -69,7 +70,7 @@ function LoginScreen() {
 export function AuthShell({ children }: { children: ReactNode }) {
   const { status } = useSession();
 
-  if (isLocalDevMode) {
+  if (!isCloudStorageMode()) {
     return <>{children}</>;
   }
 
@@ -86,8 +87,21 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
 export function UserSessionBar() {
   const { data: session } = useSession();
+  const vault = useLocalVault();
 
-  if (isLocalDevMode) {
+  if (isLocalVaultStorageMode() && vault) {
+    return (
+      <button
+        type="button"
+        onClick={vault.lock}
+        className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-black hover:bg-zinc-50"
+      >
+        ロック
+      </button>
+    );
+  }
+
+  if (!isCloudStorageMode()) {
     return null;
   }
 

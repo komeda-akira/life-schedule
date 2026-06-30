@@ -64,7 +64,9 @@ import {
   hasLocalAppData,
   readRawLocalAppData,
 } from "@/lib/local-storage";
-import { isLocalDevMode } from "@/lib/auth-config";
+import { useLocalVault } from "@/components/LocalVaultContext";
+import { isCloudStorageMode, isLocalPlainStorageMode, isLocalVaultStorageMode } from "@/lib/storage-mode";
+import { unlockVault } from "@/lib/local-vault";
 import {
   bootstrapAppData,
   loadAppData,
@@ -172,6 +174,7 @@ async function persistRemoteAppData(data: AppData): Promise<void> {
 }
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
+  const vault = useLocalVault();
   const [data, setData] = useState<AppData>(createEmptyAppData);
   const [hydrated, setHydrated] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -183,7 +186,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function load() {
-      if (isLocalDevMode) {
+      if (isLocalVaultStorageMode()) {
+        if (!vault) return;
+        try {
+          const unlocked = await unlockVault(vault.password);
+          if (cancelled) return;
+          setData(applyNorthStarScreenshotDefaults(normalizeAppData(unlocked)));
+          setHydrated(true);
+        } catch {
+          if (!cancelled) {
+            setLoadError("データを復号できませんでした。ロックして再度ログインしてください。");
+          }
+        }
+        return;
+      }
+
+      if (isLocalPlainStorageMode()) {
         setData(loadAppData());
         setHydrated(true);
         return;
@@ -221,12 +239,29 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [vault]);
 
   useEffect(() => {
     if (!hydrated || migrateOpen) return;
 
-    if (isLocalDevMode) {
+    if (isLocalVaultStorageMode()) {
+      if (!vault) return;
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+      saveTimerRef.current = setTimeout(() => {
+        void vault.saveEncrypted(data).catch(() => {
+          setLoadError("このPCへの保存に失敗しました。");
+        });
+      }, SAVE_DEBOUNCE_MS);
+      return () => {
+        if (saveTimerRef.current) {
+          clearTimeout(saveTimerRef.current);
+        }
+      };
+    }
+
+    if (isLocalPlainStorageMode()) {
       saveAppData(data);
       return;
     }
@@ -246,7 +281,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         clearTimeout(saveTimerRef.current);
       }
     };
-  }, [data, hydrated, migrateOpen]);
+  }, [data, hydrated, migrateOpen, vault]);
 
   const finishMigration = useCallback(async (next: AppData) => {
     setMigrateBusy(true);

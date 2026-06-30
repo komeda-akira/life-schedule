@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import type { Session } from "next-auth";
 import { auth } from "@/auth";
-import { isLocalDevMode } from "@/lib/auth-config";
+import { isLocalFirstMode } from "@/lib/storage-mode";
 import { isGeminiConfigured } from "@/lib/gemini-config";
 
 function requireUserId(session: Session | null): string | null {
-  if (isLocalDevMode) return "local-dev-user";
+  if (isLocalFirstMode()) return "local-user";
   return session?.user?.email ?? null;
 }
 

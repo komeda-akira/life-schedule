@@ -16,24 +16,58 @@ npm run dev
 
 ブラウザで http://localhost:3000 を開きます（`workspace-ui-kit` と同時起動する場合は `npm run dev -- -p 3001` などでポートを変えてください）。
 
-### クラウド保存（講義課題: Neon + Vercel + Google）
+### データ保存（既定: 各利用者の PC 上）
 
-1. [Neon](https://neon.tech/) で PostgreSQL を作成し、`scripts/init-db.sql` を SQL エディタで実行
-2. `.env.example` を `.env.local` にコピーし、各値を設定
-   - `AUTH_SECRET`: `openssl rand -base64 32` などで生成
-   - Google Cloud Console で OAuth クライアント（Web）を作成  
-     リダイレクト URI: `http://localhost:3000/api/auth/callback/google` と本番 URL
-   - `ALLOW_ANY_GOOGLE_USER=true`（誰でも Google ログイン可）または `ALLOWED_EMAIL` で制限
-   - `DATABASE_URL`: Neon の接続文字列
-3. `npm run dev` → Google ログイン → 初回のみ localStorage からの移行を選択可能
-4. Vercel にデプロイし、上記環境変数を Vercel のプロジェクト設定に追加
+**Neon は不要**です。各利用者が初回にパスワードを作成し、データは **その PC のブラウザ内** に暗号化して保存されます。
+
+| 項目 | 内容 |
+|------|------|
+| 保存先 | ブラウザ `localStorage`（暗号化） |
+| 認証 | 利用者が作成したパスワード |
+| 自動保存 | 編集後 約 800ms で暗号化保存 |
+| バックアップ | ヘッダーの「JSONを書き出す／読み込む」 |
+| 別 PC | 自動同期なし（JSON 書き出しで移行） |
+
+開発中だけパスワードを省略する場合（`.env.local`）:
+
+```env
+AUTH_BYPASS=true
+NEXT_PUBLIC_AUTH_BYPASS=true
+```
+
+### Vercel に公開（講義課題）
+
+1. GitHub に push（例: `komeda-akira/life-schedule`）
+2. [Vercel](https://vercel.com/) でリポジトリを Import → Deploy
+3. 環境変数（**最小構成**）:
+
+```env
+NEXT_PUBLIC_STORAGE_MODE=local
+GEMINI_API_KEY=...   # AI 機能を使う場合のみ
+```
+
+4. デプロイ後、利用者は URL を開く → パスワード作成 → 利用開始
+
+**課題のポイント:** リロードしてもデータが残る（同一ブラウザ内）。DB は使わず、各 PC ローカルに保存。
 
 記憶の設計図解: https://diagram-life-calendar-memory.surge.sh/
+
+### クラウド保存（オプション: Neon + Google）
+
+従来のクラウド同期が必要な場合のみ:
+
+```env
+NEXT_PUBLIC_STORAGE_MODE=cloud
+```
+
+1. [Neon](https://neon.tech/) で PostgreSQL を作成し、`scripts/init-db.sql` を SQL エディタで実行
+2. Google OAuth・`DATABASE_URL`・`AUTH_SECRET` を設定
+3. Google ログイン → 初回のみ localStorage からの移行を選択可能
 
 ## 構成（現状）
 
 - 北極星バー — 理念・目的・ビジョン・目標・プライムシート＋自分100年史・やりたいこと100
-- 各ワークシート — 手書き相当の初期値付き編集画面（Neon へ自動保存）
+- 各ワークシート — 手書き相当の初期値付き編集画面（**PC 内に自動保存**）
 - 年・月・週のスコープコメント — ヘッダー／ラベルから編集
 - 日ペイン — 終日行・24hタイムライン（ドラッグ作成・移動・リサイズ）、土曜=青・日曜=赤
 - **予定の繰り返し** — 毎日/毎週/毎月/毎年、終了日指定、個別編集・削除

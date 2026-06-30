@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { AiAssistantPanel } from "@/components/AiAssistantPanel";
+import { DataMenu } from "@/components/DataMenu";
 import { EventSearchPanel } from "@/components/EventSearchPanel";
 import { useAppData } from "@/components/AppDataProvider";
 import { useCalendarNavigation } from "@/components/CalendarNavigation";
@@ -22,6 +23,7 @@ export function AppHeaderTools() {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <DataMenu />
       <EventSearchPanel onJumpToDate={onJumpToDate} />
       <AiAssistantPanel buildContext={buildContext} />
     </div>

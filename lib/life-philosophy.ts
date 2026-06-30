@@ -1,3 +1,5 @@
+import type { AppData } from "@/lib/types";
+
 export const LIFE_PHILOSOPHY_REASON_COUNT = 5;
 
 export type LifePhilosophy = {
@@ -75,11 +77,20 @@ function padReasons(
   return out.slice(0, LIFE_PHILOSOPHY_REASON_COUNT) as LifePhilosophy["successReasons"];
 }
 
+export function emptyLifePhilosophy(): LifePhilosophy {
+  return {
+    keywords: [],
+    successReasons: ["", "", "", "", ""],
+    coreWord: "",
+    coreNote: "",
+  };
+}
+
 export function normalizeLifePhilosophy(
   input?: Partial<LifePhilosophy> | null,
 ): LifePhilosophy {
-  const base = DEFAULT_LIFE_PHILOSOPHY;
-  if (!input) return { ...base, keywords: [...base.keywords] };
+  const base = emptyLifePhilosophy();
+  if (!input) return base;
 
   const keywords = Array.isArray(input.keywords)
     ? input.keywords.map((k) => (typeof k === "string" ? k : ""))
@@ -92,6 +103,16 @@ export function normalizeLifePhilosophy(
       typeof input.coreWord === "string" ? input.coreWord : base.coreWord,
     coreNote:
       typeof input.coreNote === "string" ? input.coreNote : base.coreNote,
+  };
+}
+
+/** 開発・デモ用に作者のサンプル文を補完 */
+export function applyLifePhilosophyDefaults(data: AppData): AppData {
+  return {
+    ...data,
+    lifePhilosophy: data.lifePhilosophy
+      ? normalizeLifePhilosophy(data.lifePhilosophy)
+      : { ...DEFAULT_LIFE_PHILOSOPHY, keywords: [...DEFAULT_LIFE_PHILOSOPHY.keywords] },
   };
 }
 

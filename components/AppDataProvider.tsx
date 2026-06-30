@@ -187,7 +187,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     async function load() {
       if (isLocalVaultStorageMode()) {
         if (!vault) return;
-        setData(applyNorthStarScreenshotDefaults(normalizeAppData(vault.bootData)));
+        setData(normalizeAppData(vault.bootData));
         setHydrated(true);
         return;
       }

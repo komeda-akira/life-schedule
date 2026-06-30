@@ -29,7 +29,10 @@ import {
   normalizeMy100YearHistory,
 } from "@/lib/my-100-year-history";
 import { applyPurposeVisionDefaults } from "@/lib/purpose-vision";
-import { normalizeLifePhilosophy } from "@/lib/life-philosophy";
+import {
+  applyLifePhilosophyDefaults,
+  normalizeLifePhilosophy,
+} from "@/lib/life-philosophy";
 import { normalizePurposeVision } from "@/lib/purpose-vision";
 import { normalizeMidLongTermPlan } from "@/lib/mid-long-term-plan";
 import { STORAGE_KEY } from "@/lib/local-storage";
@@ -50,8 +53,10 @@ function withAllDefaults(input: AppData): AppData {
             applyGoalSettingDefaults(
               applyLifeWishList100Defaults(
                 applyMy100YearHistoryDefaults(
-                  applyPurposeVisionDefaults(
-                    applyNorthStarScreenshotDefaults(input),
+                  applyLifePhilosophyDefaults(
+                    applyPurposeVisionDefaults(
+                      applyNorthStarScreenshotDefaults(input),
+                    ),
                   ),
                 ),
               ),
@@ -63,7 +68,12 @@ function withAllDefaults(input: AppData): AppData {
   );
 }
 
-/** 初回表示用（localStorage / DB どちらも空のとき） */
+/** 新規利用者向け（個人のサンプル文・デモ予定なし） */
+export function bootstrapFreshAppData(): AppData {
+  return normalizeAppData({});
+}
+
+/** 初回表示用・開発デモ（作者のサンプル文付き） */
 export function bootstrapAppData(): AppData {
   return withAllDefaults(createEmptyAppData());
 }

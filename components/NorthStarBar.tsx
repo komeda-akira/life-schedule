@@ -72,7 +72,7 @@ export function NorthStarBar({
   })();
 
   const philosophy = getLifePhilosophy();
-  const visionWord = excerptComment(philosophy.coreWord.trim() || "利他", 14);
+  const visionWord = excerptComment(philosophy.coreWord.trim(), 14);
   const visionNote = philosophy.coreNote.trim();
 
   const renderPrimaryContent = (cat: NorthStarCategory) => {

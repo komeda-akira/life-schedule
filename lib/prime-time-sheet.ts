@@ -167,6 +167,21 @@ function isLegacySingleSheet(input: Record<string, unknown>): boolean {
   );
 }
 
+export function createEmptyPrimeTimeSheetData(): PrimeTimeSheetData {
+  const id = "page-default-1";
+  const content = createEmptyPrimeTimeSheetContent();
+  return {
+    activePageId: id,
+    pages: [
+      {
+        id,
+        title: suggestPageTitle(content, 1),
+        ...content,
+      },
+    ],
+  };
+}
+
 export function createDefaultPrimeTimeSheetData(): PrimeTimeSheetData {
   const id = "page-default-1";
   const content = normalizePrimeTimeSheetContent(null, true);
@@ -184,7 +199,7 @@ export function createDefaultPrimeTimeSheetData(): PrimeTimeSheetData {
 
 export function normalizePrimeTimeSheetData(input: unknown): PrimeTimeSheetData {
   if (!input || typeof input !== "object") {
-    return createDefaultPrimeTimeSheetData();
+    return createEmptyPrimeTimeSheetData();
   }
 
   const raw = input as Record<string, unknown>;
@@ -202,7 +217,7 @@ export function normalizePrimeTimeSheetData(input: unknown): PrimeTimeSheetData 
   }
 
   if (!Array.isArray(raw.pages) || raw.pages.length === 0) {
-    return createDefaultPrimeTimeSheetData();
+    return createEmptyPrimeTimeSheetData();
   }
 
   const pages: PrimeTimeSheetPage[] = [];
@@ -211,7 +226,7 @@ export function normalizePrimeTimeSheetData(input: unknown): PrimeTimeSheetData 
     if (page) pages.push(page);
   });
 
-  if (pages.length === 0) return createDefaultPrimeTimeSheetData();
+  if (pages.length === 0) return createEmptyPrimeTimeSheetData();
 
   const activePageId =
     typeof raw.activePageId === "string" &&
@@ -268,6 +283,8 @@ export function primeTimeSheetDataExcerpt(data: PrimeTimeSheetData): string {
 export function applyPrimeTimeSheetDefaults(data: AppData): AppData {
   return {
     ...data,
-    primeTimeSheet: normalizePrimeTimeSheetData(data.primeTimeSheet),
+    primeTimeSheet: normalizePrimeTimeSheetData(
+      data.primeTimeSheet ?? createDefaultPrimeTimeSheetData(),
+    ),
   };
 }

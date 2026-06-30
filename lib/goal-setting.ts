@@ -246,10 +246,27 @@ function cloneDefault(): GoalSetting {
   };
 }
 
+function createEmptyGoalSetting(): GoalSetting {
+  const base = cloneDefault();
+  return {
+    ownerName: "",
+    createdDate: "",
+    lifePhilosophy: "",
+    lifeVision: "",
+    groups: base.groups.map((g) => ({
+      needLabel: g.needLabel,
+      domains: g.domains.map((d) => ({
+        domainLabel: d.domainLabel,
+        goals: { shortTerm: "", mediumTerm: "", longTerm: "" },
+      })),
+    })),
+  };
+}
+
 export function normalizeGoalSetting(
   input?: Partial<GoalSetting> | null,
 ): GoalSetting {
-  const base = cloneDefault();
+  const base = createEmptyGoalSetting();
   if (!input) return base;
 
   const legacy = input as Partial<GoalSetting> & LegacyGoalSetting;
@@ -290,6 +307,6 @@ export function goalSettingBarExcerpt(gs: GoalSetting): string {
 export function applyGoalSettingDefaults(data: AppData): AppData {
   return {
     ...data,
-    goalSetting: normalizeGoalSetting(data.goalSetting),
+    goalSetting: normalizeGoalSetting(data.goalSetting ?? cloneDefault()),
   };
 }

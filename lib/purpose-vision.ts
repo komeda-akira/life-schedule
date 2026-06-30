@@ -22,6 +22,22 @@ export type PurposeVision = {
   visionMotto: string;
 };
 
+export function emptyPurposeVision(): PurposeVision {
+  return {
+    lifePurposeLead: "",
+    lifePurposeService: "",
+    lifePurposeActions: ["", "", "", "", ""],
+    visionMain: "",
+    visionNumberOneMeans: "",
+    visionInfluenceMeans: "",
+    visionEconomic: "",
+    visionAbility: "",
+    visionSpiritual: "",
+    visionHealth: "",
+    visionMotto: "",
+  };
+}
+
 export const DEFAULT_PURPOSE_VISION: PurposeVision = {
   lifePurposeLead:
     "\u611b\u3059\u308b\u5bb6\u65cf\u3068\u611b\u3059\u308b\u4ef2\u9593\u3001\u611b\u3059\u308b\u65e5\u672c\u306e\u5b89\u5fc3\u3001\u5b89\u5168\u3001\u5e73\u548c\u306a\u672a\u6765\u3078\u306e\u767a\u5c55\u306e\u305f\u3081\u306b\u751f\u304d\u308b\n\u4f1a\u8a08\u3092\u901a\u3058\u3066\u5bb6\u65cf\u3068\u793e\u4f1a\u306e\u767a\u5c55\u306b\u8ca2\u732e\u3059\u308b\u3053\u3068\u304c\u81ea\u5206\u306e\u4f7f\u547d\u3067\u3042\u308b",
@@ -102,8 +118,8 @@ function normalizeActions(
 export function normalizePurposeVision(
   input?: LegacyPurposeVision | null,
 ): PurposeVision {
-  const base = DEFAULT_PURPOSE_VISION;
-  if (!input) return { ...base };
+  const base = emptyPurposeVision();
+  if (!input) return base;
 
   return {
     lifePurposeLead: mergeSplitPurposeLead(input, base.lifePurposeLead),
@@ -142,9 +158,7 @@ export function purposeVisionBarLines(pv: PurposeVision): PurposeVisionBarLines 
     .filter(Boolean);
 
   const line1 = parts[0] ?? "";
-  const line2 =
-    parts[1] ??
-    "\u4f1a\u8a08\u3092\u901a\u3058\u3066\u5bb6\u65cf\u3068\u793e\u4f1a\u306e\u767a\u5c55\u306b\u8ca2\u732e\u3059\u308b\u3053\u3068\u304c\u81ea\u5206\u306e\u4f7f\u547d\u3067\u3042\u308b";
+  const line2 = parts[1] ?? pv.lifePurposeService.trim() ?? "";
 
   return { line1, line2 };
 }
@@ -156,10 +170,10 @@ export function purposeVisionBarExcerpt(pv: PurposeVision): string {
   return pv.visionMain.trim();
 }
 
-/** 未保存時にワークシート既定文を補完 */
+/** 未保存時にワークシート既定文を補完（開発・デモ用） */
 export function applyPurposeVisionDefaults(data: AppData): AppData {
   return {
     ...data,
-    purposeVision: normalizePurposeVision(data.purposeVision),
+    purposeVision: normalizePurposeVision(data.purposeVision ?? DEFAULT_PURPOSE_VISION),
   };
 }

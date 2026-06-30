@@ -23,6 +23,10 @@ export type LifeWishList100 = {
   items: string[];
 };
 
+function createEmptyItems(): string[] {
+  return Array<string>(LIFE_WISH_LIST_100_COUNT).fill("");
+}
+
 const DEFAULT_ITEMS_RAW: string[] = [
   "\u5e74\u53ce 2\u5104 \u2192 10\u5104",
   "AI\u30de\u30b9\u30bf\u30fc",
@@ -75,20 +79,22 @@ function normalizeItems(input: unknown, base: string[]): string[] {
 export function normalizeLifeWishList100(
   input?: Partial<LifeWishList100> | null,
 ): LifeWishList100 {
-  const base = DEFAULT_LIFE_WISH_LIST_100;
-  if (!input) return { items: [...base.items] };
-  return { items: normalizeItems(input.items, base.items) };
+  const base = createEmptyItems();
+  if (!input) return { items: [...base] };
+  return { items: normalizeItems(input.items, base) };
+}
+
+export function applyLifeWishList100Defaults(data: AppData): AppData {
+  return {
+    ...data,
+    lifeWishList100: normalizeLifeWishList100(
+      data.lifeWishList100 ?? DEFAULT_LIFE_WISH_LIST_100,
+    ),
+  };
 }
 
 export function lifeWishList100BarExcerpt(data: LifeWishList100): string {
   const first = data.items.find((t) => t.trim().length > 0)?.trim();
   if (first) return first;
   return LIFE_WISH_LIST_100_EXCERPT;
-}
-
-export function applyLifeWishList100Defaults(data: AppData): AppData {
-  return {
-    ...data,
-    lifeWishList100: normalizeLifeWishList100(data.lifeWishList100),
-  };
 }

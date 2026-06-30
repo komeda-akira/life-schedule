@@ -30,6 +30,10 @@ export type My100YearHistory = {
   highlightAge: number;
 };
 
+function createEmptyEntries(): string[] {
+  return Array<string>(MY_100_YEAR_AGE_COUNT).fill("");
+}
+
 function createDefaultEntries(): string[] {
   const entries = Array<string>(MY_100_YEAR_AGE_COUNT).fill("");
   entries[35] = "CPA\u5408\u683c \u3042\u305a\u3055\u5165\u793e";
@@ -65,7 +69,13 @@ function normalizeHighlightAge(value: unknown, fallback: number): number {
 export function normalizeMy100YearHistory(
   input?: Partial<My100YearHistory> | null,
 ): My100YearHistory {
-  const base = DEFAULT_MY_100_YEAR_HISTORY;
+  const base = {
+    createdYear: "",
+    createdMonth: "",
+    createdDay: "",
+    entries: createEmptyEntries(),
+    highlightAge: 1,
+  };
   if (!input) return { ...base, entries: [...base.entries] };
 
   return {
@@ -80,6 +90,8 @@ export function normalizeMy100YearHistory(
 export function applyMy100YearHistoryDefaults(data: AppData): AppData {
   return {
     ...data,
-    my100YearHistory: normalizeMy100YearHistory(data.my100YearHistory),
+    my100YearHistory: normalizeMy100YearHistory(
+      data.my100YearHistory ?? DEFAULT_MY_100_YEAR_HISTORY,
+    ),
   };
 }

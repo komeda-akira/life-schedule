@@ -1,5 +1,5 @@
 import { STORAGE_KEY, readRawLocalAppData } from "@/lib/local-storage";
-import { bootstrapAppData, normalizeAppData } from "@/lib/storage";
+import { bootstrapAppData, bootstrapFreshAppData, normalizeAppData } from "@/lib/storage";
 import type { AppData } from "@/lib/types";
 
 const VAULT_META_KEY = "life-schedule:vault-meta:v1";
@@ -162,7 +162,7 @@ export async function setupVault(
   initialData?: AppData,
 ): Promise<void> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const data = initialData ?? readLegacyPlainData() ?? bootstrapAppData();
+  const data = initialData ?? readLegacyPlainData() ?? bootstrapFreshAppData();
   const meta: VaultMeta = {
     version: 1,
     salt: bytesToBase64(salt),

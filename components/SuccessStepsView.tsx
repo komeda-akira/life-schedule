@@ -1,5 +1,6 @@
 "use client";
 
+import { SuccessStepBadge } from "@/components/SuccessStepBadge";
 import {
   SUCCESS_STEPS,
   SUCCESS_STEPS_TITLE,
@@ -18,9 +19,7 @@ export function SuccessStepsView() {
             className="rounded-lg border border-zinc-200 bg-zinc-50/80 p-4"
           >
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-white">
-                {item.step}
-              </span>
+              <SuccessStepBadge step={item.step} size="md" />
               <h4 className="font-bold text-black">{item.title}</h4>
             </div>
             <p className="mt-2 text-black/85">{item.body}</p>

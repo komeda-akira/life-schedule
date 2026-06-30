@@ -24,10 +24,7 @@ import {
 } from "@/components/DayScheduleTimeline";
 import { EventQuickCreatePopover } from "@/components/EventQuickCreatePopover";
 import { MonthSelfCounselingPanel } from "@/components/MonthSelfCounselingPanel";
-import {
-  OpenLayerArrow,
-  SheetOpenActionButton,
-} from "@/components/OpenLayerArrow";
+import { SheetOpenActionButton } from "@/components/OpenLayerArrow";
 import { dayWorksheetKey } from "@/lib/daily-worksheet";
 import { monthlyWorksheetExcerpt } from "@/lib/monthly-worksheet";
 import { weeklyWorksheetExcerpt } from "@/lib/weekly-worksheet";
@@ -73,11 +70,8 @@ import {
   MONTH_PANE_TITLE,
   PANE_HINTS,
   OPEN_DAILY_SHEET_ACTION,
-  OPEN_DAILY_SHEET_HINT,
   OPEN_MONTHLY_SHEET_ACTION,
-  OPEN_MONTHLY_SHEET_HINT,
   OPEN_WEEKLY_SHEET_ACTION,
-  OPEN_WEEKLY_SHEET_HINT,
   DAY_SWITCH_HINT,
   MONTH_SWITCH_HINT,
   scopeCommentTitle,
@@ -89,13 +83,13 @@ import {
   WEEK_PANE_TITLE,
   DAY_PANE_TITLE,
   OPEN_MLTP_ACTION,
-  OPEN_MLTP_HINT,
   OPEN_YEAR_SCOPE_ACTION,
   YEAR_PANE_TITLE,
   YEAR_START_LABEL,
   YEAR_SWITCH_HINT,
 } from "@/lib/pane-labels";
 import { yearPlanSummaryExcerpt } from "@/lib/mid-long-term-plan";
+import { SUCCESS_STEP_NUMBERS } from "@/lib/success-steps-content";
 import { isMultiDayEvent } from "@/lib/event-span";
 import type { CalendarEvent, EventKind } from "@/lib/types";
 
@@ -138,31 +132,14 @@ function PaneHeader({
   title,
   hint,
   children,
-  onTitleClick,
-  titleClickHint,
 }: {
   title: string;
   hint?: string;
   children?: ReactNode;
-  onTitleClick?: () => void;
-  titleClickHint?: string;
 }) {
   return (
     <div className="border-b border-zinc-200 bg-white px-2 py-2">
-      {onTitleClick ? (
-        <button
-          type="button"
-          onClick={onTitleClick}
-          title={titleClickHint}
-          className="mx-auto block w-full text-center text-base font-semibold text-black underline decoration-zinc-400 underline-offset-2 hover:bg-zinc-50"
-        >
-          {title}
-        </button>
-      ) : (
-        <div className="text-center text-base font-semibold text-black">
-          {title}
-        </div>
-      )}
+      <div className="text-center text-base font-semibold text-black">{title}</div>
       {hint ? (
         <p className="mt-0.5 text-center text-xs leading-snug text-black/60">
           {hint}
@@ -193,29 +170,19 @@ function YearScopeCommentExcerpt({ text }: { text: string }) {
   );
 }
 
-function ScopeLabelButton({
+function PaneDateLabel({
   children,
-  onOpenScope,
-  title,
-  className,
+  className = "",
 }: {
   children: ReactNode;
-  onOpenScope: () => void;
-  title: string;
   className?: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onOpenScope();
-      }}
-      title={title}
-      className={`font-semibold text-black underline decoration-zinc-400 underline-offset-2 hover:text-black ${className ?? ""}`}
+    <span
+      className={`min-w-0 flex-1 text-center text-sm font-semibold text-black sm:text-base ${className}`}
     >
       {children}
-    </button>
+    </span>
   );
 }
 
@@ -284,12 +251,7 @@ function YearPane({
 
   return (
     <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px]">
-      <PaneHeader
-        title={YEAR_PANE_TITLE}
-        hint={PANE_HINTS.year}
-        onTitleClick={onOpenPlan}
-        titleClickHint={OPEN_MLTP_HINT}
-      />
+      <PaneHeader title={YEAR_PANE_TITLE} hint={PANE_HINTS.year} />
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         <ul className="flex flex-col gap-1">
           {years.map((year) => {
@@ -372,13 +334,9 @@ function MonthPane({
       <PaneHeader title={MONTH_PANE_TITLE} hint={PANE_HINTS.month}>
         <div className="flex items-center justify-between gap-1">
           <NavChevron dir="prev" label={LABEL_PREV_YEAR} onClick={() => onAddYear(-1)} />
-          <ScopeLabelButton
-            onOpenScope={onOpenScope}
-            title={OPEN_MONTHLY_SHEET_HINT}
-            className={PANE_DATE_NAV_CLASS}
-          >
+          <PaneDateLabel className={PANE_DATE_NAV_CLASS}>
             {formatMonthHeader(cursor)}
-          </ScopeLabelButton>
+          </PaneDateLabel>
           <NavChevron dir="next" label={LABEL_NEXT_YEAR} onClick={() => onAddYear(1)} />
         </div>
       </PaneHeader>
@@ -416,6 +374,7 @@ function MonthPane({
             cursor.getMonth() + 1,
           )}
           className="mt-2 shrink-0"
+          successStep={SUCCESS_STEP_NUMBERS.action}
         />
         <div className="mt-2 min-h-0 flex-1">
           <MonthSelfCounselingPanel />
@@ -433,7 +392,6 @@ function WeekPane({
   onSelectDay,
   onAddWeek,
   onOpenWeeklySheet,
-  onOpenDailySheet,
 }: {
   cursor: Date;
   comment: string;
@@ -442,7 +400,6 @@ function WeekPane({
   onSelectDay: (d: Date) => void;
   onAddWeek: (delta: number) => void;
   onOpenWeeklySheet: () => void;
-  onOpenDailySheet: () => void;
 }) {
   const days = useMemo(() => {
     const monday = getMonday(cursor);
@@ -460,13 +417,9 @@ function WeekPane({
       <PaneHeader title={WEEK_PANE_TITLE} hint={PANE_HINTS.week}>
         <div className="flex items-center justify-between gap-1">
           <NavChevron dir="prev" label={LABEL_PREV_WEEK} onClick={() => onAddWeek(-1)} />
-          <ScopeLabelButton
-            onOpenScope={onOpenWeeklySheet}
-            title={OPEN_WEEKLY_SHEET_HINT}
-            className={PANE_DATE_NAV_CLASS}
-          >
+          <PaneDateLabel className={PANE_DATE_NAV_CLASS}>
             {formatWeekHeader(cursor)}
-          </ScopeLabelButton>
+          </PaneDateLabel>
           <NavChevron dir="next" label={LABEL_NEXT_WEEK} onClick={() => onAddWeek(1)} />
         </div>
       </PaneHeader>
@@ -505,6 +458,7 @@ function WeekPane({
             title={OPEN_WEEKLY_SHEET_ACTION}
             subtitle={weekInMonthLabel(selectedWeek)}
             className="mb-3"
+            successStep={SUCCESS_STEP_NUMBERS.action}
           />
         ) : null}
         <p className="mb-1 text-[10px] font-medium text-black/60">
@@ -531,21 +485,6 @@ function WeekPane({
             );
           })}
         </ul>
-        <button
-          type="button"
-          onClick={onOpenDailySheet}
-          className="flex w-full items-start justify-between gap-2 rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100"
-        >
-          <span className="min-w-0">
-            <span className="font-semibold">{OPEN_DAILY_SHEET_ACTION}</span>
-            <span
-              className={`mt-0.5 block text-[10px] text-black/55 ${weekdayTextClass(cursor)}`}
-            >
-              {formatDayHeader(cursor)}
-            </span>
-          </span>
-          <OpenLayerArrow className="mt-0.5" />
-        </button>
       </div>
     </div>
   );
@@ -577,15 +516,19 @@ function DayPane({
       <PaneHeader title={DAY_PANE_TITLE} hint={PANE_HINTS.day}>
         <div className="flex items-center justify-between gap-1">
           <NavChevron dir="prev" label={LABEL_PREV_DAY} onClick={() => onAddDay(-1)} />
-          <ScopeLabelButton
-            onOpenScope={onOpenDailySheet}
-            title={OPEN_DAILY_SHEET_HINT}
-            className={`${PANE_DATE_NAV_CLASS} ${weekdayTextClass(cursor)}`}
-          >
+          <PaneDateLabel className={weekdayTextClass(cursor)}>
             {formatDayHeader(cursor)}
-          </ScopeLabelButton>
+          </PaneDateLabel>
           <NavChevron dir="next" label={LABEL_NEXT_DAY} onClick={() => onAddDay(1)} />
         </div>
+        <SheetOpenActionButton
+          onClick={onOpenDailySheet}
+          title={OPEN_DAILY_SHEET_ACTION}
+          subtitle={formatDayHeader(cursor)}
+          subtitleClassName={weekdayTextClass(cursor)}
+          className="mt-2"
+          successStep={SUCCESS_STEP_NUMBERS.action}
+        />
       </PaneHeader>
       <DayScheduleTimeline
         date={cursor}
@@ -817,7 +760,6 @@ export function CalendarPanes() {
             cursor.getMonth() + 1,
           )
         }
-        onOpenDailySheet={() => openDailySheet(cursor)}
       />
       <DayPane
         cursor={cursor}
@@ -898,7 +840,6 @@ export function CalendarPanes() {
                 cursor.getMonth() + 1,
               )
             }
-            onOpenDailySheet={() => openDailySheet(cursor)}
           />
         ) : null}
         {mobileTab === 3 ? (

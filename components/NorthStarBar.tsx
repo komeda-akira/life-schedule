@@ -6,6 +6,7 @@ import { My100YearHistoryModal } from "@/components/My100YearHistoryModal";
 import { NorthStarModal } from "@/components/NorthStarModal";
 import { OpenLayerArrow } from "@/components/OpenLayerArrow";
 import { useAppData } from "@/components/AppDataProvider";
+import { SuccessStepBadge } from "@/components/SuccessStepBadge";
 import { excerptComment } from "@/lib/calendar";
 import { LIFE_WISH_LIST_100_LABEL } from "@/lib/life-wish-list-100";
 import { MY_100_YEAR_HISTORY_LABEL } from "@/lib/my-100-year-history";
@@ -13,6 +14,14 @@ import { goalSettingBarExcerpt } from "@/lib/goal-setting";
 import { primeTimeSheetDataExcerpt } from "@/lib/prime-time-sheet";
 import { purposeVisionBarLines } from "@/lib/purpose-vision";
 import { NORTH_STAR_LABELS, type NorthStarCategory } from "@/lib/types";
+import { SUCCESS_STEP_NUMBERS } from "@/lib/success-steps-content";
+
+const NORTH_STAR_SUCCESS_STEP: Partial<Record<NorthStarCategory, number>> = {
+  vision: SUCCESS_STEP_NUMBERS.lifePhilosophy,
+  purpose: SUCCESS_STEP_NUMBERS.lifeVision,
+  goal: SUCCESS_STEP_NUMBERS.goal,
+  prime: SUCCESS_STEP_NUMBERS.plan,
+};
 
 const PRIMARY_CATEGORIES: NorthStarCategory[] = ["vision", "purpose", "goal"];
 
@@ -47,6 +56,22 @@ const headerAuxBtnClass =
 
 function NorthStarOpenArrow({ className = "" }: { className?: string }) {
   return <OpenLayerArrow className={`text-[11px] ${className}`} />;
+}
+
+function NorthStarLabel({
+  category,
+  className = "",
+}: {
+  category: NorthStarCategory;
+  className?: string;
+}) {
+  const step = NORTH_STAR_SUCCESS_STEP[category];
+  return (
+    <span className={`inline-flex items-center gap-1.5 ${className}`}>
+      {step != null ? <SuccessStepBadge step={step} /> : null}
+      <span>{NORTH_STAR_LABELS[category]}</span>
+    </span>
+  );
 }
 
 export function NorthStarBar({
@@ -127,7 +152,10 @@ export function NorthStarBar({
                 className={`${northStarBtnClass} max-w-[11rem]`}
               >
                 <NorthStarOpenArrow className="absolute right-2 top-2" />
-                <span className={headerPrimaryLabelClass}>{NORTH_STAR_LABELS.prime}</span>
+                <NorthStarLabel
+                  category="prime"
+                  className={headerPrimaryLabelClass}
+                />
                 <span className="mt-0.5 line-clamp-2 text-[10px] leading-snug">
                   <span className="font-normal text-black/60">{primeExcerpt}</span>
                 </span>
@@ -170,7 +198,7 @@ export function NorthStarBar({
             }`}
           >
             <NorthStarOpenArrow className="absolute right-2 top-2" />
-            <span className={headerPrimaryLabelClass}>{NORTH_STAR_LABELS[cat]}</span>
+            <NorthStarLabel category={cat} className={headerPrimaryLabelClass} />
             <span className="mt-0.5 line-clamp-2 leading-snug">
               {cat === "vision" ? (
                 <>
@@ -214,9 +242,10 @@ export function NorthStarBar({
           className={headerPrimaryBtnClass}
         >
           <NorthStarOpenArrow className="absolute right-2 top-2" />
-          <span className={headerPrimaryLabelClass}>
-            {NORTH_STAR_LABELS[cat]}
-          </span>
+          <NorthStarLabel
+            category={cat}
+            className={headerPrimaryLabelClass}
+          />
           {renderPrimaryContent(cat)}
         </button>
       ))}
@@ -227,9 +256,10 @@ export function NorthStarBar({
           onClick={() => setOpen("prime")}
           className={`${headerAuxBtnClass} flex-1 px-2.5 py-2 lg:flex-none`}
         >
-          <span className="text-sm font-bold leading-tight text-zinc-800 sm:text-base">
-            {NORTH_STAR_LABELS.prime}
-          </span>
+          <NorthStarLabel
+            category="prime"
+            className="text-sm font-bold leading-tight text-zinc-800 sm:text-base"
+          />
           <NorthStarOpenArrow />
         </button>
         <button

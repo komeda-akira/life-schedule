@@ -1,3 +1,5 @@
+import { SuccessStepBadge } from "@/components/SuccessStepBadge";
+
 type OpenLayerArrowProps = {
   className?: string;
 };
@@ -18,14 +20,18 @@ type SheetOpenActionButtonProps = {
   onClick: () => void;
   title: string;
   subtitle?: string;
+  subtitleClassName?: string;
   className?: string;
+  successStep?: number;
 };
 
 export function SheetOpenActionButton({
   onClick,
   title,
   subtitle,
+  subtitleClassName = "",
   className = "",
+  successStep,
 }: SheetOpenActionButtonProps) {
   return (
     <button
@@ -34,9 +40,18 @@ export function SheetOpenActionButton({
       className={`flex w-full items-start justify-between gap-2 rounded-md border border-dashed border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-xs text-black hover:bg-zinc-100 ${className}`}
     >
       <span className="min-w-0">
-        <span className="font-semibold">{title}</span>
+        <span className="flex items-center gap-1.5 font-semibold">
+          {successStep != null ? (
+            <SuccessStepBadge step={successStep} />
+          ) : null}
+          <span>{title}</span>
+        </span>
         {subtitle ? (
-          <span className="mt-0.5 block text-[10px] text-black/55">{subtitle}</span>
+          <span
+            className={`mt-0.5 block text-[10px] text-black/55 ${subtitleClassName}`}
+          >
+            {subtitle}
+          </span>
         ) : null}
       </span>
       <OpenLayerArrow className="mt-0.5" />

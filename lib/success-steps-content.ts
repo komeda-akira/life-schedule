@@ -6,6 +6,19 @@ export type SuccessStep = {
 
 export const SUCCESS_STEPS_TITLE = "\u6210\u529f\u306e\u30b9\u30c6\u30c3\u30d7";
 
+/** UI 上の導線と成功のステップ番号の対応 */
+export const SUCCESS_STEP_NUMBERS = {
+  lifePhilosophy: 1,
+  lifeVision: 2,
+  goal: 3,
+  plan: 4,
+  action: 5,
+} as const;
+
+export function getSuccessStepTitle(step: number): string {
+  return SUCCESS_STEPS.find((item) => item.step === step)?.title ?? "";
+}
+
 export const SUCCESS_STEPS: SuccessStep[] = [
   {
     step: 1,

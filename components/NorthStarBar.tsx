@@ -11,6 +11,10 @@ import { excerptComment } from "@/lib/calendar";
 import { LIFE_WISH_LIST_100_LABEL } from "@/lib/life-wish-list-100";
 import { MY_100_YEAR_HISTORY_LABEL } from "@/lib/my-100-year-history";
 import { goalSettingBarExcerpt } from "@/lib/goal-setting";
+import {
+  linkedPhilosophyText,
+  linkedVisionText,
+} from "@/lib/goal-setting-linked-content";
 import { primeTimeSheetDataExcerpt } from "@/lib/prime-time-sheet";
 import { purposeVisionBarLines } from "@/lib/purpose-vision";
 import { NORTH_STAR_LABELS, type NorthStarCategory } from "@/lib/types";
@@ -90,7 +94,14 @@ export function NorthStarBar({
   } = useAppData();
 
   const purposeBarLines = purposeVisionBarLines(getPurposeVision());
-  const goalBarText = goalSettingBarExcerpt(getGoalSetting());
+  const goalSetting = getGoalSetting();
+  const goalBarText = goalSettingBarExcerpt(goalSetting, {
+    philosophy: linkedPhilosophyText(
+      getLifePhilosophy(),
+      goalSetting.lifePhilosophy,
+    ),
+    vision: linkedVisionText(getPurposeVision(), goalSetting.lifeVision),
+  });
   const primeExcerpt = (() => {
     const ex = primeTimeSheetDataExcerpt(getPrimeTimeSheetData());
     return ex ? excerptComment(ex, 32) : "";

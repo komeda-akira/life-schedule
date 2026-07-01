@@ -2,8 +2,12 @@
 
 import { useCallback, useState } from "react";
 import { ChoiceTheoryView } from "@/components/ChoiceTheoryView";
+import { GoalSettingLinkedPhilosophyVision } from "@/components/GoalSettingLinkedPhilosophyVision";
+import { GoalStructuringGuide } from "@/components/GoalStructuringGuide";
 import { Modal } from "@/components/Modal";
 import { OpenLayerArrow } from "@/components/OpenLayerArrow";
+import { RoleGoalWorksheetView } from "@/components/RoleGoalWorksheetView";
+import { ThinkingExpansionSheetView } from "@/components/ThinkingExpansionSheetView";
 import { useAppData } from "@/components/AppDataProvider";
 import {
   CHOICE_THEORY_BUTTON_SUBTITLE,
@@ -22,11 +26,21 @@ import {
   GS_CREATED_LABEL,
   GS_OWNER_PREFIX,
   GS_OWNER_SUFFIX,
-  GS_PHILOSOPHY_LABEL,
   GS_SAVE_HINT,
   GS_SHEET_TITLE,
-  GS_VISION_LABEL,
 } from "@/lib/goal-setting-labels";
+import {
+  ROLE_GOAL_BUTTON_SUBTITLE,
+  ROLE_GOAL_MODAL_TITLE,
+  ROLE_GOAL_STEP_LABEL,
+  ROLE_GOAL_TITLE,
+} from "@/lib/role-goal-worksheet-content";
+import {
+  TES_BUTTON_SUBTITLE,
+  TES_MODAL_TITLE,
+  TES_STEP_LABEL,
+  TES_TITLE,
+} from "@/lib/thinking-expansion-sheet-content";
 
 const inputClass =
   "w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm text-black placeholder:text-black/35 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400";
@@ -37,6 +51,8 @@ export function GoalSettingView() {
   const { getGoalSetting, updateGoalSetting } = useAppData();
   const data = getGoalSetting();
   const [choiceTheoryOpen, setChoiceTheoryOpen] = useState(false);
+  const [roleGoalOpen, setRoleGoalOpen] = useState(false);
+  const [expansionOpen, setExpansionOpen] = useState(false);
 
   const patch = useCallback(
     (partial: Partial<GoalSetting>) => {
@@ -94,11 +110,11 @@ export function GoalSettingView() {
         <p className="mt-3 text-[11px] text-black/55">{GS_SAVE_HINT}</p>
       </header>
 
-      <div className="flex justify-start">
+      <div className="flex flex-col gap-3">
         <button
           type="button"
           onClick={() => setChoiceTheoryOpen(true)}
-          className="group flex max-w-md items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-zinc-300 hover:shadow-md"
+          className="group flex w-full max-w-md items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-zinc-300 hover:shadow-md"
         >
           <span
             className="flex h-11 w-11 shrink-0 flex-col gap-0.5 rounded-lg border border-zinc-200 bg-zinc-50 p-1.5"
@@ -139,32 +155,76 @@ export function GoalSettingView() {
             <OpenLayerArrow className="text-base text-zinc-400" />
           </span>
         </button>
+
+        <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={() => setRoleGoalOpen(true)}
+          className="group flex h-full min-w-0 items-center gap-3 rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 to-indigo-50 px-4 py-3 text-left shadow-sm transition-all hover:border-sky-300 hover:shadow-md"
+        >
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-sky-200 bg-white text-[10px] font-bold leading-tight text-sky-800"
+            aria-hidden
+          >
+            Step3
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold text-black">
+              {ROLE_GOAL_TITLE}
+            </span>
+            <span className="mt-0.5 block text-[11px] font-medium text-black/65">
+              {ROLE_GOAL_BUTTON_SUBTITLE}
+            </span>
+            <span className="mt-1 block text-[10px] font-semibold text-sky-700">
+              {ROLE_GOAL_STEP_LABEL}
+            </span>
+          </span>
+          <span
+            className="shrink-0 text-lg text-sky-400 transition-transform group-hover:translate-x-0.5"
+            aria-hidden
+          >
+            <OpenLayerArrow className="text-base text-sky-400" />
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setExpansionOpen(true)}
+          className="group flex h-full min-w-0 items-center gap-3 rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-4 py-3 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md"
+        >
+          <span
+            className="grid h-11 w-11 shrink-0 grid-cols-3 grid-rows-3 gap-px rounded-lg border border-violet-200 bg-violet-100 p-1"
+            aria-hidden
+          >
+            {Array.from({ length: 9 }, (_, i) => (
+              <span
+                key={i}
+                className={`rounded-[1px] ${i === 4 ? "bg-violet-500" : "bg-violet-300/70"}`}
+              />
+            ))}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold text-black">{TES_TITLE}</span>
+            <span className="mt-0.5 block text-[11px] font-medium text-black/65">
+              {TES_BUTTON_SUBTITLE}
+            </span>
+            <span className="mt-1 block text-[10px] font-semibold text-violet-700">
+              {TES_STEP_LABEL}
+            </span>
+          </span>
+          <span
+            className="shrink-0 text-lg text-violet-400 transition-transform group-hover:translate-x-0.5"
+            aria-hidden
+          >
+            <OpenLayerArrow className="text-base text-violet-400" />
+          </span>
+        </button>
+        </div>
       </div>
 
-      <section className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 rounded-lg border border-zinc-200 bg-zinc-50/60 p-3">
-          <span className="text-xs font-semibold text-black/80">
-            {GS_PHILOSOPHY_LABEL}
-          </span>
-          <textarea
-            value={data.lifePhilosophy}
-            onChange={(e) => patch({ lifePhilosophy: e.target.value })}
-            rows={2}
-            className={textareaClass}
-          />
-        </label>
-        <label className="flex flex-col gap-1 rounded-lg border border-zinc-200 bg-zinc-50/60 p-3">
-          <span className="text-xs font-semibold text-black/80">
-            {GS_VISION_LABEL}
-          </span>
-          <textarea
-            value={data.lifeVision}
-            onChange={(e) => patch({ lifeVision: e.target.value })}
-            rows={2}
-            className={textareaClass}
-          />
-        </label>
-      </section>
+      <GoalStructuringGuide />
+
+      <GoalSettingLinkedPhilosophyVision />
 
       <div className="overflow-x-auto rounded-lg border border-zinc-300">
         <table className="w-full min-w-[720px] border-collapse text-sm">
@@ -259,6 +319,26 @@ export function GoalSettingView() {
           </tbody>
         </table>
       </div>
+
+      {expansionOpen ? (
+        <Modal
+          title={TES_MODAL_TITLE}
+          onClose={() => setExpansionOpen(false)}
+          plan
+        >
+          <ThinkingExpansionSheetView />
+        </Modal>
+      ) : null}
+
+      {roleGoalOpen ? (
+        <Modal
+          title={ROLE_GOAL_MODAL_TITLE}
+          onClose={() => setRoleGoalOpen(false)}
+          plan
+        >
+          <RoleGoalWorksheetView />
+        </Modal>
+      ) : null}
 
       {choiceTheoryOpen ? (
         <Modal

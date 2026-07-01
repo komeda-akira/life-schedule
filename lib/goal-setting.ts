@@ -1,4 +1,14 @@
 import type { AppData } from "@/lib/types";
+import {
+  normalizeRoleGoalRows,
+  type RoleGoalRow,
+} from "@/lib/role-goal-worksheet";
+import {
+  normalizeThinkingExpansionSheet,
+  type ThinkingExpansionSheet,
+} from "@/lib/thinking-expansion-sheet";
+
+export type { RoleGoalRow, ThinkingExpansionSheet };
 
 export type GoalHorizon = {
   shortTerm: string;
@@ -22,6 +32,10 @@ export type GoalSetting = {
   lifePhilosophy: string;
   lifeVision: string;
   groups: GoalNeedGroup[];
+  /** Step3 役割ごとに目標を考える */
+  roleGoals: RoleGoalRow[];
+  /** Step3 思考拡張シート（マンダラチャート） */
+  thinkingExpansion: ThinkingExpansionSheet;
 };
 
 function h(
@@ -115,6 +129,8 @@ export const DEFAULT_GOAL_SETTING: GoalSetting = {
       ),
     ]),
   ],
+  roleGoals: normalizeRoleGoalRows(undefined),
+  thinkingExpansion: normalizeThinkingExpansionSheet(undefined),
 };
 
 function mergeStr(value: unknown, fallback: string): string {
@@ -226,7 +242,12 @@ function migrateLegacyDomains(
     target.goals = normalizeHorizon(row.goals, target.goals);
   }
 
-  return { ...base, groups };
+  return {
+    ...base,
+    groups,
+    roleGoals: base.roleGoals,
+    thinkingExpansion: base.thinkingExpansion,
+  };
 }
 
 function cloneDefault(): GoalSetting {
@@ -243,6 +264,8 @@ function cloneDefault(): GoalSetting {
         goals: { ...d.goals },
       })),
     })),
+    roleGoals: normalizeRoleGoalRows(base.roleGoals),
+    thinkingExpansion: normalizeThinkingExpansionSheet(base.thinkingExpansion),
   };
 }
 
@@ -260,6 +283,8 @@ function createEmptyGoalSetting(): GoalSetting {
         goals: { shortTerm: "", mediumTerm: "", longTerm: "" },
       })),
     })),
+    roleGoals: normalizeRoleGoalRows(undefined),
+    thinkingExpansion: normalizeThinkingExpansionSheet(undefined),
   };
 }
 
@@ -287,13 +312,20 @@ export function normalizeGoalSetting(
     lifePhilosophy: mergeStr(input.lifePhilosophy, base.lifePhilosophy),
     lifeVision: mergeStr(input.lifeVision, base.lifeVision),
     groups: normalizeGroups(input.groups, base.groups),
+    roleGoals: normalizeRoleGoalRows(input.roleGoals ?? base.roleGoals),
+    thinkingExpansion: normalizeThinkingExpansionSheet(
+      input.thinkingExpansion ?? base.thinkingExpansion,
+    ),
   };
 }
 
-export function goalSettingBarExcerpt(gs: GoalSetting): string {
-  const vision = gs.lifeVision.trim();
+export function goalSettingBarExcerpt(
+  gs: GoalSetting,
+  linked?: { philosophy?: string; vision?: string },
+): string {
+  const vision = (linked?.vision ?? gs.lifeVision).trim();
   if (vision) return vision;
-  const philosophy = gs.lifePhilosophy.trim();
+  const philosophy = (linked?.philosophy ?? gs.lifePhilosophy).trim();
   if (philosophy) return philosophy;
   for (const g of gs.groups) {
     for (const d of g.domains) {

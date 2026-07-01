@@ -1,6 +1,11 @@
-/** 達成する計画の立て方 — 中長期行動計画表モーダル用 */
+/** 達成する計画の立て方 — 中長期行動計画表・プライムシート用 */
+
+export const PLAN_GUIDE_STEP_LABEL = "Step4 目標を達成する計画の立て方";
 
 export const PLAN_GUIDE_TITLE = "達成する計画の立て方";
+
+export const PLAN_GUIDE_PRIME_SHEET_INTRO =
+  "目標達成のプライムタイムで何をすべきか考え、プライムタイムシートに落とし込みます。下の入力欄①〜⑥は、この手順に沿って記入してください。";
 
 export const PLAN_GUIDE_BUTTON_SUBTITLE =
   "パレートの法則・プライムタイム・書き方";
@@ -33,6 +38,8 @@ export const PLAN_GUIDE_SHEET_INTRO =
 export const PLAN_GUIDE_SHEET_STEPS_TITLE =
   "プライムタイムシートの書き方";
 
+export const PLAN_GUIDE_TOGGLE_SUMMARY = "書き方の説明を見る";
+
 export const PLAN_GUIDE_SHEET_STEPS = [
   "人生ビジョン・目標の構造化シートに書いた「仕事・職業分野」の目標の中から、特に実現したい目標を1つ選ぶ。",
   "シートの項目に従い「あるべき姿」「目標達成の指標（いつまでに何を）」「現状」「あるべき姿と現状のGAP」を書き出す。",
@@ -58,19 +65,22 @@ export const PLAN_GUIDE_EXAMPLE_FIELDS: PlanGuideExampleField[] = [
     label: "② 目標達成の指標",
     value: "【20○○年9月までに顧客満足度調査で95点を達成する】",
   },
-  { label: "あるべき姿", value: "顧客満足度97点" },
-  { label: "現状とGAP", value: "現状70点、GAP27点" },
+  { label: "③ 現在の状態", value: "満足度調査67点" },
+  { label: "④ GAP", value: "満足度調査28点のGAP" },
 ];
 
 export const PLAN_GUIDE_EXAMPLE_ACTIONS = [
-  "顧客満足度の向上",
-  "顧客満足度に連動した人事制度に変更",
-  "フィードバック制度の導入",
-  "採用基準の見直し",
+  "生産性向上の仕組みづくり",
+  "顧客満足度に連動した人事制度へ変更",
+  "良い人材の採用（ホスピタリティ、フットワーク）",
+  "採用戦略の見直し",
   "新商品・サービスの開発",
   "業界トップ企業の調査",
-  "既存サービスラインのブラッシュアップ",
+  "既存サービスラインの見直し",
 ] as const;
+
+export const PLAN_GUIDE_SCHEDULE_NOTE =
+  "第2象限の項目を裏面のスケジュールに書き込みましょう！";
 
 export type PlanGuideQuadrant = {
   id: "q1" | "q2" | "q3" | "q4";
@@ -87,7 +97,7 @@ export const PLAN_GUIDE_MATRIX_QUADRANTS: PlanGuideQuadrant[] = [
     urgency: "high",
     importance: "high",
     label: "第1象限",
-    items: ["クレーム対応", "顧客の緊急ニーズ"],
+    items: ["満足度調査の結果分析", "既存サービスラインの見直し"],
   },
   {
     id: "q2",
@@ -95,9 +105,9 @@ export const PLAN_GUIDE_MATRIX_QUADRANTS: PlanGuideQuadrant[] = [
     importance: "high",
     label: "第2象限（プライムタイム）",
     items: [
-      "業界トップ企業の調査",
-      "新商品・サービスの開発",
-      "顧客満足度に連動した人事制度に変更",
+      "10年計画書の策定",
+      "顧客満足度に連動した人事制度へ変更",
+      "採用方針見直し",
     ],
     highlight: true,
   },
@@ -106,7 +116,7 @@ export const PLAN_GUIDE_MATRIX_QUADRANTS: PlanGuideQuadrant[] = [
     urgency: "high",
     importance: "low",
     label: "第3象限",
-    items: ["電話", "会議"],
+    items: ["電話", "定例ミーティング"],
   },
   {
     id: "q4",

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>思考拡張シート — スクリーンショット用</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      background: #fafafa;
+      color: #111;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 16px; }
+    .step { font-size: 12px; font-weight: 700; color: #6d28d9; }
+    .title { margin: 4px 0 0; font-size: 18px; font-weight: 700; }
+    .intro { margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: #333; }
+    .grid-shell {
+      display: inline-block;
+      border: 2px solid #404040;
+      border-radius: 8px;
+      padding: 2px;
+      background: #404040;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(9, 72px);
+      grid-template-rows: repeat(9, 58px);
+      gap: 1px;
+      background: #a3a3a3;
+    }
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      font-size: 9px;
+      line-height: 1.25;
+      text-align: center;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #fff;
+      border-top: 1px solid #a3a3a3;
+      border-left: 1px solid #a3a3a3;
+    }
+    .cell.major-t { border-top-width: 2px; border-top-color: #525252; }
+    .cell.major-l { border-left-width: 2px; border-left-color: #525252; }
+    .cell.vision { background: #ede9fe; font-weight: 600; }
+    .cell.anchor { background: #e4e4e7; font-weight: 500; }
+    .caption {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="step">Step3 明確な「目標」を設定する</div>
+      <h1 class="title">目標設定のための思考拡張シート</h1>
+      <p class="intro">記入例 — 中央に人生ビジョン、8テーマが外側ブロックへ広がる</p>
+    </div>
+    <div class="grid-shell">
+      <div class="grid" id="grid"></div>
+    </div>
+    <p class="caption">life-schedule 思考拡張シート（9×9 マンダラ）</p>
+  </div>
+  <script>
+    const grid = Array.from({ length: 9 }, () => Array(9).fill(""));
+    grid[4][4] = "会社＆業界トップ\nリーダーとして縁ある人を幸せにする";
+    const themes = [
+      "健全な財務体質", "100歳まで健康", "信頼し合える友・仲間", "温かい家庭",
+      "能力開発", "趣味・教養", "蓄財・経済", "地域貢献",
+    ];
+    const themeCoords = [[3,3],[3,4],[3,5],[4,3],[4,5],[5,3],[5,4],[5,5]];
+    const outerCenters = [[1,1],[1,4],[1,7],[4,1],[4,7],[7,1],[7,4],[7,7]];
+    themes.forEach((t, i) => {
+      const [tr, tc] = themeCoords[i];
+      const [or, oc] = outerCenters[i];
+      grid[tr][tc] = t;
+      grid[or][oc] = t;
+    });
+    [[0,4,"健康の知識"],[0,5,"身体年齢30代"],[1,3,"筋力・スタミナ"],[1,5,"80歳で20本の歯"],
+     [2,3,"一流の見た目"],[2,4,"適正体重"],[2,5,"質の高い睡眠"]].forEach(([r,c,v]) => grid[r][c]=v);
+
+    function role(r, c) {
+      if (r === 4 && c === 4) return "vision";
+      if (themeCoords.some(([tr, tc]) => tr === r && tc === c)) return "anchor";
+      if (outerCenters.some(([or, oc]) => or === r && oc === c)) return "anchor";
+      return "detail";
+    }
+
+    const el = document.getElementById("grid");
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const cell = document.createElement("div");
+        cell.className = "cell " + role(r, c);
+        if (r % 3 === 0) cell.classList.add("major-t");
+        if (c % 3 === 0) cell.classList.add("major-l");
+        cell.textContent = grid[r][c];
+        el.appendChild(cell);
+      }
+    }
+  </script>
+</body>
+</html>

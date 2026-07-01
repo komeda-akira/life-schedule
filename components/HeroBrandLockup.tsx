@@ -1,4 +1,5 @@
 import { SuccessStepsButton } from "@/components/SuccessStepsButton";
+import { YearCalendarSummaryButton } from "@/components/YearCalendarSummaryButton";
 import {
   heroBrandColors,
   heroBrandEnglishClass,
@@ -29,6 +30,7 @@ export function HeroBrandLockup() {
         </h1>
 
         <SuccessStepsButton />
+        <YearCalendarSummaryButton />
       </div>
     </div>
   );

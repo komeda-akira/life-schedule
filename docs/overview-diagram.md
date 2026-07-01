@@ -141,9 +141,12 @@ flowchart LR
 
 ![北極星4ボタン＋スコープコメント](life-schedule-screenshot-4btn-scope-comment.png)
 
+![思考拡張シート（記入例）](life-schedule-screenshot-thinking-expansion-sheet.png)
+
 - `C:\Users\komeda\src\life-schedule\docs\life-schedule-screenshot-4column-ui.png`
 - `C:\Users\komeda\src\life-schedule\docs\life-schedule-screenshot-north-star-3btn-modal.png`
 - `C:\Users\komeda\src\life-schedule\docs\life-schedule-screenshot-4btn-scope-comment.png`
+- `C:\Users\komeda\src\life-schedule\docs\life-schedule-screenshot-thinking-expansion-sheet.png`
 
 ---
 

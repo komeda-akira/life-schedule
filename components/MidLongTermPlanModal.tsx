@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/Modal";
+import { MidLongTermPlanGuide } from "@/components/MidLongTermPlanGuide";
 import { OpenLayerArrow } from "@/components/OpenLayerArrow";
 import { PlanAchievementGuideView } from "@/components/PlanAchievementGuideView";
 import { NorthStarModal } from "@/components/NorthStarModal";
@@ -458,6 +459,8 @@ export function MidLongTermPlanModal({
             </span>
           </div>
         </header>
+
+        <MidLongTermPlanGuide />
 
         <div className="flex justify-start">
           <button

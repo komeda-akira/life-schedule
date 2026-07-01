@@ -10,7 +10,10 @@ import {
   type RefObject,
 } from "react";
 import { useAppData } from "@/components/AppDataProvider";
-import { useRegisterCalendarJump } from "@/components/CalendarNavigation";
+import {
+  useCalendarNavigation,
+  useRegisterCalendarJump,
+} from "@/components/CalendarNavigation";
 import { parseInstanceEventId } from "@/lib/recurrence";
 import { EventModal } from "@/components/EventModal";
 import { MidLongTermPlanModal } from "@/components/MidLongTermPlanModal";
@@ -38,6 +41,7 @@ import {
 import {
   addDays,
   addYears,
+  CALENDAR_INITIAL_CURSOR,
   excerptComment,
   formatDayHeader,
   formatMonthHeader,
@@ -97,7 +101,7 @@ import type { CalendarEvent, EventKind } from "@/lib/types";
 const PANE_DATE_NAV_CLASS =
   "min-w-0 flex-1 text-center text-sm font-semibold underline decoration-zinc-800 underline-offset-2 sm:text-base";
 
-const INITIAL_CURSOR = startOfDay(new Date(2026, 4, 21));
+const INITIAL_CURSOR = CALENDAR_INITIAL_CURSOR;
 
 function NavChevron({
   dir,
@@ -553,6 +557,7 @@ export function CalendarPanes() {
     getMonthlyWorksheet,
     getWeeklyWorksheet,
   } = useAppData();
+  const { setCursorDate } = useCalendarNavigation();
   const [cursor, setCursor] = useState(INITIAL_CURSOR);
   const [mobileTab, setMobileTab] = useState(3);
   const [scopeModal, setScopeModal] = useState<ScopeModalState>(null);
@@ -578,6 +583,10 @@ export function CalendarPanes() {
   }, []);
 
   useRegisterCalendarJump(jumpToDateKey);
+
+  useEffect(() => {
+    setCursorDate(cursor);
+  }, [cursor, setCursorDate]);
 
   const mComment = getScopeComment(monthKey(cursor));
   const wComment = getScopeComment(weekKey(cursor));

@@ -25,3 +25,9 @@ export const heroSuccessStepsButtonClass =
   "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-teal-200/90 bg-white/95 px-2.5 py-1.5 text-xs font-semibold text-teal-800 shadow-sm transition hover:border-teal-300 hover:bg-teal-50/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500 sm:px-3 sm:text-sm";
 
 export const heroSuccessStepsArrowClass = "text-teal-600/70";
+
+/** 年間カレンダー要約 — スカイ系で成功ステップと並べる */
+export const heroYearSummaryButtonClass =
+  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-sky-200/90 bg-white/95 px-2.5 py-1.5 text-xs font-semibold text-sky-800 shadow-sm transition hover:border-sky-300 hover:bg-sky-50/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 sm:px-3 sm:text-sm";
+
+export const heroYearSummaryArrowClass = "text-sky-600/70";

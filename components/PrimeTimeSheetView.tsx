@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { PrimeTimeSheetGuide } from "@/components/PrimeTimeSheetGuide";
 import { useAppData } from "@/components/AppDataProvider";
 import type { PrimeTimeSheetContent, PrimeTimeSheetPage } from "@/lib/prime-time-sheet";
 import {
@@ -362,6 +363,8 @@ export function PrimeTimeSheetView() {
   return (
     <div className="space-y-4 text-black">
       <p className="text-[10px] text-black/50">{PTS_SAVE_HINT}</p>
+
+      <PrimeTimeSheetGuide />
 
       <div className="space-y-3 border-b border-zinc-200 pb-3">
         <div className="flex flex-wrap items-center justify-between gap-2">

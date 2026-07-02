@@ -23,3 +23,12 @@ export const GS_COL_LONG = "\u9577\u671f\u76ee\u6a19\uff08\uff15\u5e74\u4ee5\u4e
 export const GS_BAR_LABEL_STRUCTURING = "\u69cb\u9020\u5316";
 export const GS_BAR_LABEL_ROLES = "\u5f79\u5272";
 export const GS_BAR_LABEL_EXPANSION = "\u601d\u8003\u62e1\u5f35";
+
+export const GS_DECLARATION_HEADING = "目標宣言";
+export const GS_DECLARATION_HINT =
+  "何歳までに何を実現するかを宣言します。入力内容は北極星バー「目標」の赤文字に連動表示されます。";
+export const GS_DECLARATION_AGE_LABEL = "何歳までに";
+export const GS_DECLARATION_AGE_SUFFIX = "歳までに";
+export const GS_DECLARATION_ACHIEVEMENT_LABEL = "実現する内容";
+export const GS_DECLARATION_ACHIEVEMENT_PLACEHOLDER =
+  "例：家族と社会に貢献できる自分になる";

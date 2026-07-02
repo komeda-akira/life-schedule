@@ -37,11 +37,18 @@ export type GoalNeedGroup = {
   domains: GoalDomainRow[];
 };
 
+export type GoalDeclaration = {
+  targetAge: string;
+  achievement: string;
+};
+
 export type GoalSetting = {
   ownerName: string;
   createdDate: string;
   lifePhilosophy: string;
   lifeVision: string;
+  /** 目標構造化シート — 期限と実現内容の宣言（北極星バー「目標」と連動） */
+  goalDeclaration: GoalDeclaration;
   groups: GoalNeedGroup[];
   /** Step3 役割ごとに目標を考える */
   roleGoals: RoleGoalRow[];
@@ -140,12 +147,26 @@ export const DEFAULT_GOAL_SETTING: GoalSetting = {
       ),
     ]),
   ],
+  goalDeclaration: { targetAge: "", achievement: "" },
   roleGoals: normalizeRoleGoalRows(undefined),
   thinkingExpansion: normalizeThinkingExpansionSheet(undefined),
 };
 
 function mergeStr(value: unknown, fallback: string): string {
   return typeof value === "string" ? value : fallback;
+}
+
+export function emptyGoalDeclaration(): GoalDeclaration {
+  return { targetAge: "", achievement: "" };
+}
+
+function normalizeGoalDeclaration(input: unknown): GoalDeclaration {
+  if (!input || typeof input !== "object") return emptyGoalDeclaration();
+  const declaration = input as Partial<GoalDeclaration>;
+  return {
+    targetAge: mergeStr(declaration.targetAge, ""),
+    achievement: mergeStr(declaration.achievement, ""),
+  };
 }
 
 function emptyHorizon(): GoalHorizon {
@@ -256,6 +277,7 @@ function migrateLegacyDomains(
   return {
     ...base,
     groups,
+    goalDeclaration: base.goalDeclaration,
     roleGoals: base.roleGoals,
     thinkingExpansion: base.thinkingExpansion,
   };
@@ -268,6 +290,7 @@ function cloneDefault(): GoalSetting {
     createdDate: base.createdDate,
     lifePhilosophy: base.lifePhilosophy,
     lifeVision: base.lifeVision,
+    goalDeclaration: { ...base.goalDeclaration },
     groups: base.groups.map((g) => ({
       needLabel: g.needLabel,
       domains: g.domains.map((d) => ({
@@ -287,6 +310,7 @@ function createEmptyGoalSetting(): GoalSetting {
     createdDate: "",
     lifePhilosophy: "",
     lifeVision: "",
+    goalDeclaration: emptyGoalDeclaration(),
     groups: base.groups.map((g) => ({
       needLabel: g.needLabel,
       domains: g.domains.map((d) => ({
@@ -322,6 +346,9 @@ export function normalizeGoalSetting(
     createdDate: mergeStr(input.createdDate, base.createdDate),
     lifePhilosophy: mergeStr(input.lifePhilosophy, base.lifePhilosophy),
     lifeVision: mergeStr(input.lifeVision, base.lifeVision),
+    goalDeclaration: normalizeGoalDeclaration(
+      input.goalDeclaration ?? base.goalDeclaration,
+    ),
     groups: normalizeGroups(input.groups, base.groups),
     roleGoals: normalizeRoleGoalRows(input.roleGoals ?? base.roleGoals),
     thinkingExpansion: normalizeThinkingExpansionSheet(
@@ -330,10 +357,28 @@ export function normalizeGoalSetting(
   };
 }
 
+export function formatGoalDeclarationText(
+  declaration: GoalDeclaration,
+): string {
+  const age = declaration.targetAge.trim();
+  const achievement = declaration.achievement.trim();
+  if (!age && !achievement) return "";
+  if (age && achievement) return `${age}歳までに${achievement}`;
+  if (achievement) return achievement;
+  return `${age}歳までに実現する`;
+}
+
+export function goalSettingBarDeclaration(gs: GoalSetting): string {
+  return excerptComment(formatGoalDeclarationText(gs.goalDeclaration), 48);
+}
+
 export function goalSettingBarExcerpt(gs: GoalSetting): string {
-  return goalSettingBarSummaries(gs)
+  const declaration = goalSettingBarDeclaration(gs);
+  const summaries = goalSettingBarSummaries(gs)
     .map(({ label, text }) => `${label}：${text}`)
     .join("\n");
+  if (declaration && summaries) return `${declaration}\n${summaries}`;
+  return declaration || summaries;
 }
 
 export type GoalSheetBarSummary = {

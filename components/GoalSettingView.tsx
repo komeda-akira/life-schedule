@@ -16,7 +16,12 @@ import {
   CHOICE_THEORY_TITLE,
   getChoiceTheoryNeedStyle,
 } from "@/lib/choice-theory-content";
-import type { GoalDomainRow, GoalNeedGroup, GoalSetting } from "@/lib/goal-setting";
+import {
+  formatGoalDeclarationText,
+  type GoalDomainRow,
+  type GoalNeedGroup,
+  type GoalSetting,
+} from "@/lib/goal-setting";
 import {
   GS_COL_DOMAIN,
   GS_COL_LONG,
@@ -24,6 +29,12 @@ import {
   GS_COL_NEED,
   GS_COL_SHORT,
   GS_CREATED_LABEL,
+  GS_DECLARATION_ACHIEVEMENT_LABEL,
+  GS_DECLARATION_ACHIEVEMENT_PLACEHOLDER,
+  GS_DECLARATION_AGE_LABEL,
+  GS_DECLARATION_AGE_SUFFIX,
+  GS_DECLARATION_HEADING,
+  GS_DECLARATION_HINT,
   GS_OWNER_PREFIX,
   GS_OWNER_SUFFIX,
   GS_SAVE_HINT,
@@ -46,6 +57,11 @@ const inputClass =
   "w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm text-black placeholder:text-black/35 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400";
 
 const textareaClass = `${inputClass} min-h-[4.5rem] resize-y leading-relaxed`;
+
+const declarationInputClass =
+  "rounded-md border border-red-300 bg-white px-2.5 py-1.5 text-sm text-red-800 placeholder:text-red-300/60 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-400";
+
+const declarationTextareaClass = `${declarationInputClass} min-h-[4rem] w-full resize-y leading-relaxed font-semibold`;
 
 export function GoalSettingView() {
   const { getGoalSetting, updateGoalSetting } = useAppData();
@@ -223,6 +239,66 @@ export function GoalSettingView() {
       </div>
 
       <GoalStructuringGuide />
+
+      <section className="rounded-xl border-2 border-red-200 bg-gradient-to-br from-red-50/90 to-white p-4 shadow-sm">
+        <h4 className="text-base font-bold text-red-950">{GS_DECLARATION_HEADING}</h4>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-black/65">
+          {GS_DECLARATION_HINT}
+        </p>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
+          <label className="flex shrink-0 flex-col gap-1">
+            <span className="text-xs font-semibold text-black/75">
+              {GS_DECLARATION_AGE_LABEL}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={data.goalDeclaration.targetAge}
+                onChange={(e) =>
+                  patch({
+                    goalDeclaration: {
+                      ...data.goalDeclaration,
+                      targetAge: e.target.value,
+                    },
+                  })
+                }
+                className={`${declarationInputClass} w-20 text-center text-lg font-bold`}
+                placeholder="54"
+                aria-label={GS_DECLARATION_AGE_LABEL}
+              />
+              <span className="text-sm font-semibold text-red-900/80">
+                {GS_DECLARATION_AGE_SUFFIX}
+              </span>
+            </div>
+          </label>
+          <label className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-xs font-semibold text-black/75">
+              {GS_DECLARATION_ACHIEVEMENT_LABEL}
+            </span>
+            <textarea
+              value={data.goalDeclaration.achievement}
+              onChange={(e) =>
+                patch({
+                  goalDeclaration: {
+                    ...data.goalDeclaration,
+                    achievement: e.target.value,
+                  },
+                })
+              }
+              rows={2}
+              className={declarationTextareaClass}
+              placeholder={GS_DECLARATION_ACHIEVEMENT_PLACEHOLDER}
+              aria-label={GS_DECLARATION_ACHIEVEMENT_LABEL}
+            />
+          </label>
+        </div>
+        {formatGoalDeclarationText(data.goalDeclaration) ? (
+          <p className="mt-3 rounded-md border border-red-200/80 bg-white/80 px-3 py-2 text-sm font-bold leading-relaxed text-red-700">
+            {formatGoalDeclarationText(data.goalDeclaration)}
+          </p>
+        ) : null}
+      </section>
 
       <GoalSettingLinkedPhilosophyVision />
 

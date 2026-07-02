@@ -4,7 +4,6 @@ import { useCallback } from "react";
 import { useAppData } from "@/components/AppDataProvider";
 import {
   ROLE_FREQUENCY_PRESETS,
-  ROLE_GOAL_ADD_PHASE,
   ROLE_GOAL_ADD_ROW,
   ROLE_GOAL_COL_DESCRIPTION,
   ROLE_GOAL_COL_KEY_PEOPLE,
@@ -18,7 +17,6 @@ import {
   ROLE_GOAL_INTRO,
   ROLE_GOAL_MODAL_TITLE,
   ROLE_GOAL_PHASE_DAYS_PER_YEAR_LABEL,
-  ROLE_GOAL_PHASE_LABEL,
   ROLE_GOAL_PLAN_EMPTY,
   ROLE_GOAL_PLAN_EQUIVALENT,
   ROLE_GOAL_PLAN_MONTHLY,
@@ -27,7 +25,6 @@ import {
   ROLE_GOAL_PLAN_ROLE_HOURS,
   ROLE_GOAL_PLAN_SUMMARY_TITLE,
   ROLE_GOAL_PLAN_TIMELINE,
-  ROLE_GOAL_REMOVE_PHASE,
   ROLE_GOAL_ROW_PREFIX,
   ROLE_GOAL_STEP_LABEL,
   ROLE_GOAL_THINKING_BODY,
@@ -197,17 +194,11 @@ function CompactPlanSummary({ stats }: { stats: RoleTimeStats }) {
 }
 
 function PhaseEditor({
-  phaseIndex,
   phase,
-  canRemove,
   onChange,
-  onRemove,
 }: {
-  phaseIndex: number;
   phase: RoleGoalPhase;
-  canRemove: boolean;
   onChange: (partial: Partial<RoleGoalPhase>) => void;
-  onRemove: () => void;
 }) {
   const stats = computeRoleTimeStats([phase]);
   const phaseResult = stats.phases[0];
@@ -219,22 +210,6 @@ function PhaseEditor({
 
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-2.5 shadow-sm">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-[10px] font-bold text-black/55">
-          {ROLE_GOAL_PHASE_LABEL}
-          {phaseIndex + 1}
-        </p>
-        {canRemove ? (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="text-[10px] font-semibold text-red-600/80 hover:text-red-700"
-          >
-            {ROLE_GOAL_REMOVE_PHASE}
-          </button>
-        ) : null}
-      </div>
-
       <div className="flex flex-col gap-2.5">
         <input
           type="text"
@@ -350,42 +325,16 @@ function RoleTimePlanner({
   phases: RoleGoalPhase[];
   onChangePhases: (phases: RoleGoalPhase[]) => void;
 }) {
-  const stats = computeRoleTimeStats(phases);
+  const phase = phases[0] ?? createEmptyRoleGoalPhase();
+  const stats = computeRoleTimeStats([phase]);
 
-  const updatePhase = (index: number, partial: Partial<RoleGoalPhase>) => {
-    onChangePhases(
-      phases.map((phase, i) => (i === index ? { ...phase, ...partial } : phase)),
-    );
-  };
-
-  const addPhase = () => {
-    onChangePhases([...phases, createEmptyRoleGoalPhase()]);
-  };
-
-  const removePhase = (index: number) => {
-    if (phases.length <= 1) return;
-    onChangePhases(phases.filter((_, i) => i !== index));
+  const updatePhase = (partial: Partial<RoleGoalPhase>) => {
+    onChangePhases([{ ...phase, ...partial }]);
   };
 
   return (
     <div className="flex flex-col gap-2.5">
-      {phases.map((phase, phaseIndex) => (
-        <PhaseEditor
-          key={phaseIndex}
-          phaseIndex={phaseIndex}
-          phase={phase}
-          canRemove={phases.length > 1}
-          onChange={(partial) => updatePhase(phaseIndex, partial)}
-          onRemove={() => removePhase(phaseIndex)}
-        />
-      ))}
-      <button
-        type="button"
-        onClick={addPhase}
-        className="rounded-lg border border-dashed border-zinc-300 px-3 py-2 text-[11px] font-semibold text-black/60 transition-colors hover:border-sky-400 hover:bg-sky-50/50 hover:text-sky-800"
-      >
-        + {ROLE_GOAL_ADD_PHASE}
-      </button>
+      <PhaseEditor phase={phase} onChange={updatePhase} />
       <PlanSummary stats={stats} />
     </div>
   );

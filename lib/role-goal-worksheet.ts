@@ -19,7 +19,7 @@ export type RoleGoalRow = {
 };
 
 export const DEFAULT_ROLE_GOAL_ROW_COUNT = 3;
-export const DEFAULT_PHASE_COUNT = 2;
+export const DEFAULT_PHASE_COUNT = 1;
 
 export function createEmptyRoleGoalPhase(): RoleGoalPhase {
   return {
@@ -124,7 +124,7 @@ function normalizePhases(input: unknown): RoleGoalPhase[] {
   if (!Array.isArray(input) || input.length === 0) {
     return Array.from({ length: DEFAULT_PHASE_COUNT }, createEmptyRoleGoalPhase);
   }
-  const phases = input.map(normalizeRoleGoalPhase);
+  const phases = input.map(normalizeRoleGoalPhase).slice(0, DEFAULT_PHASE_COUNT);
   while (phases.length < DEFAULT_PHASE_COUNT) {
     phases.push(createEmptyRoleGoalPhase());
   }
@@ -163,7 +163,6 @@ function migrateLegacyRow(row: LegacyRoleGoalRow): RoleGoalRow {
           frequencyPreset: inferFrequencyPreset(days),
           daysPerYear: daysPerYear || "365",
         },
-        createEmptyRoleGoalPhase(),
       ],
       description: mergeField(row.description),
     };

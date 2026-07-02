@@ -22,7 +22,7 @@ export const ROLE_GOAL_TIME_GUIDE_TITLE =
 
 export const ROLE_GOAL_TIME_GUIDE_ITEMS = [
   "その役割が終わる日から逆算して、あと何年その役割を果たせるか？",
-  "期間ごとに、どのくらいの頻度で関わるか（ほぼ毎日・週末中心・年数回など）",
+  "どのくらいの頻度で関わるか（ほぼ毎日・週末中心・年数回など）",
   "関わる日は、1日あたり何時間をこの役割に使うか？",
 ] as const;
 
@@ -65,13 +65,6 @@ export const ROLE_GOAL_EXAMPLE = {
       hoursPerDay: "8",
       frequencyPreset: "daily",
       daysPerYear: "365",
-    },
-    {
-      label: "大学進学後",
-      years: "40",
-      hoursPerDay: "8",
-      frequencyPreset: "occasional",
-      daysPerYear: "9",
     },
   ],
   description:

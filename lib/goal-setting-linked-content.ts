@@ -59,6 +59,132 @@ export function linkedPhilosophyCenter(
   };
 }
 
+const VISION_CENTER_LINE_MAX = 22;
+
+export type LinkedVisionCenterSummary = {
+  line1: string;
+  line2: string;
+};
+
+function stripParenthetical(text: string): string {
+  return text.replace(/[（(][^）)]*[）)]/g, "").trim();
+}
+
+function fitVisionCenterLine(text: string, max = VISION_CENTER_LINE_MAX): string {
+  const t = text.trim();
+  if (!t) return "";
+  if (t.length <= max) return t;
+
+  for (const punct of ["、", "。", "・", " "] as const) {
+    const idx = t.lastIndexOf(punct, max);
+    if (idx > max * 0.45) {
+      return t.slice(0, idx + (punct === " " ? 0 : 1)).trim();
+    }
+  }
+
+  return `${t.slice(0, max)}…`;
+}
+
+function splitVisionCenterText(text: string): LinkedVisionCenterSummary {
+  const parts = text
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (parts.length >= 2) {
+    return {
+      line1: fitVisionCenterLine(parts[0]),
+      line2: fitVisionCenterLine(parts[1]),
+    };
+  }
+
+  const single = parts[0] ?? text.trim();
+  if (!single) return { line1: "", line2: "" };
+  if (single.length <= VISION_CENTER_LINE_MAX) {
+    return { line1: single, line2: "" };
+  }
+
+  for (const punct of ["、", "。"] as const) {
+    const idx = single.indexOf(punct);
+    if (idx > 0 && idx < single.length - 1) {
+      return {
+        line1: fitVisionCenterLine(single.slice(0, idx + 1)),
+        line2: fitVisionCenterLine(single.slice(idx + 1)),
+      };
+    }
+  }
+
+  const half = Math.min(VISION_CENTER_LINE_MAX, Math.ceil(single.length / 2));
+  return {
+    line1: fitVisionCenterLine(single.slice(0, half)),
+    line2: fitVisionCenterLine(single.slice(half)),
+  };
+}
+
+function withMottoOrService(
+  line1: string,
+  motto: string,
+  service: string,
+): LinkedVisionCenterSummary {
+  if (!line1) return { line1: "", line2: "" };
+  if (motto) return { line1, line2: fitVisionCenterLine(motto) };
+  if (service) return { line1, line2: fitVisionCenterLine(service) };
+  return { line1, line2: "" };
+}
+
+/** 思考拡張シート中央マス — Step2 人生ビジョンの2行要約 */
+export function linkedVisionCenterSummary(
+  purposeVision: PurposeVision,
+  fallback = "",
+): LinkedVisionCenterSummary {
+  const main = purposeVision.visionMain.trim();
+  const motto = purposeVision.visionMotto.trim();
+  const service = purposeVision.lifePurposeService.trim();
+  const leadParts = purposeVision.lifePurposeLead
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const fallbackVision = fallback.trim();
+
+  if (main) {
+    const stripped = stripParenthetical(main);
+    const lines = splitVisionCenterText(stripped);
+    if (lines.line1 && !lines.line2) {
+      return withMottoOrService(lines.line1, motto, service);
+    }
+    return lines;
+  }
+
+  if (leadParts.length >= 2) {
+    return {
+      line1: fitVisionCenterLine(leadParts[0]),
+      line2: fitVisionCenterLine(leadParts[1]),
+    };
+  }
+
+  if (leadParts[0]) {
+    return withMottoOrService(fitVisionCenterLine(leadParts[0]), motto, service);
+  }
+
+  if (service) {
+    const lines = splitVisionCenterText(service);
+    if (lines.line1 && !lines.line2) {
+      return withMottoOrService(lines.line1, motto, "");
+    }
+    return lines;
+  }
+
+  if (motto) {
+    return { line1: fitVisionCenterLine(motto), line2: "" };
+  }
+
+  if (fallbackVision) {
+    return splitVisionCenterText(fallbackVision);
+  }
+
+  return { line1: "", line2: "" };
+}
+
 /** 思考拡張シート左上 — Step1 キーワード一覧 */
 export function linkedPhilosophyKeywords(philosophy: LifePhilosophy): string {
   return philosophy.keywords

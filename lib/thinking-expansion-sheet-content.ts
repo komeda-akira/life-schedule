@@ -5,17 +5,17 @@ export const TES_TITLE = "思考拡張シート";
 export const TES_STEP_LABEL = "Step3 明確な「目標」を設定する";
 
 export const TES_BUTTON_SUBTITLE =
-  "人生理念を中心に8つのテーマを広げる";
+  "人生ビジョンを中心に8つのテーマを広げる";
 
 export const TES_MODAL_TITLE = "目標設定のための思考拡張シート";
 
 export const TES_INTRO =
-  "中央に Step1 で定めた人生理念（一言）を置き、周囲8マスにテーマを書きます。各テーマは外側の3×3ブロックの中心に連動し、さらに8方向へ具体化していきます。";
+  "中央に Step2 で描いた人生ビジョンの要約を置き、周囲8マスにテーマを書きます。各テーマは外側の3×3ブロックの中心に連動し、さらに8方向へ具体化していきます。";
 
-export const TES_CENTER_LABEL = "人生理念（中央）";
+export const TES_CENTER_LABEL = "人生ビジョン（中央）";
 
 export const TES_CENTER_EMPTY =
-  "Step1「人生理念」で一言を入力すると、中央マスに自動表示されます。";
+  "Step2「目的・ビジョン」で人生ビジョンを入力すると、中央マスに要約が自動表示されます。";
 
 export const TES_THEME_HINT_TITLE = "テーマの例（中央ブロックの周囲8マス）";
 
@@ -33,7 +33,7 @@ export const TES_DEFAULT_THEMES = [
 export const TES_SYNC_HINT =
   "中央3×3のテーマと、外側各ブロックの中心は自動で同期されます。";
 
-export const TES_LEGEND_PHILOSOPHY = "人生理念（中央）";
+export const TES_LEGEND_PHILOSOPHY = "人生ビジョン（中央）";
 export const TES_LEGEND_THEME = "テーマ（8分野）";
 export const TES_LEGEND_DETAIL = "具体化（自由記入）";
 
@@ -41,12 +41,12 @@ export const TES_VISION_LINK_LABEL = "Step2 で入力した人生ビジョン";
 export const TES_VISION_LINK_EMPTY =
   "Step2「目的・ビジョン」で入力すると、ここに表示されます。";
 
-export const TES_PHILOSOPHY_LINK_LABEL = "Step1 で選んだキーワード";
+export const TES_PHILOSOPHY_LINK_LABEL = "Step1 で入力した人生理念";
 export const TES_PHILOSOPHY_LINK_EMPTY =
-  "Step1「人生理念」でキーワードを入力すると、ここに表示されます。";
+  "Step1「人生理念」でキーワードや一言を入力すると、ここに表示されます。";
 
 export const TES_LINKED_HEADER_HINT =
-  "中央マスは Step1 の「一言」と補足（北極星バーの理念と同じ）が自動表示されます。";
+  "上段は Step1 の人生理念と Step2 の人生ビジョン全文。中央マスにはビジョンの要約（2行以内）が自動表示されます。";
 
 export const TES_INPUT_HINT =
   "各マスをタップして入力。テーマは中央と外側ブロックの中心で自動同期します。";

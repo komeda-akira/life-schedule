@@ -3,8 +3,8 @@
 import { useCallback } from "react";
 import { useAppData } from "@/components/AppDataProvider";
 import {
-  linkedPhilosophyCenter,
-  linkedPhilosophyKeywords,
+  linkedPhilosophyText,
+  linkedVisionCenterSummary,
   linkedVisionText,
 } from "@/lib/goal-setting-linked-content";
 import {
@@ -95,14 +95,14 @@ function cellAriaLabel(row: number, col: number): string {
   return `${row + 1}行${col + 1}列`;
 }
 
-function CenterPhilosophyCell({
-  word,
-  note,
+function CenterVisionCell({
+  line1,
+  line2,
 }: {
-  word: string;
-  note: string;
+  line1: string;
+  line2: string;
 }) {
-  if (!word && !note) {
+  if (!line1 && !line2) {
     return (
       <div className="flex min-h-[5rem] items-center justify-center px-2 py-2 text-center text-[11px] leading-relaxed text-zinc-400 sm:min-h-[5.5rem] sm:text-xs">
         {TES_CENTER_EMPTY}
@@ -110,14 +110,25 @@ function CenterPhilosophyCell({
     );
   }
 
+  const totalLen = (line1 + line2).length;
+  const compact = totalLen > 28;
+
   return (
-    <div className="flex min-h-[5rem] flex-wrap items-center justify-center gap-x-1.5 gap-y-1 px-2 py-2 text-center sm:min-h-[5.5rem]">
-      <span className="text-lg font-black leading-none text-red-700 sm:text-xl">
-        {word || "—"}
+    <div className="flex min-h-[5rem] flex-col items-center justify-center gap-0.5 px-1.5 py-2 text-center sm:min-h-[5.5rem] sm:px-2">
+      <span
+        className={`font-bold leading-tight text-red-800 ${
+          compact ? "text-[10px] sm:text-[11px]" : "text-[11px] sm:text-xs"
+        }`}
+      >
+        {line1}
       </span>
-      {note ? (
-        <span className="text-[10px] font-bold leading-snug text-zinc-900 sm:text-[11px]">
-          （{note}）
+      {line2 ? (
+        <span
+          className={`font-semibold leading-snug text-zinc-800 ${
+            compact ? "text-[9px] sm:text-[10px]" : "text-[10px] sm:text-[11px]"
+          }`}
+        >
+          {line2}
         </span>
       ) : null}
     </div>
@@ -162,29 +173,27 @@ function ExpansionGrid({
   grid,
   onChange,
   readOnly,
-  philosophyKeywords,
-  philosophyCenter,
+  philosophyLinked,
+  visionCenter,
   linkedVision,
 }: {
   grid: ThinkingExpansionGrid;
   onChange?: (grid: ThinkingExpansionGrid) => void;
   readOnly?: boolean;
-  philosophyKeywords?: string;
-  philosophyCenter?: { word: string; note: string };
+  philosophyLinked?: string;
+  visionCenter?: { line1: string; line2: string };
   linkedVision?: string;
 }) {
   const showLinkedHeader =
     !readOnly &&
-    (philosophyKeywords != null ||
-      philosophyCenter != null ||
-      linkedVision != null);
+    (philosophyLinked != null || visionCenter != null || linkedVision != null);
 
   return (
     <div className="rounded-2xl bg-gradient-to-br from-violet-50/40 via-white to-sky-50/30 p-2 sm:p-3">
       {showLinkedHeader ? (
         <div className="mb-2 sm:mb-3">
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-            <LinkedPhilosophyPanel text={philosophyKeywords ?? ""} />
+            <LinkedPhilosophyPanel text={philosophyLinked ?? ""} />
             <LinkedVisionPanel text={linkedVision ?? ""} />
           </div>
           <p className="mt-2 text-center text-[10px] leading-relaxed text-zinc-500 sm:text-[11px]">
@@ -208,10 +217,10 @@ function ExpansionGrid({
 
                 return (
                   <div key={`${r}-${c}`} className={cellSurfaceClass(r, c)}>
-                    {isCenterPhilosophy && !readOnly && philosophyCenter ? (
-                      <CenterPhilosophyCell
-                        word={philosophyCenter.word}
-                        note={philosophyCenter.note}
+                    {isCenterPhilosophy && !readOnly && visionCenter ? (
+                      <CenterVisionCell
+                        line1={visionCenter.line1}
+                        line2={visionCenter.line2}
                       />
                     ) : readOnly ? (
                       <div className="flex min-h-[3.25rem] items-center justify-center px-1.5 py-1.5 text-center text-[10px] leading-snug text-zinc-700 sm:min-h-[3.75rem] sm:text-[11px]">
@@ -276,8 +285,14 @@ export function ThinkingExpansionSheetView() {
   const sheet = data.thinkingExpansion;
   const exampleGrid = createExampleExpansionGrid();
   const philosophy = getLifePhilosophy();
-  const philosophyKeywords = linkedPhilosophyKeywords(philosophy);
-  const philosophyCenter = linkedPhilosophyCenter(philosophy);
+  const philosophyLinked = linkedPhilosophyText(
+    philosophy,
+    data.lifePhilosophy,
+  );
+  const visionCenter = linkedVisionCenterSummary(
+    getPurposeVision(),
+    data.lifeVision,
+  );
   const linkedVision = linkedVisionText(getPurposeVision(), data.lifeVision);
 
   const updateGrid = useCallback(
@@ -323,8 +338,8 @@ export function ThinkingExpansionSheetView() {
         <ExpansionGrid
           grid={sheet.cells}
           onChange={updateGrid}
-          philosophyKeywords={philosophyKeywords}
-          philosophyCenter={philosophyCenter}
+          philosophyLinked={philosophyLinked}
+          visionCenter={visionCenter}
           linkedVision={linkedVision}
         />
       </div>

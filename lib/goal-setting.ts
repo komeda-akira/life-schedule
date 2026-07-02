@@ -1,12 +1,23 @@
 import type { AppData } from "@/lib/types";
+import { excerptComment } from "@/lib/calendar";
+import {
+  GS_BAR_LABEL_EXPANSION,
+  GS_BAR_LABEL_ROLES,
+  GS_BAR_LABEL_STRUCTURING,
+} from "@/lib/goal-setting-labels";
 import {
   normalizeRoleGoalRows,
   type RoleGoalRow,
 } from "@/lib/role-goal-worksheet";
 import {
   normalizeThinkingExpansionSheet,
+  themeAnchorGlobal,
   type ThinkingExpansionSheet,
 } from "@/lib/thinking-expansion-sheet";
+import {
+  TES_VISION_COL,
+  TES_VISION_ROW,
+} from "@/lib/thinking-expansion-sheet-content";
 
 export type { RoleGoalRow, ThinkingExpansionSheet };
 
@@ -319,21 +330,91 @@ export function normalizeGoalSetting(
   };
 }
 
-export function goalSettingBarExcerpt(
-  gs: GoalSetting,
-  linked?: { philosophy?: string; vision?: string },
-): string {
-  const vision = (linked?.vision ?? gs.lifeVision).trim();
-  if (vision) return vision;
-  const philosophy = (linked?.philosophy ?? gs.lifePhilosophy).trim();
-  if (philosophy) return philosophy;
-  for (const g of gs.groups) {
-    for (const d of g.domains) {
-      const s = d.goals.shortTerm.trim();
-      if (s) return s;
+export function goalSettingBarExcerpt(gs: GoalSetting): string {
+  return goalSettingBarSummaries(gs)
+    .map(({ label, text }) => `${label}：${text}`)
+    .join("\n");
+}
+
+export type GoalSheetBarSummary = {
+  label: string;
+  text: string;
+};
+
+function domainHasGoals(goals: GoalHorizon): boolean {
+  return Boolean(
+    goals.shortTerm.trim() ||
+      goals.mediumTerm.trim() ||
+      goals.longTerm.trim(),
+  );
+}
+
+function structuringSheetExcerpt(gs: GoalSetting): string {
+  const filled: string[] = [];
+  for (const group of gs.groups) {
+    for (const domain of group.domains) {
+      if (!domainHasGoals(domain.goals)) continue;
+      const label = domain.domainLabel.trim();
+      if (label) filled.push(label);
     }
   }
-  return "";
+  if (filled.length === 0) return "";
+  if (filled.length === 1) return excerptComment(filled[0], 22);
+  const preview = filled
+    .slice(0, 2)
+    .map((label) => excerptComment(label, 10))
+    .join("・");
+  if (filled.length > 2) return `${preview}ほか${filled.length - 2}分野`;
+  return excerptComment(preview, 24);
+}
+
+function roleGoalsSheetExcerpt(roleGoals: RoleGoalRow[]): string {
+  const roles = roleGoals.map((row) => row.role.trim()).filter(Boolean);
+  if (roles.length === 0) return "";
+  if (roles.length === 1) return excerptComment(roles[0], 22);
+  if (roles.length === 2) {
+    return excerptComment(roles.join("・"), 24);
+  }
+  return `${excerptComment(roles.slice(0, 2).join("・"), 16)}ほか${roles.length - 2}`;
+}
+
+function thinkingExpansionSheetExcerpt(sheet: ThinkingExpansionSheet): string {
+  const grid = sheet.cells;
+  const center = (grid[TES_VISION_ROW]?.[TES_VISION_COL] ?? "").trim();
+  const centerLine = center.split(/\n+/)[0]?.trim() ?? "";
+
+  const themes: string[] = [];
+  for (let index = 0; index < 8; index += 1) {
+    const [row, col] = themeAnchorGlobal(index);
+    const theme = (grid[row]?.[col] ?? "").trim();
+    if (theme) themes.push(theme);
+  }
+
+  if (centerLine) return excerptComment(centerLine, 24);
+  if (themes.length === 0) return "";
+  if (themes.length === 1) return excerptComment(themes[0], 22);
+  return `${excerptComment(themes[0], 14)}ほか${themes.length - 1}テーマ`;
+}
+
+export function goalSettingBarSummaries(gs: GoalSetting): GoalSheetBarSummary[] {
+  const items: GoalSheetBarSummary[] = [];
+
+  const structuring = structuringSheetExcerpt(gs);
+  if (structuring) {
+    items.push({ label: GS_BAR_LABEL_STRUCTURING, text: structuring });
+  }
+
+  const roles = roleGoalsSheetExcerpt(gs.roleGoals);
+  if (roles) {
+    items.push({ label: GS_BAR_LABEL_ROLES, text: roles });
+  }
+
+  const expansion = thinkingExpansionSheetExcerpt(gs.thinkingExpansion);
+  if (expansion) {
+    items.push({ label: GS_BAR_LABEL_EXPANSION, text: expansion });
+  }
+
+  return items;
 }
 
 export function applyGoalSettingDefaults(data: AppData): AppData {

@@ -18,3 +18,8 @@ export const GS_COL_DOMAIN = "\u5206\u91ce";
 export const GS_COL_SHORT = "\u77ed\u671f\u76ee\u6a19\uff08\uff11\u5e74\u672a\u6e80\uff09";
 export const GS_COL_MEDIUM = "\u4e2d\u671f\u76ee\u6a19\uff08\uff11\u301c\uff15\u5e74\uff09";
 export const GS_COL_LONG = "\u9577\u671f\u76ee\u6a19\uff08\uff15\u5e74\u4ee5\u4e0a\uff09";
+
+/** \u5317\u6975\u661f\u30d0\u30fc\u300c\u76ee\u6a19\u300d\u5185\u306e\u5404\u30b7\u30fc\u30c8\u8981\u7d04\u30e9\u30d9\u30eb */
+export const GS_BAR_LABEL_STRUCTURING = "\u69cb\u9020\u5316";
+export const GS_BAR_LABEL_ROLES = "\u5f79\u5272";
+export const GS_BAR_LABEL_EXPANSION = "\u601d\u8003\u62e1\u5f35";

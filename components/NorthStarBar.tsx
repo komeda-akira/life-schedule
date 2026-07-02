@@ -10,11 +10,7 @@ import { SuccessStepBadge } from "@/components/SuccessStepBadge";
 import { excerptComment } from "@/lib/calendar";
 import { LIFE_WISH_LIST_100_LABEL } from "@/lib/life-wish-list-100";
 import { MY_100_YEAR_HISTORY_LABEL } from "@/lib/my-100-year-history";
-import { goalSettingBarExcerpt } from "@/lib/goal-setting";
-import {
-  linkedPhilosophyText,
-  linkedVisionText,
-} from "@/lib/goal-setting-linked-content";
+import { goalSettingBarSummaries } from "@/lib/goal-setting";
 import { primeTimeSheetDataExcerpt } from "@/lib/prime-time-sheet";
 import { purposeVisionBarLines } from "@/lib/purpose-vision";
 import { NORTH_STAR_LABELS, type NorthStarCategory } from "@/lib/types";
@@ -78,6 +74,31 @@ function NorthStarLabel({
   );
 }
 
+function GoalBarSummaries({
+  summaries,
+  labelClassName = "text-black/55",
+  textClassName = "text-red-700",
+}: {
+  summaries: ReturnType<typeof goalSettingBarSummaries>;
+  labelClassName?: string;
+  textClassName?: string;
+}) {
+  if (summaries.length === 0) return null;
+
+  return (
+    <span
+      className={`mt-0.5 flex w-full flex-col gap-0.5 font-bold leading-[1.4] ${textClassName}`}
+    >
+      {summaries.map(({ label, text }) => (
+        <span key={label} className="line-clamp-1">
+          <span className={labelClassName}>{label}：</span>
+          {text}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export function NorthStarBar({
   className = "",
   variant = "bar",
@@ -94,14 +115,7 @@ export function NorthStarBar({
   } = useAppData();
 
   const purposeBarLines = purposeVisionBarLines(getPurposeVision());
-  const goalSetting = getGoalSetting();
-  const goalBarText = goalSettingBarExcerpt(goalSetting, {
-    philosophy: linkedPhilosophyText(
-      getLifePhilosophy(),
-      goalSetting.lifePhilosophy,
-    ),
-    vision: linkedVisionText(getPurposeVision(), goalSetting.lifeVision),
-  });
+  const goalSummaries = goalSettingBarSummaries(getGoalSetting());
   const primeExcerpt = (() => {
     const ex = primeTimeSheetDataExcerpt(getPrimeTimeSheetData());
     return ex ? excerptComment(ex, 32) : "";
@@ -141,11 +155,12 @@ export function NorthStarBar({
     }
 
     if (cat === "goal") {
-      return goalBarText ? (
-        <span className="mt-0.5 text-[11px] font-bold leading-[1.4] text-red-700 sm:text-xs">
-          <span className="line-clamp-2">{goalBarText}</span>
-        </span>
-      ) : null;
+      return (
+        <GoalBarSummaries
+          summaries={goalSummaries}
+          textClassName="text-[11px] text-red-700 sm:text-xs"
+        />
+      );
     }
 
     return null;
@@ -231,10 +246,11 @@ export function NorthStarBar({
                     <span className="line-clamp-2">{purposeBarLines.line2}</span>
                   ) : null}
                 </span>
-              ) : goalBarText ? (
-                <span className="flex w-full flex-col text-[10px] font-bold leading-[1.35] text-red-700">
-                  <span className="line-clamp-3">{goalBarText}</span>
-                </span>
+              ) : cat === "goal" ? (
+                <GoalBarSummaries
+                  summaries={goalSummaries}
+                  textClassName="text-[10px] text-red-700"
+                />
               ) : null}
             </span>
           </button>

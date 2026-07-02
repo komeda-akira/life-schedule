@@ -8,7 +8,7 @@ export const GS_LINKED_PHILOSOPHY_EMPTY =
   "Step1 でキーワードや一言を入力すると表示されます。";
 
 export const GS_LINKED_VISION_EMPTY =
-  "Step2 で「奉仕の実践」または「人生ビジョン（理想の姿）」を入力すると表示されます。";
+  "Step2 で「具体的な実践・貢献」または「人生ビジョン（理想の姿）」を入力すると表示されます。";
 
 /** 目標の構造化シート — Step1 人生理念から連動 */
 export function linkedPhilosophyText(

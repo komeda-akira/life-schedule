@@ -240,66 +240,6 @@ export function GoalSettingView() {
 
       <GoalStructuringGuide />
 
-      <section className="rounded-xl border-2 border-red-200 bg-gradient-to-br from-red-50/90 to-white p-4 shadow-sm">
-        <h4 className="text-base font-bold text-red-950">{GS_DECLARATION_HEADING}</h4>
-        <p className="mt-1.5 text-[11px] leading-relaxed text-black/65">
-          {GS_DECLARATION_HINT}
-        </p>
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
-          <label className="flex shrink-0 flex-col gap-1">
-            <span className="text-xs font-semibold text-black/75">
-              {GS_DECLARATION_AGE_LABEL}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={data.goalDeclaration.targetAge}
-                onChange={(e) =>
-                  patch({
-                    goalDeclaration: {
-                      ...data.goalDeclaration,
-                      targetAge: e.target.value,
-                    },
-                  })
-                }
-                className={`${declarationInputClass} w-20 text-center text-lg font-bold`}
-                placeholder="54"
-                aria-label={GS_DECLARATION_AGE_LABEL}
-              />
-              <span className="text-sm font-semibold text-red-900/80">
-                {GS_DECLARATION_AGE_SUFFIX}
-              </span>
-            </div>
-          </label>
-          <label className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="text-xs font-semibold text-black/75">
-              {GS_DECLARATION_ACHIEVEMENT_LABEL}
-            </span>
-            <textarea
-              value={data.goalDeclaration.achievement}
-              onChange={(e) =>
-                patch({
-                  goalDeclaration: {
-                    ...data.goalDeclaration,
-                    achievement: e.target.value,
-                  },
-                })
-              }
-              rows={2}
-              className={declarationTextareaClass}
-              placeholder={GS_DECLARATION_ACHIEVEMENT_PLACEHOLDER}
-              aria-label={GS_DECLARATION_ACHIEVEMENT_LABEL}
-            />
-          </label>
-        </div>
-        {formatGoalDeclarationText(data.goalDeclaration) ? (
-          <p className="mt-3 rounded-md border border-red-200/80 bg-white/80 px-3 py-2 text-sm font-bold leading-relaxed text-red-700">
-            {formatGoalDeclarationText(data.goalDeclaration)}
-          </p>
-        ) : null}
-      </section>
-
       <GoalSettingLinkedPhilosophyVision />
 
       <div className="overflow-x-auto rounded-lg border border-zinc-300">
@@ -395,6 +335,66 @@ export function GoalSettingView() {
           </tbody>
         </table>
       </div>
+
+      <section className="rounded-xl border-2 border-red-200 bg-gradient-to-br from-red-50/90 to-white p-4 shadow-sm">
+        <h4 className="text-base font-bold text-red-950">{GS_DECLARATION_HEADING}</h4>
+        <p className="mt-1.5 text-sm leading-relaxed text-black/70">
+          {GS_DECLARATION_HINT}
+        </p>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
+          <label className="flex shrink-0 flex-col gap-1">
+            <span className="text-xs font-semibold text-black/75">
+              {GS_DECLARATION_AGE_LABEL}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={data.goalDeclaration.targetAge}
+                onChange={(e) =>
+                  patch({
+                    goalDeclaration: {
+                      ...data.goalDeclaration,
+                      targetAge: e.target.value,
+                    },
+                  })
+                }
+                className={`${declarationInputClass} w-20 text-center text-lg font-bold`}
+                placeholder="54"
+                aria-label={GS_DECLARATION_AGE_LABEL}
+              />
+              <span className="text-sm font-semibold text-red-900/80">
+                {GS_DECLARATION_AGE_SUFFIX}
+              </span>
+            </div>
+          </label>
+          <label className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-xs font-semibold text-black/75">
+              {GS_DECLARATION_ACHIEVEMENT_LABEL}
+            </span>
+            <textarea
+              value={data.goalDeclaration.achievement}
+              onChange={(e) =>
+                patch({
+                  goalDeclaration: {
+                    ...data.goalDeclaration,
+                    achievement: e.target.value,
+                  },
+                })
+              }
+              rows={2}
+              className={declarationTextareaClass}
+              placeholder={GS_DECLARATION_ACHIEVEMENT_PLACEHOLDER}
+              aria-label={GS_DECLARATION_ACHIEVEMENT_LABEL}
+            />
+          </label>
+        </div>
+        {formatGoalDeclarationText(data.goalDeclaration) ? (
+          <p className="mt-3 rounded-md border border-red-200/80 bg-white/80 px-3 py-2.5 text-base font-bold leading-relaxed text-red-700 sm:text-lg">
+            {formatGoalDeclarationText(data.goalDeclaration)}
+          </p>
+        ) : null}
+      </section>
 
       {expansionOpen ? (
         <Modal

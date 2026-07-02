@@ -373,12 +373,7 @@ export function goalSettingBarDeclaration(gs: GoalSetting): string {
 }
 
 export function goalSettingBarExcerpt(gs: GoalSetting): string {
-  const declaration = goalSettingBarDeclaration(gs);
-  const summaries = goalSettingBarSummaries(gs)
-    .map(({ label, text }) => `${label}：${text}`)
-    .join("\n");
-  if (declaration && summaries) return `${declaration}\n${summaries}`;
-  return declaration || summaries;
+  return goalSettingBarDeclaration(gs);
 }
 
 export type GoalSheetBarSummary = {

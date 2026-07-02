@@ -12,7 +12,6 @@ import { LIFE_WISH_LIST_100_LABEL } from "@/lib/life-wish-list-100";
 import { MY_100_YEAR_HISTORY_LABEL } from "@/lib/my-100-year-history";
 import {
   goalSettingBarDeclaration,
-  goalSettingBarSummaries,
 } from "@/lib/goal-setting";
 import { primeTimeSheetDataExcerpt } from "@/lib/prime-time-sheet";
 import { purposeVisionBarLines } from "@/lib/purpose-vision";
@@ -77,37 +76,17 @@ function NorthStarLabel({
   );
 }
 
-function GoalBarSummaries({
+function GoalBarDeclaration({
   declaration,
-  summaries,
-  labelClassName = "text-black/55",
-  textClassName = "text-red-700",
-  declarationClassName = "text-red-700",
+  className = "text-sm font-bold leading-snug text-red-700 sm:text-base",
 }: {
   declaration: string;
-  summaries: ReturnType<typeof goalSettingBarSummaries>;
-  labelClassName?: string;
-  textClassName?: string;
-  declarationClassName?: string;
+  className?: string;
 }) {
-  if (!declaration && summaries.length === 0) return null;
+  if (!declaration) return null;
 
   return (
-    <span
-      className={`mt-0.5 flex w-full flex-col gap-0.5 font-bold leading-[1.4] ${textClassName}`}
-    >
-      {declaration ? (
-        <span className={`line-clamp-2 ${declarationClassName}`}>
-          {declaration}
-        </span>
-      ) : null}
-      {summaries.map(({ label, text }) => (
-        <span key={label} className="line-clamp-1">
-          <span className={labelClassName}>{label}：</span>
-          {text}
-        </span>
-      ))}
-    </span>
+    <span className={`mt-0.5 line-clamp-3 ${className}`}>{declaration}</span>
   );
 }
 
@@ -127,9 +106,7 @@ export function NorthStarBar({
   } = useAppData();
 
   const purposeBarLines = purposeVisionBarLines(getPurposeVision());
-  const goalSetting = getGoalSetting();
-  const goalDeclaration = goalSettingBarDeclaration(goalSetting);
-  const goalSummaries = goalSettingBarSummaries(goalSetting);
+  const goalDeclaration = goalSettingBarDeclaration(getGoalSetting());
   const primeExcerpt = (() => {
     const ex = primeTimeSheetDataExcerpt(getPrimeTimeSheetData());
     return ex ? excerptComment(ex, 32) : "";
@@ -169,13 +146,7 @@ export function NorthStarBar({
     }
 
     if (cat === "goal") {
-      return (
-        <GoalBarSummaries
-          declaration={goalDeclaration}
-          summaries={goalSummaries}
-          textClassName="text-[11px] text-red-700 sm:text-xs"
-        />
-      );
+      return <GoalBarDeclaration declaration={goalDeclaration} />;
     }
 
     return null;
@@ -262,10 +233,9 @@ export function NorthStarBar({
                   ) : null}
                 </span>
               ) : cat === "goal" ? (
-                <GoalBarSummaries
+                <GoalBarDeclaration
                   declaration={goalDeclaration}
-                  summaries={goalSummaries}
-                  textClassName="text-[10px] text-red-700"
+                  className="text-xs font-bold leading-snug text-red-700 sm:text-sm"
                 />
               ) : null}
             </span>

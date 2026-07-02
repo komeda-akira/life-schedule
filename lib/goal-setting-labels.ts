@@ -26,9 +26,9 @@ export const GS_BAR_LABEL_EXPANSION = "\u601d\u8003\u62e1\u5f35";
 
 export const GS_DECLARATION_HEADING = "目標宣言";
 export const GS_DECLARATION_HINT =
-  "何歳までに何を実現するかを宣言します。入力内容は北極星バー「目標」の赤文字に連動表示されます。";
+  "何歳までに何を実現するかを宣言します。実現する内容には、年収・売上・人数など具体的な数値目標を書いてください。入力内容は北極星バー「目標」の赤文字に連動表示されます。";
 export const GS_DECLARATION_AGE_LABEL = "何歳までに";
 export const GS_DECLARATION_AGE_SUFFIX = "歳までに";
 export const GS_DECLARATION_ACHIEVEMENT_LABEL = "実現する内容";
 export const GS_DECLARATION_ACHIEVEMENT_PLACEHOLDER =
-  "例：家族と社会に貢献できる自分になる";
+  "例：年収1,000万円を達成し、100人の仲間と業界をけん引する";

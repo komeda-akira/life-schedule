@@ -1,16 +1,22 @@
 import { NextResponse } from "next/server";
 import type { Session } from "next-auth";
 import { auth } from "@/auth";
-import { isLocalPlainStorageMode } from "@/lib/storage-mode";
+import { allowsGeminiWithoutSession } from "@/lib/storage-mode";
 import { generateGeminiReply } from "@/lib/gemini-client";
 import { getGeminiApiKey, getGeminiModelCandidates } from "@/lib/gemini-config";
 
 function unauthorized() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return NextResponse.json(
+    {
+      error:
+        "AI を使うにはログインが必要です。クラウド保存モードでは Google でログインしてください。",
+    },
+    { status: 401 },
+  );
 }
 
 function requireUserId(session: Session | null): string | null {
-  if (isLocalPlainStorageMode()) return "local-user";
+  if (allowsGeminiWithoutSession()) return "local-user";
   const email = session?.user?.email;
   return email ?? null;
 }
@@ -25,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "GEMINI_API_KEY が未設定です。.env.local に Google AI Studio の API キーを追加してください。",
+          "GEMINI_API_KEY が未設定です。Vercel の Environment Variables、または .env.local に Google AI Studio の API キーを追加してください。",
       },
       { status: 503 },
     );

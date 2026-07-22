@@ -31,7 +31,15 @@ export function isLocalVaultStorageMode(): boolean {
   return getStorageBackend() === "local-vault";
 }
 
-/** 開発用 local-plain のみ（本番 local-vault ではサーバー API を無認証にしない） */
+/** 開発用 local-plain のみ（本番 local-vault では app-data 等を無認証にしない） */
 export function isLocalFirstMode(): boolean {
   return getStorageBackend() === "local-plain";
+}
+
+/**
+ * Gemini API はクライアントから渡した要約だけを使うため、
+ * クラウド（Google ログイン）以外ではセッション不要。
+ */
+export function allowsGeminiWithoutSession(): boolean {
+  return !isCloudStorageMode();
 }

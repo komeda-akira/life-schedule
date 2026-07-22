@@ -129,7 +129,7 @@ export function AiAssistantPanel({ buildContext }: AiAssistantPanelProps) {
                     {" "}で API キーを作成
                   </li>
                   <li>
-                    プロジェクト直下の{" "}
+                    ローカル:{" "}
                     <code className="rounded bg-white/80 px-1 py-0.5 font-mono text-[11px]">
                       .env.local
                     </code>
@@ -137,13 +137,14 @@ export function AiAssistantPanel({ buildContext }: AiAssistantPanelProps) {
                     <code className="rounded bg-white/80 px-1 py-0.5 font-mono text-[11px]">
                       GEMINI_API_KEY=あなたのキー
                     </code>
-                    {" "}を追加
+                    {" "}を追加し、開発サーバーを再起動
                   </li>
                   <li>
+                    本番（Vercel）: Project Settings → Environment Variables に{" "}
                     <code className="rounded bg-white/80 px-1 py-0.5 font-mono text-[11px]">
-                      npm run dev
+                      GEMINI_API_KEY
                     </code>
-                    {" "}を再起動
+                    {" "}を追加して再デプロイ
                   </li>
                 </ol>
               </div>

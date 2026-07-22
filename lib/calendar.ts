@@ -5,8 +5,10 @@ export function startOfDay(d: Date): Date {
   return x;
 }
 
-/** カレンダー UI の初期表示日（CalendarPanes とナビ context で共有） */
-export const CALENDAR_INITIAL_CURSOR = startOfDay(new Date(2026, 4, 21));
+/** 画面を開いたときのカレンダーカーソル（端末の今日） */
+export function getCalendarInitialCursor(now = new Date()): Date {
+  return startOfDay(now);
+}
 
 export function addDays(d: Date, n: number): Date {
   const x = new Date(d);

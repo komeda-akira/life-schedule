@@ -22,8 +22,8 @@ export function formatYearRemainingLabel(d: Date): string {
 export const DAILY_TODO_ROW_COUNT = 12;
 export const DAILY_MONEY_ROW_COUNT = 4;
 export const DAILY_MEAL_GROUP_COUNT = 4;
-export const DAILY_SCHEDULE_START_HOUR = 5;
-export const DAILY_SCHEDULE_END_HOUR = 24;
+/** 行動予定の自由記入行数（旧 5〜24時枠と同じ 20 行を維持） */
+export const DAILY_SCHEDULE_ROW_COUNT = 20;
 
 export type DailyTodoRow = {
   checked: boolean;
@@ -90,8 +90,7 @@ function emptyTodos(): DailyTodoRow[] {
 }
 
 function emptySchedule(): DailyScheduleRow[] {
-  const count = DAILY_SCHEDULE_END_HOUR - DAILY_SCHEDULE_START_HOUR + 1;
-  return Array.from({ length: count }, () => ({
+  return Array.from({ length: DAILY_SCHEDULE_ROW_COUNT }, () => ({
     planned: "",
     result: "",
   }));

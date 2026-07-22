@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { CALENDAR_INITIAL_CURSOR } from "@/lib/calendar";
+import { getCalendarInitialCursor } from "@/lib/calendar";
 
 type CalendarNavigationContextValue = {
   jumpToDate: (dateKey: string) => void;
@@ -23,8 +23,8 @@ const CalendarNavigationContext =
 
 export function CalendarNavigationProvider({ children }: { children: ReactNode }) {
   const handlerRef = useRef<((dateKey: string) => void) | null>(null);
-  const [cursorDate, setCursorDateState] = useState<Date | null>(
-    CALENDAR_INITIAL_CURSOR,
+  const [cursorDate, setCursorDateState] = useState<Date | null>(() =>
+    getCalendarInitialCursor(),
   );
 
   const registerJumpHandler = useCallback((fn: (dateKey: string) => void) => {
@@ -60,7 +60,7 @@ export function useCalendarNavigation() {
 
 /** カレンダーの現在カーソル */
 export function useCalendarCursor(): Date {
-  return useCalendarNavigation().cursorDate ?? CALENDAR_INITIAL_CURSOR;
+  return useCalendarNavigation().cursorDate ?? getCalendarInitialCursor();
 }
 
 export function useRegisterCalendarJump(handler: (dateKey: string) => void) {

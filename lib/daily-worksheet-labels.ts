@@ -21,7 +21,6 @@ export const DW_MONEY_AMOUNT = "\u91d1\u984d";
 export const DW_SCHEDULE_TITLE = "\u884c\u52d5\u4e88\u5b9a";
 export const DW_COL_PLAN = "\u884c\u52d5\u4e88\u5b9a";
 export const DW_COL_RESULT = "\u7d50\u679c";
-export const DW_COL_SCHEDULE_TIME = "\u6642\u9593";
 export const DW_OWNER_LABEL = "\u540d\u524d";
 export const DW_SAVE_HINT =
   "\u5165\u529b\u5185\u5bb9\u306f\u81ea\u52d5\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002";

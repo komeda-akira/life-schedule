@@ -41,12 +41,12 @@ import {
 import {
   addDays,
   addYears,
-  CALENDAR_INITIAL_CURSOR,
   excerptComment,
   formatDayHeader,
   formatMonthHeader,
   formatWeekHeader,
   formatWeekRowLabel,
+  getCalendarInitialCursor,
   getMonday,
   isSameDay,
   isToday,
@@ -100,8 +100,6 @@ import type { CalendarEvent, EventKind } from "@/lib/types";
 /** 月・週・日ペインのナビ日付（年／年月／年月日） */
 const PANE_DATE_NAV_CLASS =
   "min-w-0 flex-1 text-center text-sm font-semibold underline decoration-zinc-800 underline-offset-2 sm:text-base";
-
-const INITIAL_CURSOR = CALENDAR_INITIAL_CURSOR;
 
 function NavChevron({
   dir,
@@ -558,7 +556,7 @@ export function CalendarPanes() {
     getWeeklyWorksheet,
   } = useAppData();
   const { setCursorDate } = useCalendarNavigation();
-  const [cursor, setCursor] = useState(INITIAL_CURSOR);
+  const [cursor, setCursor] = useState(() => getCalendarInitialCursor());
   const [mobileTab, setMobileTab] = useState(3);
   const [scopeModal, setScopeModal] = useState<ScopeModalState>(null);
   const [monthlySheetModal, setMonthlySheetModal] =
@@ -571,6 +569,11 @@ export function CalendarPanes() {
   const [eventDraft, setEventDraft] = useState<EventDraft | null>(null);
   const [quickCreate, setQuickCreate] = useState<QuickCreateState>(null);
   const dayScrollRef = useRef<HTMLDivElement>(null);
+
+  // 画面を開いた／ログイン直後は必ず端末の今日を選択（古い固定日や HMR 残りを上書き）
+  useEffect(() => {
+    setCursor(getCalendarInitialCursor());
+  }, []);
 
   const dateKey = formatDateKey(cursor);
   const dayEvents = eventsForDate(dateKey);

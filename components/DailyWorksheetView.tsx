@@ -5,8 +5,6 @@ import { useAppData } from "@/components/AppDataProvider";
 import type { DailyWorksheet } from "@/lib/daily-worksheet";
 import {
   DAILY_MEAL_GROUP_COUNT,
-  DAILY_SCHEDULE_END_HOUR,
-  DAILY_SCHEDULE_START_HOUR,
   formatDailySheetTitle,
   formatYearRemainingLabel,
 } from "@/lib/daily-worksheet";
@@ -15,7 +13,6 @@ import {
   DW_COL_PLAN,
   DW_COL_PRIORITY,
   DW_COL_RESULT,
-  DW_COL_SCHEDULE_TIME,
   DW_COL_TIME,
   DW_COL_TODO,
   DW_HEALTH,
@@ -98,11 +95,6 @@ export function DailyWorksheetView({ dayKey, date }: DailyWorksheetViewProps) {
     );
     patch({ schedule });
   };
-
-  const scheduleHours = Array.from(
-    { length: DAILY_SCHEDULE_END_HOUR - DAILY_SCHEDULE_START_HOUR + 1 },
-    (_, i) => DAILY_SCHEDULE_START_HOUR + i,
-  );
 
   return (
     <div className="flex flex-col gap-4 font-sans text-black">
@@ -334,14 +326,11 @@ export function DailyWorksheetView({ dayKey, date }: DailyWorksheetViewProps) {
             <table className="w-full border-collapse text-[11px]">
               <thead>
                 <tr className="bg-zinc-50">
-                  <th className="border-b border-r border-zinc-800 px-1 py-1 text-left font-bold">
+                  <th className="w-1/2 border-b border-r border-zinc-800 px-1 py-1 text-left font-bold">
                     {DW_COL_PLAN}
                   </th>
-                  <th className="border-b border-r border-zinc-800 px-1 py-1 text-left font-bold">
+                  <th className="w-1/2 border-b border-zinc-800 px-1 py-1 text-left font-bold">
                     {DW_COL_RESULT}
-                  </th>
-                  <th className="w-10 border-b border-zinc-800 px-1 py-1 font-bold">
-                    {DW_COL_SCHEDULE_TIME}
                   </th>
                 </tr>
               </thead>
@@ -361,7 +350,7 @@ export function DailyWorksheetView({ dayKey, date }: DailyWorksheetViewProps) {
                         className={`${textareaClass} min-h-[2.25rem]`}
                       />
                     </td>
-                    <td className="border-b border-r border-zinc-300 p-0 align-top">
+                    <td className="border-b border-zinc-300 p-0 align-top">
                       <textarea
                         value={row.result}
                         onChange={(e) =>
@@ -370,9 +359,6 @@ export function DailyWorksheetView({ dayKey, date }: DailyWorksheetViewProps) {
                         rows={2}
                         className={`${textareaClass} min-h-[2.25rem]`}
                       />
-                    </td>
-                    <td className="border-b border-zinc-300 px-1 py-1 text-center align-top font-bold text-black/80">
-                      {scheduleHours[i]}
                     </td>
                   </tr>
                 ))}

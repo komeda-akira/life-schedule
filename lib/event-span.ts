@@ -40,6 +40,9 @@ export function isMultiDayEvent(event: CalendarEvent): boolean {
 }
 
 export function spanLengthDays(event: CalendarEvent): number {
+  // 時刻付きの繰り返しは「各出現日の同時刻」であり、endDate による複数日連続とはみなさない。
+  // （終了日と繰り返し終了日の取り違えで 8:00〜23:59 に伸びる不具合を防ぐ）
+  if (event.recurrence && event.kind === "timed") return 0;
   return daysBetween(parseDateKey(event.date), parseDateKey(eventSpanEndDate(event)));
 }
 

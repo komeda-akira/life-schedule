@@ -87,8 +87,16 @@ export function EventModal({
     setEndDate(bounds.endDate);
   }, [event, data.events, dateKey]);
 
+  // 時刻付きの繰り返しは各日の同時刻なので、終了日を開始日に揃える
+  useEffect(() => {
+    if (recurrenceFreq && kind === "timed" && endDate !== startDate) {
+      setEndDate(startDate);
+    }
+  }, [recurrenceFreq, kind, startDate, endDate]);
+
   const showScopeChoice = isRecurringInstance || isRecurringMaster;
   const spanEditable = !isRecurringInstance || editScope === "all";
+  const multiDayLocked = Boolean(recurrenceFreq) && kind === "timed";
 
   const buildPayload = (): CalendarEvent | null => {
     const trimmed = title.trim();
@@ -107,10 +115,13 @@ export function EventModal({
       isRecurringInstance && editScope === "single"
         ? instance!.dateKey
         : startDate;
+    // 時刻付き繰り返しは単日出現。終了日は付けない（繰り返し終了日は recurrence.until）
     const eventEndDate =
       isRecurringInstance && editScope === "single"
         ? undefined
-        : normalizeEventEndDate(startDate, endDate);
+        : multiDayLocked
+          ? undefined
+          : normalizeEventEndDate(startDate, endDate);
 
     const base: CalendarEvent = {
       id: event?.id ?? crypto.randomUUID(),
@@ -187,7 +198,7 @@ export function EventModal({
               onChange={(e) => {
                 const next = e.target.value;
                 setStartDate(next);
-                if (endDate < next) setEndDate(next);
+                if (multiDayLocked || endDate < next) setEndDate(next);
               }}
               className="rounded-lg border border-zinc-300 px-3 py-2 disabled:bg-zinc-100"
             />
@@ -196,15 +207,19 @@ export function EventModal({
             <span className="font-medium text-black">終了日</span>
             <input
               type="date"
-              value={endDate}
+              value={multiDayLocked ? startDate : endDate}
               min={startDate}
-              disabled={!spanEditable}
+              disabled={!spanEditable || multiDayLocked}
               onChange={(e) => setEndDate(e.target.value)}
               className="rounded-lg border border-zinc-300 px-3 py-2 disabled:bg-zinc-100"
             />
           </label>
         </div>
-        {endDate > startDate ? (
+        {multiDayLocked ? (
+          <p className="text-[11px] leading-snug text-black/55">
+            時刻付きの繰り返しは、毎日（または毎週など）同じ開始〜終了時刻で入ります。いつまで繰り返すかは下の「繰り返し終了日」で指定してください。
+          </p>
+        ) : endDate > startDate ? (
           <p className="text-[11px] leading-snug text-black/55">
             複数日の予定は期間中の各日に表示されます。時刻付きの場合、初日・最終日は時刻を表示し、途中の日は終日として表示します。
           </p>

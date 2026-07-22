@@ -155,12 +155,16 @@ function normalizeEvent(raw: unknown): CalendarEvent | null {
     return null;
   }
   const recurrence = normalizeRecurrenceRule(x.recurrence);
-  const endDate =
+  let endDate =
     typeof x.endDate === "string" &&
     /^\d{4}-\d{2}-\d{2}$/.test(x.endDate) &&
     x.endDate > x.date
       ? x.endDate
       : undefined;
+  // 時刻付き繰り返しの endDate は複数日連続と誤認されるため破棄する
+  if (recurrence && x.kind === "timed") {
+    endDate = undefined;
+  }
   const recurrenceSkipDates = Array.isArray(x.recurrenceSkipDates)
     ? x.recurrenceSkipDates.filter(
         (d): d is string => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d),

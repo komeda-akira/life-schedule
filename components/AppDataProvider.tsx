@@ -374,16 +374,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
         if (parsed && scope === "all") {
           const masterId = parsed.masterId;
+          const existingMaster = prev.events.find((e) => e.id === masterId);
           const rest = prev.events.filter(
             (e) =>
               e.id !== masterId &&
               e.recurrenceId !== masterId &&
               e.id !== event.id,
           );
+          // 展開インスタンスには recurrence が無いので、マスターの繰り返し設定を維持する
           const master: CalendarEvent = {
             ...event,
             id: masterId,
-            date: prev.events.find((e) => e.id === masterId)?.date ?? event.date,
+            date: existingMaster?.date ?? event.date,
+            recurrence: event.recurrence ?? existingMaster?.recurrence,
+            recurrenceSkipDates: existingMaster?.recurrenceSkipDates,
             recurrenceId: undefined,
           };
           return { ...prev, events: [...rest, master] };

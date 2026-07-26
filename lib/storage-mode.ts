@@ -37,9 +37,14 @@ export function isLocalFirstMode(): boolean {
 }
 
 /**
- * Gemini API はクライアントから渡した要約だけを使うため、
+ * AI API はクライアントから渡した要約だけを使うため、
  * クラウド（Google ログイン）以外ではセッション不要。
  */
-export function allowsGeminiWithoutSession(): boolean {
+export function allowsAiWithoutSession(): boolean {
   return !isCloudStorageMode();
+}
+
+/** @deprecated Use allowsAiWithoutSession */
+export function allowsGeminiWithoutSession(): boolean {
+  return allowsAiWithoutSession();
 }

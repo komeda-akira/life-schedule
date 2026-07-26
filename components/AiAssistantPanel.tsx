@@ -34,7 +34,7 @@ export function AiAssistantPanel({ buildContext }: AiAssistantPanelProps) {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch("/api/gemini/status");
+        const res = await fetch("/api/claude/status");
         if (!res.ok) return;
         const body = (await res.json()) as { configured?: boolean };
         if (!cancelled) setConfigured(body.configured === true);
@@ -61,7 +61,7 @@ export function AiAssistantPanel({ buildContext }: AiAssistantPanelProps) {
       setMessages(nextMessages);
       setLoading(true);
       try {
-        const res = await fetch("/api/gemini", {
+        const res = await fetch("/api/claude", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -106,7 +106,7 @@ export function AiAssistantPanel({ buildContext }: AiAssistantPanelProps) {
       </button>
 
       {open ? (
-        <Modal title="Gemini AI アシスタント" onClose={() => setOpen(false)} wide>
+        <Modal title="Claude AI アシスタント" onClose={() => setOpen(false)} wide>
           <div className="flex flex-col gap-3">
             <p className="text-xs leading-relaxed text-black/65">
               予定・北極星・ワークシートの概要をもとに、計画や振り返りについて質問できます。
@@ -115,16 +115,16 @@ export function AiAssistantPanel({ buildContext }: AiAssistantPanelProps) {
 
             {configured === false ? (
               <div className="rounded-lg border border-amber-200 bg-amber-50/90 px-4 py-3 text-xs leading-relaxed text-amber-950">
-                <p className="font-semibold">Gemini API キーの設定が必要です</p>
+                <p className="font-semibold">Claude API キーの設定が必要です</p>
                 <ol className="mt-2 list-decimal space-y-1.5 pl-4">
                   <li>
                     <a
-                      href="https://aistudio.google.com/apikey"
+                      href="https://console.anthropic.com/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-medium text-violet-700 underline underline-offset-2 hover:text-violet-900"
                     >
-                      Google AI Studio
+                      Anthropic Console
                     </a>
                     {" "}で API キーを作成
                   </li>
@@ -135,14 +135,14 @@ export function AiAssistantPanel({ buildContext }: AiAssistantPanelProps) {
                     </code>
                     {" "}に{" "}
                     <code className="rounded bg-white/80 px-1 py-0.5 font-mono text-[11px]">
-                      GEMINI_API_KEY=あなたのキー
+                      ANTHROPIC_API_KEY=あなたのキー
                     </code>
                     {" "}を追加し、開発サーバーを再起動
                   </li>
                   <li>
                     本番（Vercel）: Project Settings → Environment Variables に{" "}
                     <code className="rounded bg-white/80 px-1 py-0.5 font-mono text-[11px]">
-                      GEMINI_API_KEY
+                      ANTHROPIC_API_KEY
                     </code>
                     {" "}を追加して再デプロイ
                   </li>

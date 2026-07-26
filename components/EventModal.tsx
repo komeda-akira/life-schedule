@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/Modal";
 import { useAppData, type EventEditScope } from "@/components/AppDataProvider";
+import {
+  minutesToTimeInput,
+  timeInputToMinutes,
+} from "@/lib/day-schedule";
 import {
   normalizeEventEndDate,
   resolveEventSpanBounds,
@@ -24,21 +28,6 @@ type EventModalProps = {
   onClose: () => void;
 };
 
-function minutesToInput(m: number): string {
-  const h = Math.floor(m / 60);
-  const min = m % 60;
-  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
-}
-
-function inputToMinutes(v: string): number | null {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(v.trim());
-  if (!m) return null;
-  const h = Number(m[1]);
-  const min = Number(m[2]);
-  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
-  return h * 60 + min;
-}
-
 export function EventModal({
   event,
   dateKey,
@@ -54,6 +43,11 @@ export function EventModal({
   const isRecurringInstance = Boolean(instance);
   const isRecurringMaster = Boolean(event?.recurrence && !event.recurrenceId);
 
+  const masterRecurrence = useMemo(() => {
+    if (!instance) return event?.recurrence;
+    return data.events.find((e) => e.id === instance.masterId)?.recurrence;
+  }, [data.events, event?.recurrence, instance]);
+
   const initialBounds = resolveEventSpanBounds(event, data.events, dateKey);
 
   const [title, setTitle] = useState(event?.title ?? prefilledTitle);
@@ -62,24 +56,27 @@ export function EventModal({
   const [startDate, setStartDate] = useState(initialBounds.startDate);
   const [endDate, setEndDate] = useState(initialBounds.endDate);
   const [startStr, setStartStr] = useState(
-    minutesToInput(event?.startMin ?? defaultStartMin),
+    minutesToTimeInput(event?.startMin ?? defaultStartMin),
   );
   const [endStr, setEndStr] = useState(
-    minutesToInput(
+    minutesToTimeInput(
       event?.endMin ??
         defaultEndMin ??
         (event?.startMin ?? defaultStartMin) + 60,
     ),
   );
   const [recurrenceFreq, setRecurrenceFreq] = useState<RecurrenceFreq | "">(
-    event?.recurrence?.freq ?? "",
+    event?.recurrence?.freq ?? masterRecurrence?.freq ?? "",
   );
   const [recurrenceUntil, setRecurrenceUntil] = useState(
-    event?.recurrence?.until ?? defaultRecurrenceUntil(dateKey),
+    event?.recurrence?.until ??
+      masterRecurrence?.until ??
+      defaultRecurrenceUntil(dateKey),
   );
-  const [editScope, setEditScope] = useState<EventEditScope>("all");
-  const [deleteScope, setDeleteScope] = useState<EventEditScope>("all");
+  const [editScope, setEditScope] = useState<EventEditScope>("single");
+  const [deleteScope, setDeleteScope] = useState<EventEditScope>("single");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     const bounds = resolveEventSpanBounds(event, data.events, dateKey);
@@ -98,14 +95,23 @@ export function EventModal({
   const spanEditable = !isRecurringInstance || editScope === "all";
   const multiDayLocked = Boolean(recurrenceFreq) && kind === "timed";
 
+  const timedTimesValid = useMemo(() => {
+    if (kind !== "timed") return true;
+    const s = timeInputToMinutes(startStr);
+    const e = timeInputToMinutes(endStr);
+    return s !== null && e !== null && e > s;
+  }, [kind, startStr, endStr]);
+
+  const canSave = Boolean(title.trim()) && timedTimesValid;
+
   const buildPayload = (): CalendarEvent | null => {
     const trimmed = title.trim();
     if (!trimmed) return null;
     let startMin: number | undefined;
     let endMin: number | undefined;
     if (kind === "timed") {
-      const s = inputToMinutes(startStr);
-      const e = inputToMinutes(endStr);
+      const s = timeInputToMinutes(startStr);
+      const e = timeInputToMinutes(endStr);
       if (s === null || e === null || e <= s) return null;
       startMin = s;
       endMin = e;
@@ -134,7 +140,10 @@ export function EventModal({
       endMin,
       createdAt: event?.createdAt ?? now,
     };
-    if (recurrenceFreq && !isRecurringInstance) {
+    const applyRecurrence =
+      recurrenceFreq &&
+      (!isRecurringInstance || editScope === "all");
+    if (applyRecurrence) {
       base.recurrence = {
         freq: recurrenceFreq,
         interval: 1,
@@ -145,8 +154,20 @@ export function EventModal({
   };
 
   const save = () => {
+    setSaveError(null);
+    if (!title.trim()) {
+      setSaveError("タイトルを入力してください");
+      return;
+    }
+    if (kind === "timed" && !timedTimesValid) {
+      setSaveError("終了時刻は開始時刻より後にしてください");
+      return;
+    }
     const payload = buildPayload();
-    if (!payload) return;
+    if (!payload) {
+      setSaveError("入力内容を確認してください");
+      return;
+    }
     const scope = showScopeChoice ? editScope : "all";
     upsertEvent(payload, scope);
     onClose();
@@ -173,7 +194,10 @@ export function EventModal({
           <input
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setSaveError(null);
+            }}
             className="rounded-lg border border-zinc-300 px-3 py-2"
             autoFocus
           />
@@ -232,7 +256,10 @@ export function EventModal({
               <input
                 type="radio"
                 checked={kind === "allDay"}
-                onChange={() => setKind("allDay")}
+                onChange={() => {
+                  setKind("allDay");
+                  setSaveError(null);
+                }}
               />
               終日
             </label>
@@ -240,7 +267,10 @@ export function EventModal({
               <input
                 type="radio"
                 checked={kind === "timed"}
-                onChange={() => setKind("timed")}
+                onChange={() => {
+                  setKind("timed");
+                  setSaveError(null);
+                }}
               />
               時刻付き
             </label>
@@ -253,7 +283,10 @@ export function EventModal({
               <input
                 type="time"
                 value={startStr}
-                onChange={(e) => setStartStr(e.target.value)}
+                onChange={(e) => {
+                  setStartStr(e.target.value);
+                  setSaveError(null);
+                }}
                 className="rounded-lg border border-zinc-300 px-3 py-2"
               />
             </label>
@@ -262,14 +295,17 @@ export function EventModal({
               <input
                 type="time"
                 value={endStr}
-                onChange={(e) => setEndStr(e.target.value)}
+                onChange={(e) => {
+                  setEndStr(e.target.value);
+                  setSaveError(null);
+                }}
                 className="rounded-lg border border-zinc-300 px-3 py-2"
               />
             </label>
           </div>
         ) : null}
 
-        {!isRecurringInstance ? (
+        {!isRecurringInstance || editScope === "all" ? (
           <div className="grid gap-2 text-sm sm:grid-cols-2">
             <label className="flex flex-col gap-1">
               <span className="font-medium text-black">繰り返し</span>
@@ -327,11 +363,17 @@ export function EventModal({
           </fieldset>
         ) : null}
 
+        {saveError ? (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+            {saveError}
+          </p>
+        ) : null}
+
         <div className="flex flex-wrap gap-2 pt-2">
           <button
             type="button"
             onClick={save}
-            disabled={!title.trim()}
+            disabled={!canSave}
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-40"
           >
             保存

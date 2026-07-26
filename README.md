@@ -43,7 +43,7 @@ NEXT_PUBLIC_AUTH_BYPASS=true
 
 ```env
 NEXT_PUBLIC_STORAGE_MODE=local
-GEMINI_API_KEY=...   # AI 機能を使う場合のみ
+ANTHROPIC_API_KEY=...   # AI 機能を使う場合のみ
 ```
 
 4. デプロイ後、利用者は URL を開く → パスワード作成 → 利用開始
@@ -72,7 +72,7 @@ NEXT_PUBLIC_STORAGE_MODE=cloud
 - 日ペイン — 終日行・24hタイムライン（ドラッグ作成・移動・リサイズ）、土曜=青・日曜=赤
 - **予定の繰り返し** — 毎日/毎週/毎月/毎年、終了日指定、個別編集・削除
 - **予定検索** — ヘッダーの検索欄からタイトル・メモで検索し日付へジャンプ
-- **Gemini AI** — ヘッダー「AI に相談」から計画・振り返りを質問（`GEMINI_API_KEY` 要）
+- **Claude AI** — ヘッダー「AI に相談」から計画・振り返りを質問（`ANTHROPIC_API_KEY` 要）
 - 予定データ — JSON の書き出し／読み込み（ヘッダー）
 - 年・月・週・日の四ペイン — 広い画面は4列、狭い画面はタブ切替
 - ヘッダーから公開図解（改善・画面）へリンク
@@ -92,6 +92,6 @@ ALLOW_ANY_GOOGLE_USER=true
 
 | 変数 | 用途 |
 |------|------|
-| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/apikey) の API キー |
-| `GEMINI_MODEL` | 任意（既定 `gemini-2.5-flash`） |
+| `ANTHROPIC_API_KEY` | [Anthropic Console](https://console.anthropic.com/) の API キー |
+| `ANTHROPIC_MODEL` | 任意（既定 `claude-sonnet-4-5`） |
 | `ALLOW_ANY_GOOGLE_USER` | `true` で全 Google ユーザー許可 |

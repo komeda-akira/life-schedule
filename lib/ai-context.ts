@@ -1,7 +1,7 @@
 import type { AppData } from "@/lib/types";
 import { formatEventDateRange, isMultiDayEvent } from "@/lib/event-span";
 
-/** Gemini 用にアプリデータの要約テキストを生成 */
+/** AI アシスタント用にアプリデータの要約テキストを生成 */
 export function buildAiContext(data: AppData): string {
   const lines: string[] = [];
 

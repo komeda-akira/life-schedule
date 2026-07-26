@@ -7,8 +7,9 @@ export const WEEKLY_SCHEDULE_START_HOUR = 5;
 export const WEEKLY_SCHEDULE_END_HOUR = 24;
 export const WEEKLY_DAY_COUNT = 7;
 
+/** 5:00〜23:00 の行（最終行の下端が 24:00）。+1 すると「24」行が余分に付き時刻がずれる */
 export const WEEKLY_HOUR_ROW_COUNT =
-  WEEKLY_SCHEDULE_END_HOUR - WEEKLY_SCHEDULE_START_HOUR + 1;
+  WEEKLY_SCHEDULE_END_HOUR - WEEKLY_SCHEDULE_START_HOUR;
 
 export type WeeklyDayColumn = {
   dateLabel: string;

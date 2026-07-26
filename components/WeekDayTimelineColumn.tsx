@@ -14,11 +14,13 @@ import {
   formatMinutesRange,
   minutesFromTimelineYWithOffset,
   normalizeCreateRange,
+  TIMELINE_DAY_END_MIN,
   TIMELINE_DEFAULT_DURATION_MIN,
   TIMELINE_SNAP_MINUTES,
   type EventManipMode,
 } from "@/lib/day-schedule";
 import { isToday, layoutDayEvents, toTimedForLayout, type PlacedEvent } from "@/lib/calendar";
+import { isMultiDayEvent } from "@/lib/event-span";
 import {
   WEEKLY_SCHEDULE_START_HOUR,
   WEEKLY_TIMELINE_HEIGHT,
@@ -27,8 +29,9 @@ import {
 } from "@/lib/weekly-worksheet";
 import type { CalendarEvent } from "@/lib/types";
 
-const RESIZE_HANDLE_PX = 6;
+const RESIZE_HANDLE_PX = 10;
 const DRAG_THRESHOLD_PX = 4;
+const MIN_BLOCK_HEIGHT_PX = 22;
 
 type CreateDragState = {
   pointerId: number;
@@ -69,14 +72,27 @@ function pointerMinFromGrid(
   );
 }
 
+function detectManipMode(
+  localY: number,
+  blockHeight: number,
+): EventManipMode {
+  const handle = Math.min(
+    RESIZE_HANDLE_PX,
+    Math.max(5, Math.floor(blockHeight / 4)),
+  );
+  if (localY <= handle) return "resize-start";
+  if (localY >= blockHeight - handle) return "resize-end";
+  return "move";
+}
+
 function eventBlockStyle(startMin: number, endMin: number) {
   const visibleStart = Math.max(startMin, WEEKLY_TIMELINE_START_MIN);
-  const visibleEnd = Math.min(endMin, 24 * 60);
+  const visibleEnd = Math.min(endMin, TIMELINE_DAY_END_MIN);
   const top =
     ((visibleStart - WEEKLY_TIMELINE_START_MIN) / 60) * WEEKLY_TIMELINE_ROW_PX;
   const height = Math.max(
     ((visibleEnd - visibleStart) / 60) * WEEKLY_TIMELINE_ROW_PX,
-    16,
+    MIN_BLOCK_HEIGHT_PX,
   );
   return { top, height };
 }
@@ -84,11 +100,13 @@ function eventBlockStyle(startMin: number, endMin: number) {
 function TimelineEventBlock({
   ev,
   dragging,
+  draggable,
   onEdit,
   onInteractStart,
 }: {
   ev: PlacedEvent;
   dragging: boolean;
+  draggable: boolean;
   onEdit: (id: string) => void;
   onInteractStart: (
     e: ReactPointerEvent<HTMLDivElement>,
@@ -113,17 +131,20 @@ function TimelineEventBlock({
       onPointerDown={(e) => {
         e.stopPropagation();
         if (e.button !== 0) return;
+        if (!draggable) {
+          onEdit(ev.id);
+          return;
+        }
         const rect = e.currentTarget.getBoundingClientRect();
         const localY = e.clientY - rect.top;
-        let mode: EventManipMode = "move";
-        if (localY <= RESIZE_HANDLE_PX) mode = "resize-start";
-        else if (localY >= rect.height - RESIZE_HANDLE_PX) mode = "resize-end";
-        onInteractStart(e, mode);
+        onInteractStart(e, detectManipMode(localY, rect.height));
       }}
       className={`absolute box-border overflow-hidden rounded-r border border-zinc-200/80 px-0.5 py-px text-left shadow-sm touch-none select-none ${colorClass} ${
         dragging
           ? "z-40 cursor-grabbing shadow-md ring-2 ring-blue-400/60"
-          : "z-20 cursor-grab hover:brightness-[0.98]"
+          : draggable
+            ? "z-20 cursor-grab hover:brightness-[0.98]"
+            : "z-20 cursor-pointer hover:brightness-[0.98]"
       }`}
       style={{
         top,
@@ -131,7 +152,28 @@ function TimelineEventBlock({
         left: `calc(${leftPct}% + 1px)`,
         width: `calc(${widthPct}% - 2px)`,
       }}
+      title={
+        draggable
+          ? undefined
+          : "複数日の予定はクリックで編集"
+      }
     >
+      {draggable ? (
+        <>
+          <div
+            className="absolute inset-x-0 top-0 z-10 flex h-2.5 cursor-ns-resize items-start justify-center"
+            aria-hidden
+          >
+            <span className="mt-px h-0.5 w-5 rounded-full bg-black/20" />
+          </div>
+          <div
+            className="absolute inset-x-0 bottom-0 z-10 flex h-2.5 cursor-ns-resize items-end justify-center"
+            aria-hidden
+          >
+            <span className="mb-px h-0.5 w-5 rounded-full bg-black/20" />
+          </div>
+        </>
+      ) : null}
       <div className="pointer-events-none truncate text-[11px] leading-tight font-semibold">
         {ev.title}
       </div>
@@ -152,6 +194,8 @@ export function WeekDayTimelineColumn({
   onEdit,
 }: WeekDayTimelineColumnProps) {
   const gridRef = useRef<HTMLDivElement>(null);
+  const createDragRef = useRef<CreateDragState | null>(null);
+  const eventDragRef = useRef<EventDragState | null>(null);
   const [createDrag, setCreateDrag] = useState<CreateDragState | null>(null);
   const [eventDrag, setEventDrag] = useState<EventDragState | null>(null);
 
@@ -164,6 +208,11 @@ export function WeekDayTimelineColumn({
   );
   const placed = useMemo(() => layoutDayEvents(timed), [timed]);
   const showNowLine = isToday(date);
+  const eventById = useMemo(() => {
+    const map = new Map<string, CalendarEvent>();
+    for (const e of events) map.set(e.id, e);
+    return map;
+  }, [events]);
 
   const displayed = useMemo(() => {
     if (!eventDrag) return placed;
@@ -185,7 +234,10 @@ export function WeekDayTimelineColumn({
       if (!dragged) {
         onCreateRange(
           range.startMin,
-          Math.min(24 * 60, range.startMin + TIMELINE_DEFAULT_DURATION_MIN),
+          Math.min(
+            TIMELINE_DAY_END_MIN,
+            range.startMin + TIMELINE_DEFAULT_DURATION_MIN,
+          ),
         );
       } else {
         onCreateRange(range.startMin, range.endMin);
@@ -213,24 +265,28 @@ export function WeekDayTimelineColumn({
     [onEdit, onUpdateRange],
   );
 
+  const isCreating = createDrag !== null;
+  const isEventDragging = eventDrag !== null;
+
   useEffect(() => {
-    if (!createDrag) return;
+    if (!isCreating) return;
 
     const onMove = (e: PointerEvent) => {
-      if (e.pointerId !== createDrag.pointerId || !gridRef.current) return;
-      setCreateDrag((d) =>
-        d
-          ? {
-              ...d,
-              currentMin: pointerMinFromGrid(e.clientY, gridRef.current!),
-            }
-          : null,
-      );
+      const d = createDragRef.current;
+      if (!d || e.pointerId !== d.pointerId || !gridRef.current) return;
+      const next = {
+        ...d,
+        currentMin: pointerMinFromGrid(e.clientY, gridRef.current),
+      };
+      createDragRef.current = next;
+      setCreateDrag(next);
     };
 
     const onUp = (e: PointerEvent) => {
-      if (e.pointerId !== createDrag.pointerId) return;
-      finishCreateDrag(createDrag);
+      const d = createDragRef.current;
+      if (!d || e.pointerId !== d.pointerId) return;
+      finishCreateDrag(d);
+      createDragRef.current = null;
       setCreateDrag(null);
     };
 
@@ -242,35 +298,36 @@ export function WeekDayTimelineColumn({
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
     };
-  }, [createDrag, finishCreateDrag]);
+  }, [isCreating, finishCreateDrag]);
 
   useEffect(() => {
-    if (!eventDrag) return;
+    if (!isEventDragging) return;
 
     const onMove = (e: PointerEvent) => {
-      if (e.pointerId !== eventDrag.pointerId || !gridRef.current) return;
+      const d = eventDragRef.current;
+      if (!d || e.pointerId !== d.pointerId || !gridRef.current) return;
       const pointerMin = pointerMinFromGrid(e.clientY, gridRef.current);
       const range = computeManipulatedRange(
-        eventDrag.mode,
+        d.mode,
         pointerMin,
-        eventDrag.originStartMin,
-        eventDrag.originEndMin,
-        eventDrag.grabOffsetMin,
+        d.originStartMin,
+        d.originEndMin,
+        d.grabOffsetMin,
       );
-      setEventDrag((d) =>
-        d
-          ? {
-              ...d,
-              currentStartMin: range.startMin,
-              currentEndMin: range.endMin,
-            }
-          : null,
-      );
+      const next = {
+        ...d,
+        currentStartMin: range.startMin,
+        currentEndMin: range.endMin,
+      };
+      eventDragRef.current = next;
+      setEventDrag(next);
     };
 
     const onUp = (e: PointerEvent) => {
-      if (e.pointerId !== eventDrag.pointerId) return;
-      finishEventDrag(eventDrag, e.clientY);
+      const d = eventDragRef.current;
+      if (!d || e.pointerId !== d.pointerId) return;
+      finishEventDrag(d, e.clientY);
+      eventDragRef.current = null;
       setEventDrag(null);
     };
 
@@ -282,7 +339,7 @@ export function WeekDayTimelineColumn({
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
     };
-  }, [eventDrag, finishEventDrag]);
+  }, [isEventDragging, finishEventDrag]);
 
   const createPreview = useMemo(() => {
     if (!createDrag) return null;
@@ -290,13 +347,15 @@ export function WeekDayTimelineColumn({
   }, [createDrag]);
 
   const onGridPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0 || !gridRef.current || eventDrag) return;
+    if (e.button !== 0 || !gridRef.current || eventDragRef.current) return;
     const startMin = pointerMinFromGrid(e.clientY, gridRef.current);
-    setCreateDrag({
+    const next = {
       pointerId: e.pointerId,
       startMin,
       currentMin: startMin,
-    });
+    };
+    createDragRef.current = next;
+    setCreateDrag(next);
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
@@ -307,8 +366,9 @@ export function WeekDayTimelineColumn({
   ) => {
     if (!gridRef.current) return;
     const pointerMin = pointerMinFromGrid(e.clientY, gridRef.current);
+    createDragRef.current = null;
     setCreateDrag(null);
-    setEventDrag({
+    const next: EventDragState = {
       mode,
       pointerId: e.pointerId,
       eventId: ev.id,
@@ -318,7 +378,9 @@ export function WeekDayTimelineColumn({
       pointerStartClientY: e.clientY,
       currentStartMin: ev.startMin,
       currentEndMin: ev.endMin,
-    });
+    };
+    eventDragRef.current = next;
+    setEventDrag(next);
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
@@ -330,6 +392,8 @@ export function WeekDayTimelineColumn({
       WEEKLY_TIMELINE_ROW_PX
     : null;
 
+  const hourRowCount = WEEKLY_TIMELINE_HEIGHT / WEEKLY_TIMELINE_ROW_PX;
+
   return (
     <div
       ref={gridRef}
@@ -340,7 +404,7 @@ export function WeekDayTimelineColumn({
       onPointerDown={onGridPointerDown}
       aria-label="週次スケジュール。ドラッグで追加・移動・上下端で時間変更"
     >
-      {Array.from({ length: WEEKLY_TIMELINE_HEIGHT / WEEKLY_TIMELINE_ROW_PX }, (_, h) => (
+      {Array.from({ length: hourRowCount }, (_, h) => (
         <div
           key={h}
           className="pointer-events-none absolute right-0 left-0 border-t border-zinc-200"
@@ -368,15 +432,20 @@ export function WeekDayTimelineColumn({
         />
       ) : null}
 
-      {displayed.map((ev) => (
-        <TimelineEventBlock
-          key={ev.id}
-          ev={ev}
-          dragging={eventDrag?.eventId === ev.id}
-          onEdit={onEdit}
-          onInteractStart={(e, mode) => onEventInteractStart(e, ev, mode)}
-        />
-      ))}
+      {displayed.map((ev) => {
+        const source = eventById.get(ev.id);
+        const draggable = !source || !isMultiDayEvent(source);
+        return (
+          <TimelineEventBlock
+            key={ev.id}
+            ev={ev}
+            dragging={eventDrag?.eventId === ev.id}
+            draggable={draggable}
+            onEdit={onEdit}
+            onInteractStart={(e, mode) => onEventInteractStart(e, ev, mode)}
+          />
+        );
+      })}
     </div>
   );
 }

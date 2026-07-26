@@ -71,6 +71,7 @@ function HourGrid({
   onCreateRange,
   onUpdateRange,
   onEditEvent,
+  createDraft,
 }: {
   dayIndices: number[];
   showMemo: boolean;
@@ -82,6 +83,11 @@ function HourGrid({
   onCreateRange: (dateKey: string, startMin: number, endMin: number) => void;
   onUpdateRange: (dateKey: string, id: string, startMin: number, endMin: number) => void;
   onEditEvent: (dateKey: string, id: string) => void;
+  createDraft: {
+    dateKey: string;
+    startMin: number;
+    endMin: number;
+  } | null;
 }) {
   return (
     <table className="h-full w-full table-fixed border-collapse text-xs">
@@ -168,6 +174,14 @@ function HourGrid({
                 <WeekDayTimelineColumn
                   date={dayDate}
                   events={dayEvents}
+                  createDraft={
+                    createDraft?.dateKey === dateKey
+                      ? {
+                          startMin: createDraft.startMin,
+                          endMin: createDraft.endMin,
+                        }
+                      : null
+                  }
                   onCreateRange={(startMin, endMin) =>
                     onCreateRange(dateKey, startMin, endMin)
                   }
@@ -301,6 +315,7 @@ export function WeeklyWorksheetView({
     onCreateRange,
     onUpdateRange: onUpdateEventRange,
     onEditEvent,
+    createDraft: quickCreate,
   };
 
   return (

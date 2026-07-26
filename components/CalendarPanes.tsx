@@ -503,6 +503,7 @@ function DayPane({
   onEdit,
   onUpdateRange,
   scrollRef,
+  createDraft,
 }: {
   cursor: Date;
   events: CalendarEvent[];
@@ -513,6 +514,7 @@ function DayPane({
   onEdit: (id: string) => void;
   onUpdateRange: (id: string, startMin: number, endMin: number) => void;
   scrollRef: RefObject<HTMLDivElement | null>;
+  createDraft?: { startMin: number; endMin: number } | null;
 }) {
   return (
     <div className="flex min-h-[420px] min-w-0 flex-1 flex-col md:min-h-[520px]">
@@ -537,6 +539,7 @@ function DayPane({
         date={cursor}
         events={events}
         scrollRef={scrollRef}
+        createDraft={createDraft}
         onCreateRange={onCreateRange}
         onCreateAllDay={onCreateAllDay}
         onEdit={onEdit}
@@ -784,6 +787,7 @@ export function CalendarPanes() {
         onEdit={onEditEvent}
         onUpdateRange={onUpdateEventRange}
         scrollRef={dayScrollRef}
+        createDraft={quickCreate}
       />
     </>
   );
@@ -866,6 +870,7 @@ export function CalendarPanes() {
             onEdit={onEditEvent}
             onUpdateRange={onUpdateEventRange}
             scrollRef={dayScrollRef}
+            createDraft={quickCreate}
           />
         ) : null}
       </div>

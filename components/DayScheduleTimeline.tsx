@@ -10,17 +10,26 @@ import {
   type RefObject,
 } from "react";
 import {
-  computeManipulatedRange,
   currentMinutesOfDay,
   eventTimelineColorClass,
   formatMinutesRange,
-  minutesFromTimelineY,
-  normalizeCreateRange,
-  TIMELINE_DAY_END_MIN,
-  TIMELINE_DEFAULT_DURATION_MIN,
   TIMELINE_SNAP_MINUTES,
   type EventManipMode,
 } from "@/lib/day-schedule";
+import {
+  autoScrollNearEdge,
+  createDragPreviewRange,
+  detectResizeOrMove,
+  finishCreateDragRange,
+  pointerMinutesFloor,
+  pointerMinutesRound,
+  scrollTimelineToMinutes,
+  TIMELINE_DRAG_THRESHOLD_PX,
+  updateEventDragFromPointer,
+  type TimelineCreateDrag,
+  type TimelineEventDrag,
+  type TimelineRange,
+} from "@/lib/timeline-interaction";
 import {
   isToday,
   layoutDayEvents,
@@ -32,70 +41,36 @@ import type { CalendarEvent } from "@/lib/types";
 
 const HOUR_PX = 48;
 const DAY_HEIGHT = 24 * HOUR_PX;
-const RESIZE_HANDLE_PX = 12;
-const DRAG_THRESHOLD_PX = 4;
-const MIN_BLOCK_HEIGHT_PX = 28;
-
-type CreateDragState = {
-  pointerId: number;
-  startMin: number;
-  currentMin: number;
-};
-
-type EventDragState = {
-  mode: EventManipMode;
-  pointerId: number;
-  eventId: string;
-  originStartMin: number;
-  originEndMin: number;
-  grabOffsetMin: number;
-  pointerStartClientY: number;
-  currentStartMin: number;
-  currentEndMin: number;
-};
+const MIN_BLOCK_HEIGHT_PX = 24;
 
 type DayScheduleTimelineProps = {
   date: Date;
   events: CalendarEvent[];
   scrollRef: RefObject<HTMLDivElement | null>;
+  /** クイック作成中のドラフト（ポップオーバー表示中もグリッドに残す） */
+  createDraft?: TimelineRange | null;
   onCreateRange: (startMin: number, endMin: number) => void;
   onCreateAllDay: () => void;
   onEdit: (id: string) => void;
   onUpdateRange: (id: string, startMin: number, endMin: number) => void;
 };
 
-function pointerMinFromGrid(
-  clientY: number,
-  grid: HTMLDivElement,
-): number {
+function gridMetrics(grid: HTMLDivElement) {
   const rect = grid.getBoundingClientRect();
-  const y = Math.min(rect.height, Math.max(0, clientY - rect.top));
-  return minutesFromTimelineY(y, HOUR_PX);
-}
-
-function detectManipMode(
-  localY: number,
-  blockHeight: number,
-): EventManipMode {
-  // 短いブロックは中央を移動優先（端だけがリサイズ）
-  const handle = Math.min(
-    RESIZE_HANDLE_PX,
-    Math.max(6, Math.floor(blockHeight / 4)),
-  );
-  if (localY <= handle) return "resize-start";
-  if (localY >= blockHeight - handle) return "resize-end";
-  return "move";
+  return { top: rect.top, height: rect.height };
 }
 
 function TimelineEventBlock({
   ev,
   dragging,
+  ghost,
   draggable,
   onEdit,
   onInteractStart,
 }: {
   ev: PlacedEvent;
   dragging: boolean;
+  ghost?: boolean;
   draggable: boolean;
   onEdit: (id: string) => void;
   onInteractStart: (
@@ -110,19 +85,23 @@ function TimelineEventBlock({
   );
   const widthPct = 100 / ev.laneCount;
   const leftPct = (ev.lane / ev.laneCount) * 100;
-  const colorClass = eventTimelineColorClass(ev.id);
+  const colorClass = ghost
+    ? "border border-blue-300 bg-blue-100/50 text-blue-900/50"
+    : eventTimelineColorClass(ev.id);
 
   return (
     <div
       role="button"
-      tabIndex={0}
+      tabIndex={ghost ? -1 : 0}
       onKeyDown={(e) => {
+        if (ghost) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onEdit(ev.id);
         }
       }}
       onPointerDown={(e) => {
+        if (ghost) return;
         e.stopPropagation();
         if (e.button !== 0) return;
         if (!draggable) {
@@ -131,14 +110,16 @@ function TimelineEventBlock({
         }
         const rect = e.currentTarget.getBoundingClientRect();
         const localY = e.clientY - rect.top;
-        onInteractStart(e, detectManipMode(localY, rect.height));
+        onInteractStart(e, detectResizeOrMove(localY, rect.height));
       }}
-      className={`absolute box-border overflow-hidden rounded-r border border-zinc-200/80 px-1.5 py-0.5 text-left shadow-sm touch-none select-none ${colorClass} ${
-        dragging
-          ? "z-40 cursor-grabbing shadow-md ring-2 ring-blue-400/60"
-          : draggable
-            ? "z-20 cursor-grab hover:brightness-[0.98]"
-            : "z-20 cursor-pointer hover:brightness-[0.98]"
+      className={`group absolute box-border overflow-hidden rounded-md px-1.5 py-0.5 text-left touch-none select-none ${colorClass} ${
+        ghost
+          ? "pointer-events-none z-10"
+          : dragging
+            ? "z-40 cursor-grabbing shadow-lg ring-2 ring-blue-500/40"
+            : draggable
+              ? "z-20 cursor-grab shadow-sm hover:brightness-[0.97]"
+              : "z-20 cursor-pointer shadow-sm hover:brightness-[0.97]"
       }`}
       style={{
         top,
@@ -149,29 +130,29 @@ function TimelineEventBlock({
       title={
         draggable
           ? undefined
-          : "複数日の予定はクリックで編集（ドラッグ変更は単日の時刻付きのみ）"
+          : "複数日の予定はクリックで編集"
       }
     >
-      {draggable ? (
+      {draggable && !ghost ? (
         <>
           <div
-            className="absolute inset-x-0 top-0 z-10 flex h-3 cursor-ns-resize items-start justify-center"
+            className="absolute inset-x-0 top-0 z-10 h-2.5 cursor-ns-resize opacity-0 transition-opacity group-hover:opacity-100"
             aria-hidden
           >
-            <span className="mt-0.5 h-0.5 w-8 rounded-full bg-black/25" />
+            <span className="mx-auto mt-0.5 block h-0.5 w-7 rounded-full bg-current opacity-40" />
           </div>
           <div
-            className="absolute inset-x-0 bottom-0 z-10 flex h-3 cursor-ns-resize items-end justify-center"
+            className="absolute inset-x-0 bottom-0 z-10 h-2.5 cursor-ns-resize opacity-0 transition-opacity group-hover:opacity-100"
             aria-hidden
           >
-            <span className="mb-0.5 h-0.5 w-8 rounded-full bg-black/25" />
+            <span className="mx-auto mb-0.5 block h-0.5 w-7 rounded-full bg-current opacity-40" />
           </div>
         </>
       ) : null}
       <div className="pointer-events-none truncate text-[11px] leading-tight font-semibold">
         {ev.title}
       </div>
-      {height >= 36 ? (
+      {height >= 32 ? (
         <div className="pointer-events-none truncate text-[10px] leading-tight opacity-80">
           {formatMinutesRange(ev.startMin, ev.endMin)}
         </div>
@@ -180,22 +161,46 @@ function TimelineEventBlock({
   );
 }
 
+function DraftBlock({ range, label }: { range: TimelineRange; label?: string }) {
+  return (
+    <div
+      className="pointer-events-none absolute right-1 left-1 z-[25] rounded-md border border-blue-500 bg-[#1a73e8]/85 px-1.5 py-0.5 text-white shadow-md"
+      style={{
+        top: (range.startMin / 60) * HOUR_PX,
+        height: Math.max(
+          ((range.endMin - range.startMin) / 60) * HOUR_PX,
+          MIN_BLOCK_HEIGHT_PX,
+        ),
+      }}
+    >
+      <div className="truncate text-[11px] font-semibold leading-tight">
+        {label ?? "（タイトルなし）"}
+      </div>
+      <div className="truncate text-[10px] leading-tight opacity-90">
+        {formatMinutesRange(range.startMin, range.endMin)}
+      </div>
+    </div>
+  );
+}
+
 export function DayScheduleTimeline({
   date,
   events,
   scrollRef,
+  createDraft = null,
   onCreateRange,
   onCreateAllDay,
   onEdit,
   onUpdateRange,
 }: DayScheduleTimelineProps) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const createDragRef = useRef<CreateDragState | null>(null);
-  const eventDragRef = useRef<EventDragState | null>(null);
-  const [createDrag, setCreateDrag] = useState<CreateDragState | null>(null);
-  const [eventDrag, setEventDrag] = useState<EventDragState | null>(null);
+  const createDragRef = useRef<TimelineCreateDrag | null>(null);
+  const eventDragRef = useRef<TimelineEventDrag | null>(null);
+  const [createDrag, setCreateDrag] = useState<TimelineCreateDrag | null>(null);
+  const [eventDrag, setEventDrag] = useState<TimelineEventDrag | null>(null);
   const [nowMin, setNowMin] = useState(() => currentMinutesOfDay());
 
+  const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
   const timed = useMemo(() => toTimedForLayout(events), [events]);
   const placed = useMemo(() => layoutDayEvents(timed), [timed]);
   const allDay = events.filter((e) => e.kind === "allDay");
@@ -218,6 +223,17 @@ export function DayScheduleTimeline({
     });
   }, [placed, eventDrag]);
 
+  const ghostOrigin = useMemo(() => {
+    if (!eventDrag || eventDrag.mode !== "move") return null;
+    const ev = placed.find((e) => e.id === eventDrag.eventId);
+    if (!ev) return null;
+    return {
+      ...ev,
+      startMin: eventDrag.originStartMin,
+      endMin: eventDrag.originEndMin,
+    };
+  }, [eventDrag, placed]);
+
   useEffect(() => {
     if (!showNowLine) return;
     const id = window.setInterval(
@@ -227,33 +243,38 @@ export function DayScheduleTimeline({
     return () => clearInterval(id);
   }, [showNowLine]);
 
+  // 日付変更時に現在時刻付近へスクロール（Googleカレンダー同様）
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = showNowLine ? currentMinutesOfDay() : 8 * 60;
+    requestAnimationFrame(() => {
+      scrollTimelineToMinutes(el, target, HOUR_PX);
+    });
+  }, [dateKey, scrollRef, showNowLine]);
+
+  const cancelDrags = useCallback(() => {
+    createDragRef.current = null;
+    eventDragRef.current = null;
+    setCreateDrag(null);
+    setEventDrag(null);
+  }, []);
+
   const finishCreateDrag = useCallback(
-    (state: CreateDragState) => {
-      const range = normalizeCreateRange(state.startMin, state.currentMin);
-      const dragged =
-        Math.abs(state.currentMin - state.startMin) >= TIMELINE_SNAP_MINUTES;
-      if (!dragged) {
-        onCreateRange(
-          range.startMin,
-          Math.min(
-            TIMELINE_DAY_END_MIN,
-            range.startMin + TIMELINE_DEFAULT_DURATION_MIN,
-          ),
-        );
-      } else {
-        onCreateRange(range.startMin, range.endMin);
-      }
+    (state: TimelineCreateDrag) => {
+      const range = finishCreateDragRange(state);
+      onCreateRange(range.startMin, range.endMin);
     },
     [onCreateRange],
   );
 
   const finishEventDrag = useCallback(
-    (state: EventDragState, clientY: number) => {
+    (state: TimelineEventDrag, clientY: number) => {
       const movedPx = Math.abs(clientY - state.pointerStartClientY);
       const changed =
         state.currentStartMin !== state.originStartMin ||
         state.currentEndMin !== state.originEndMin;
-      if (movedPx < DRAG_THRESHOLD_PX && !changed) {
+      if (movedPx < TIMELINE_DRAG_THRESHOLD_PX && !changed) {
         onEdit(state.eventId);
       } else if (changed) {
         onUpdateRange(
@@ -270,90 +291,93 @@ export function DayScheduleTimeline({
   const isEventDragging = eventDrag !== null;
 
   useEffect(() => {
-    if (!isCreating) return;
+    if (!isCreating && !isEventDragging) return;
 
     const onMove = (e: PointerEvent) => {
-      const d = createDragRef.current;
-      if (!d || e.pointerId !== d.pointerId || !gridRef.current) return;
-      const next = {
-        ...d,
-        currentMin: pointerMinFromGrid(e.clientY, gridRef.current),
-      };
-      createDragRef.current = next;
-      setCreateDrag(next);
+      const scrollEl = scrollRef.current;
+      if (scrollEl) autoScrollNearEdge(scrollEl, e.clientY);
+
+      const grid = gridRef.current;
+      if (!grid) return;
+      const { top, height } = gridMetrics(grid);
+
+      const create = createDragRef.current;
+      if (create && e.pointerId === create.pointerId) {
+        const next: TimelineCreateDrag = {
+          ...create,
+          currentMin: pointerMinutesFloor(e.clientY, top, height, HOUR_PX),
+        };
+        createDragRef.current = next;
+        setCreateDrag(next);
+        return;
+      }
+
+      const drag = eventDragRef.current;
+      if (drag && e.pointerId === drag.pointerId) {
+        const pointerMin = pointerMinutesRound(e.clientY, top, height, HOUR_PX);
+        const next = updateEventDragFromPointer(drag, pointerMin);
+        eventDragRef.current = next;
+        setEventDrag(next);
+      }
     };
 
     const onUp = (e: PointerEvent) => {
-      const d = createDragRef.current;
-      if (!d || e.pointerId !== d.pointerId) return;
-      finishCreateDrag(d);
-      createDragRef.current = null;
-      setCreateDrag(null);
+      const create = createDragRef.current;
+      if (create && e.pointerId === create.pointerId) {
+        finishCreateDrag(create);
+        createDragRef.current = null;
+        setCreateDrag(null);
+        return;
+      }
+      const drag = eventDragRef.current;
+      if (drag && e.pointerId === drag.pointerId) {
+        finishEventDrag(drag, e.clientY);
+        eventDragRef.current = null;
+        setEventDrag(null);
+      }
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        cancelDrags();
+      }
     };
 
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
+    window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("keydown", onKey);
     };
-  }, [isCreating, finishCreateDrag]);
+  }, [
+    isCreating,
+    isEventDragging,
+    finishCreateDrag,
+    finishEventDrag,
+    cancelDrags,
+    scrollRef,
+  ]);
 
-  useEffect(() => {
-    if (!isEventDragging) return;
-
-    const onMove = (e: PointerEvent) => {
-      const d = eventDragRef.current;
-      if (!d || e.pointerId !== d.pointerId || !gridRef.current) return;
-      const pointerMin = pointerMinFromGrid(e.clientY, gridRef.current);
-      const range = computeManipulatedRange(
-        d.mode,
-        pointerMin,
-        d.originStartMin,
-        d.originEndMin,
-        d.grabOffsetMin,
-      );
-      const next = {
-        ...d,
-        currentStartMin: range.startMin,
-        currentEndMin: range.endMin,
-      };
-      eventDragRef.current = next;
-      setEventDrag(next);
-    };
-
-    const onUp = (e: PointerEvent) => {
-      const d = eventDragRef.current;
-      if (!d || e.pointerId !== d.pointerId) return;
-      finishEventDrag(d, e.clientY);
-      eventDragRef.current = null;
-      setEventDrag(null);
-    };
-
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
-    };
-  }, [isEventDragging, finishEventDrag]);
-
-  const createPreview = useMemo(() => {
+  const liveCreatePreview = useMemo(() => {
     if (!createDrag) return null;
-    return normalizeCreateRange(createDrag.startMin, createDrag.currentMin);
+    return createDragPreviewRange(createDrag);
   }, [createDrag]);
 
   const onGridPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 || !gridRef.current || eventDragRef.current) return;
-    const startMin = pointerMinFromGrid(e.clientY, gridRef.current);
-    const next = {
+    if (createDraft) return;
+    const { top, height } = gridMetrics(gridRef.current);
+    const originMin = pointerMinutesFloor(e.clientY, top, height, HOUR_PX);
+    const next: TimelineCreateDrag = {
       pointerId: e.pointerId,
-      startMin,
-      currentMin: startMin,
+      originMin,
+      currentMin: originMin,
+      pointerStartClientY: e.clientY,
     };
     createDragRef.current = next;
     setCreateDrag(next);
@@ -366,10 +390,11 @@ export function DayScheduleTimeline({
     mode: EventManipMode,
   ) => {
     if (!gridRef.current) return;
-    const pointerMin = pointerMinFromGrid(e.clientY, gridRef.current);
+    const { top, height } = gridMetrics(gridRef.current);
+    const pointerMin = pointerMinutesRound(e.clientY, top, height, HOUR_PX);
     createDragRef.current = null;
     setCreateDrag(null);
-    const next: EventDragState = {
+    const next: TimelineEventDrag = {
       mode,
       pointerId: e.pointerId,
       eventId: ev.id,
@@ -384,6 +409,8 @@ export function DayScheduleTimeline({
     setEventDrag(next);
     e.currentTarget.setPointerCapture(e.pointerId);
   };
+
+  const draftToShow = liveCreatePreview ?? createDraft;
 
   return (
     <div
@@ -430,16 +457,16 @@ export function DayScheduleTimeline({
 
       <div className="flex min-h-0 flex-1">
         <div
-          className="flex w-11 shrink-0 flex-col border-r border-zinc-200 bg-white"
+          className="flex w-12 shrink-0 flex-col border-r border-zinc-200 bg-white"
           style={{ height: DAY_HEIGHT }}
         >
           {Array.from({ length: 24 }, (_, h) => (
             <div
               key={h}
-              className="relative shrink-0 pr-1.5 text-right text-xs text-black/55"
+              className="relative shrink-0 pr-2 text-right text-[11px] text-black/50"
               style={{ height: HOUR_PX }}
             >
-              <span className="absolute -top-2 right-1.5 tabular-nums">
+              <span className="absolute -top-2 right-2 tabular-nums">
                 {h === 0 ? "" : `${h}:00`}
               </span>
             </div>
@@ -449,12 +476,16 @@ export function DayScheduleTimeline({
         <div
           ref={gridRef}
           className={`relative min-w-0 flex-1 touch-none select-none bg-white ${
-            eventDrag ? "cursor-grabbing" : "cursor-crosshair"
+            eventDrag
+              ? eventDrag.mode === "move"
+                ? "cursor-grabbing"
+                : "cursor-ns-resize"
+              : "cursor-default"
           }`}
           style={{ height: DAY_HEIGHT }}
           onPointerDown={onGridPointerDown}
           role="grid"
-          aria-label="時間割。空きをドラッグで追加、予定をドラッグで移動、上下端で時間変更"
+          aria-label="時間割。クリックまたはドラッグで予定を追加。予定をドラッグで移動、端で時間変更"
         >
           {Array.from({ length: 24 }, (_, h) => (
             <div key={h} className="pointer-events-none absolute right-0 left-0">
@@ -480,25 +511,15 @@ export function DayScheduleTimeline({
             </div>
           ) : null}
 
-          {createPreview ? (
-            <div
-              className="pointer-events-none absolute right-1 left-1 z-10 rounded-md border-2 border-blue-500 bg-blue-400/25"
-              style={{
-                top: (createPreview.startMin / 60) * HOUR_PX,
-                height: Math.max(
-                  ((createPreview.endMin - createPreview.startMin) / 60) *
-                    HOUR_PX,
-                  4,
-                ),
-              }}
-            >
-              <span className="absolute top-0.5 left-1.5 text-xs font-semibold text-blue-800">
-                {formatMinutesRange(
-                  createPreview.startMin,
-                  createPreview.endMin,
-                )}
-              </span>
-            </div>
+          {ghostOrigin ? (
+            <TimelineEventBlock
+              ev={ghostOrigin}
+              dragging={false}
+              ghost
+              draggable={false}
+              onEdit={onEdit}
+              onInteractStart={() => {}}
+            />
           ) : null}
 
           {displayed.map((ev) => {
@@ -515,12 +536,14 @@ export function DayScheduleTimeline({
               />
             );
           })}
+
+          {draftToShow ? <DraftBlock range={draftToShow} /> : null}
         </div>
       </div>
 
       <p className="shrink-0 border-t border-zinc-100 bg-zinc-50/50 px-2 py-1.5 text-center text-xs text-black/40">
-        {TIMELINE_SNAP_MINUTES}分 · 空きをドラッグで追加 · 予定をドラッグで移動 ·
-        上下端を引っ張って時間変更 · クリックで編集
+        {TIMELINE_SNAP_MINUTES}分単位 · 空きをクリック／ドラッグで追加 ·
+        予定をドラッグで移動 · 上下端で時間変更 · Escでキャンセル
       </p>
     </div>
   );

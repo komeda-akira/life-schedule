@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import type { Session } from "next-auth";
 import { auth } from "@/auth";
 import { allowsAiWithoutSession } from "@/lib/storage-mode";
-import { generateClaudeReply } from "@/lib/claude-client";
-import { getAnthropicApiKey, getClaudeModel } from "@/lib/claude-config";
+import { generateGeminiReply } from "@/lib/gemini-client";
+import { getGeminiApiKey, getGeminiModelCandidates } from "@/lib/gemini-config";
 
 function unauthorized() {
   return NextResponse.json(
@@ -26,12 +26,12 @@ export async function POST(request: Request) {
   const userId = requireUserId(session);
   if (!userId) return unauthorized();
 
-  const apiKey = getAnthropicApiKey();
+  const apiKey = getGeminiApiKey();
   if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          "ANTHROPIC_API_KEY が未設定です。Vercel の Environment Variables、または .env.local に Anthropic の API キーを追加してください。",
+          "GEMINI_API_KEY が未設定です。Vercel の Environment Variables、または .env.local に Google AI Studio の API キーを追加してください。",
       },
       { status: 503 },
     );
@@ -49,21 +49,20 @@ export async function POST(request: Request) {
 
     const context = body.context?.trim() ?? "";
 
-    const system = `あなたは「人生のカレンダー」アプリの計画アシスタントです。
+    const prompt = `あなたは「人生のカレンダー」アプリの計画アシスタントです。
 ユーザーの人生設計・予定・ワークシートを支援してください。
-回答は日本語、簡潔で actionable に。箇条書きを適宜使ってください。`;
+回答は日本語、簡潔で actionable に。箇条書きを適宜使ってください。
 
-    const userContent = `--- アプリ内データ（参考） ---
+--- アプリ内データ（参考） ---
 ${context.slice(0, 12_000)}
 
 --- ユーザーの質問 ---
 ${message}`;
 
-    const result = await generateClaudeReply(
+    const result = await generateGeminiReply(
       apiKey,
-      getClaudeModel(),
-      system,
-      userContent,
+      getGeminiModelCandidates(),
+      prompt,
     );
 
     if (!result.ok) {
@@ -75,7 +74,7 @@ ${message}`;
 
     return NextResponse.json({ reply: result.reply });
   } catch (error) {
-    console.error("POST /api/claude", error);
+    console.error("POST /api/gemini", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

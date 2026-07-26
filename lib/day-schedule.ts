@@ -23,6 +23,13 @@ export function snapTimelineMinutes(minutes: number): number {
   return Math.min(TIMELINE_DAY_END_MIN, Math.max(0, snapped));
 }
 
+/** クリック位置を含むスロット開始（Googleカレンダーは floor） */
+export function floorSnapMinutes(minutes: number): number {
+  const snapped =
+    Math.floor(minutes / TIMELINE_SNAP_MINUTES + 1e-9) * TIMELINE_SNAP_MINUTES;
+  return Math.min(TIMELINE_DAY_END_MIN, Math.max(0, snapped));
+}
+
 /** タイムライン内の Y 座標（px）→ 0:00 起点の分 */
 export function minutesFromTimelineY(
   y: number,

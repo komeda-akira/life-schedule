@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { Session } from "next-auth";
 import { auth } from "@/auth";
 import { allowsAiWithoutSession } from "@/lib/storage-mode";
-import { isClaudeConfigured } from "@/lib/claude-config";
+import { isGeminiConfigured } from "@/lib/gemini-config";
 
 function requireUserId(session: Session | null): string | null {
   if (allowsAiWithoutSession()) return "local-user";
@@ -21,5 +21,5 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json({ configured: isClaudeConfigured() });
+  return NextResponse.json({ configured: isGeminiConfigured() });
 }

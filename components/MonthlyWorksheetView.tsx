@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { AutoGrowTextarea } from "@/components/AutoGrowTextarea";
 import { useAppData } from "@/components/AppDataProvider";
 import type { MonthlyWorksheet } from "@/lib/monthly-worksheet";
 import { MONTHLY_DAY_COLUMNS } from "@/lib/monthly-worksheet";
@@ -28,8 +29,9 @@ const inputClass =
   "w-full border-0 bg-transparent px-1.5 py-1 text-xs text-black placeholder:text-black/30 focus:outline-none focus:ring-1 focus:ring-zinc-400 rounded";
 
 const textareaClass =
-  "w-full min-h-[6rem] resize-y rounded border border-zinc-300 bg-white px-2 py-1.5 text-xs leading-relaxed text-black placeholder:text-black/30 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400";
+  "w-full rounded border border-zinc-300 bg-white px-2 py-1.5 text-xs leading-relaxed text-black placeholder:text-black/30 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400";
 
+const REFLECTION_MIN_HEIGHT = 128;
 const sectionTitleClass =
   "border-b border-zinc-800 pb-1 text-sm font-bold tracking-tight text-black";
 
@@ -165,10 +167,11 @@ export function MonthlyWorksheetView({
               <div className="border-b border-zinc-800 bg-zinc-100 px-2 py-1 text-xs font-bold">
                 {MW_WENT_WELL}
               </div>
-              <textarea
+              <AutoGrowTextarea
                 value={data.wentWell}
                 onChange={(e) => patch({ wentWell: e.target.value })}
-                className={`${textareaClass} min-h-[8rem] border-0 rounded-none`}
+                minHeightPx={REFLECTION_MIN_HEIGHT}
+                className={`${textareaClass} border-0 rounded-none`}
               />
             </div>
           </div>
@@ -178,20 +181,22 @@ export function MonthlyWorksheetView({
               <div className="border-b border-zinc-800 bg-zinc-100 px-2 py-1 text-xs font-bold">
                 {MW_WENT_POORLY}
               </div>
-              <textarea
+              <AutoGrowTextarea
                 value={data.wentPoorly}
                 onChange={(e) => patch({ wentPoorly: e.target.value })}
-                className={`${textareaClass} min-h-[8rem] border-0 rounded-none`}
+                minHeightPx={REFLECTION_MIN_HEIGHT}
+                className={`${textareaClass} border-0 rounded-none`}
               />
             </div>
             <div className="flex flex-col rounded border-2 border-zinc-800">
               <div className="border-b border-zinc-800 bg-zinc-100 px-2 py-1 text-xs font-bold leading-snug">
                 {MW_POOR_MINDSET}
               </div>
-              <textarea
+              <AutoGrowTextarea
                 value={data.poorMindset}
                 onChange={(e) => patch({ poorMindset: e.target.value })}
-                className={`${textareaClass} min-h-[8rem] border-0 rounded-none`}
+                minHeightPx={REFLECTION_MIN_HEIGHT}
+                className={`${textareaClass} border-0 rounded-none`}
               />
             </div>
           </div>
@@ -201,10 +206,11 @@ export function MonthlyWorksheetView({
               <div className="border-b border-zinc-800 bg-zinc-100 px-2 py-1 text-xs font-bold leading-snug">
                 {MW_IMPROVEMENT}
               </div>
-              <textarea
+              <AutoGrowTextarea
                 value={data.improvement}
                 onChange={(e) => patch({ improvement: e.target.value })}
-                className={`${textareaClass} min-h-[8rem] border-0 rounded-none`}
+                minHeightPx={REFLECTION_MIN_HEIGHT}
+                className={`${textareaClass} border-0 rounded-none`}
               />
             </div>
             <div className="flex justify-center text-zinc-500" aria-hidden>
@@ -215,10 +221,11 @@ export function MonthlyWorksheetView({
               <div className="border-b border-zinc-800 bg-zinc-100 px-2 py-1 text-xs font-bold leading-snug">
                 {MW_NEXT_PLAN}
               </div>
-              <textarea
+              <AutoGrowTextarea
                 value={data.nextMonthPlan}
                 onChange={(e) => patch({ nextMonthPlan: e.target.value })}
-                className={`${textareaClass} min-h-[8rem] border-0 rounded-none`}
+                minHeightPx={REFLECTION_MIN_HEIGHT}
+                className={`${textareaClass} border-0 rounded-none`}
               />
             </div>
           </div>
@@ -238,10 +245,10 @@ export function MonthlyWorksheetView({
             <span className="border-b border-zinc-800 bg-zinc-100 px-2 py-1 text-xs font-bold">
               {MW_TOP_PRIORITY}
             </span>
-            <textarea
+            <AutoGrowTextarea
               value={data.topPriorityGoal}
               onChange={(e) => patch({ topPriorityGoal: e.target.value })}
-              rows={3}
+              minHeightPx={72}
               className={`${textareaClass} border-0 rounded-none`}
             />
           </label>

@@ -40,7 +40,7 @@ import {
 } from "@/lib/week-in-month";
 import {
   addDays,
-  addYears,
+  addMonths,
   excerptComment,
   formatDayHeader,
   formatMonthHeader,
@@ -64,11 +64,11 @@ import {
 } from "@/lib/scope-keys";
 import {
   LABEL_NEXT_DAY,
+  LABEL_NEXT_MONTH,
   LABEL_NEXT_WEEK,
-  LABEL_NEXT_YEAR,
   LABEL_PREV_DAY,
+  LABEL_PREV_MONTH,
   LABEL_PREV_WEEK,
-  LABEL_PREV_YEAR,
   MOBILE_TABS,
   monthLabel,
   MONTH_PANE_TITLE,
@@ -321,13 +321,13 @@ function MonthPane({
   cursor,
   comment,
   onSelectMonth,
-  onAddYear,
+  onAddMonth,
   onOpenScope,
 }: {
   cursor: Date;
   comment: string;
   onSelectMonth: (monthIndex: number) => void;
-  onAddYear: (delta: number) => void;
+  onAddMonth: (delta: number) => void;
   onOpenScope: () => void;
 }) {
   const selectedMonth = cursor.getMonth();
@@ -336,11 +336,11 @@ function MonthPane({
     <div className="flex min-h-[420px] min-w-0 flex-1 flex-col border-r border-zinc-200 md:min-h-[520px]">
       <PaneHeader title={MONTH_PANE_TITLE} hint={PANE_HINTS.month}>
         <div className="flex items-center justify-between gap-1">
-          <NavChevron dir="prev" label={LABEL_PREV_YEAR} onClick={() => onAddYear(-1)} />
+          <NavChevron dir="prev" label={LABEL_PREV_MONTH} onClick={() => onAddMonth(-1)} />
           <PaneDateLabel className={PANE_DATE_NAV_CLASS}>
             {formatMonthHeader(cursor)}
           </PaneDateLabel>
-          <NavChevron dir="next" label={LABEL_NEXT_YEAR} onClick={() => onAddYear(1)} />
+          <NavChevron dir="next" label={LABEL_NEXT_MONTH} onClick={() => onAddMonth(1)} />
         </div>
       </PaneHeader>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
@@ -688,15 +688,31 @@ export function CalendarPanes() {
   };
 
   const openMonthlySheet = useCallback((d: Date) => {
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
+    const day = startOfDay(d);
+    const y = day.getFullYear();
+    const m = day.getMonth() + 1;
     setMonthlySheetModal({
-      key: monthKey(d),
+      key: monthKey(day),
       year: y,
       month: m,
       heading: scopeHeadingYearMonth(y, m),
     });
   }, []);
+
+  const shiftMonthlySheet = useCallback(
+    (delta: number) => {
+      if (!monthlySheetModal) return;
+      const next = startOfDay(
+        addMonths(
+          new Date(monthlySheetModal.year, monthlySheetModal.month - 1, 1),
+          delta,
+        ),
+      );
+      setCursor(next);
+      openMonthlySheet(next);
+    },
+    [monthlySheetModal, openMonthlySheet],
+  );
 
   const openDailySheet = useCallback((d: Date) => {
     const day = startOfDay(d);
@@ -705,6 +721,16 @@ export function CalendarPanes() {
       date: day,
     });
   }, []);
+
+  const shiftDailySheet = useCallback(
+    (delta: number) => {
+      if (!dailySheetModal) return;
+      const next = startOfDay(addDays(dailySheetModal.date, delta));
+      setCursor(next);
+      openDailySheet(next);
+    },
+    [dailySheetModal, openDailySheet],
+  );
 
   const openWeeklySheet = useCallback(
     (d: Date, displayYear: number, displayMonth: number) => {
@@ -720,6 +746,22 @@ export function CalendarPanes() {
       });
     },
     [],
+  );
+
+  const shiftWeeklySheet = useCallback(
+    (delta: number) => {
+      if (!weeklySheetModal) return;
+      const nextMonday = startOfDay(
+        addDays(weeklySheetModal.weekMonday, delta * 7),
+      );
+      setCursor(nextMonday);
+      openWeeklySheet(
+        nextMonday,
+        nextMonday.getFullYear(),
+        nextMonday.getMonth() + 1,
+      );
+    },
+    [weeklySheetModal, openWeeklySheet],
   );
 
   const onSelectWeekOfMonth = useCallback((monday: Date) => {
@@ -759,7 +801,7 @@ export function CalendarPanes() {
         cursor={cursor}
         comment={monthExcerpt}
         onSelectMonth={onSelectMonth}
-        onAddYear={(d) => setCursor(startOfDay(addYears(cursor, d)))}
+        onAddMonth={(d) => setCursor(startOfDay(addMonths(cursor, d)))}
         onOpenScope={() => openMonthlySheet(cursor)}
       />
       <WeekPane
@@ -838,7 +880,7 @@ export function CalendarPanes() {
             cursor={cursor}
             comment={monthExcerpt}
             onSelectMonth={onSelectMonth}
-            onAddYear={(d) => setCursor(startOfDay(addYears(cursor, d)))}
+            onAddMonth={(d) => setCursor(startOfDay(addMonths(cursor, d)))}
             onOpenScope={() => openMonthlySheet(cursor)}
           />
         ) : null}
@@ -882,6 +924,8 @@ export function CalendarPanes() {
           month={monthlySheetModal.month}
           heading={monthlySheetModal.heading}
           onClose={() => setMonthlySheetModal(null)}
+          onPrevMonth={() => shiftMonthlySheet(-1)}
+          onNextMonth={() => shiftMonthlySheet(1)}
         />
       ) : null}
 
@@ -891,6 +935,8 @@ export function CalendarPanes() {
           weekMonday={weeklySheetModal.weekMonday}
           heading={weeklySheetModal.heading}
           onClose={() => setWeeklySheetModal(null)}
+          onPrevWeek={() => shiftWeeklySheet(-1)}
+          onNextWeek={() => shiftWeeklySheet(1)}
         />
       ) : null}
 
@@ -899,6 +945,8 @@ export function CalendarPanes() {
           dayKey={dailySheetModal.key}
           date={dailySheetModal.date}
           onClose={() => setDailySheetModal(null)}
+          onPrevDay={() => shiftDailySheet(-1)}
+          onNextDay={() => shiftDailySheet(1)}
         />
       ) : null}
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AutoGrowTextarea } from "@/components/AutoGrowTextarea";
 import { Modal } from "@/components/Modal";
 import { useAppData } from "@/components/AppDataProvider";
 
@@ -32,10 +33,10 @@ export function ScopeCommentModal({
       <p className="mb-3 text-sm text-black/80">
         この年・月・週についてのメモです。予定とは別に保存されます。保存すると年ペインの年齢表示の下に反映されます。
       </p>
-      <textarea
+      <AutoGrowTextarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        rows={8}
+        minHeightPx={192}
         className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
         placeholder="コメントを入力…"
         autoFocus

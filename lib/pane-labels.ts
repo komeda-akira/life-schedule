@@ -50,6 +50,8 @@ export const MOBILE_TABS = ["\u5e74", "\u6708", "\u9031", "\u65e5"] as const;
 
 export const LABEL_PREV_YEAR = "\u524d\u5e74";
 export const LABEL_NEXT_YEAR = "\u7fcc\u5e74";
+export const LABEL_PREV_MONTH = "\u524d\u6708";
+export const LABEL_NEXT_MONTH = "\u7fcc\u6708";
 export const LABEL_PREV_WEEK = "\u524d\u9031";
 export const LABEL_NEXT_WEEK = "\u7fcc\u9031";
 export const LABEL_PREV_DAY = "\u524d\u65e5";

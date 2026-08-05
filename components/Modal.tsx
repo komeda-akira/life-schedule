@@ -14,6 +14,8 @@ type ModalProps = {
   onNext?: () => void;
   prevLabel?: string;
   nextLabel?: string;
+  /** タイトル行の右側（閉じるボタン左）に置く追加 UI */
+  headerExtra?: ReactNode;
 };
 
 function ModalNavChevron({
@@ -47,6 +49,7 @@ function ModalTitleRow({
   onNext,
   prevLabel,
   nextLabel,
+  headerExtra,
 }: {
   title: string;
   onClose: () => void;
@@ -54,10 +57,11 @@ function ModalTitleRow({
   onNext?: () => void;
   prevLabel?: string;
   nextLabel?: string;
+  headerExtra?: ReactNode;
 }) {
   const showNav = Boolean(onPrev || onNext);
   return (
-    <div className="flex items-center justify-between gap-2 border-b border-zinc-200 px-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-zinc-200 px-4 py-3">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {showNav ? (
           <ModalNavChevron
@@ -80,13 +84,16 @@ function ModalTitleRow({
           />
         ) : null}
       </div>
-      <button
-        type="button"
-        onClick={onClose}
-        className="shrink-0 rounded-md px-2 py-1 text-sm text-black/80 hover:bg-zinc-100"
-      >
-        閉じる
-      </button>
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        {headerExtra}
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md px-2 py-1 text-sm text-black/80 hover:bg-zinc-100"
+        >
+          閉じる
+        </button>
+      </div>
     </div>
   );
 }
@@ -101,6 +108,7 @@ export function Modal({
   onNext,
   prevLabel,
   nextLabel,
+  headerExtra,
 }: ModalProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -120,12 +128,12 @@ export function Modal({
       >
         <button
           type="button"
-          className="fixed inset-0 bg-black/40"
+          className="fixed inset-0 z-0 bg-black/40"
           aria-label="閉じる"
           onClick={onClose}
         />
-        <div className="relative z-10 mx-auto w-full max-w-[min(98vw,1400px)] px-4 pt-6 pb-10">
-          <div className="flex w-full flex-col rounded-xl border border-zinc-200 bg-white shadow-xl">
+        <div className="relative z-10 mx-auto w-full max-w-[min(98vw,1400px)] px-4 pt-6 pb-10 pointer-events-none">
+          <div className="pointer-events-auto flex w-full flex-col rounded-xl border border-zinc-200 bg-white shadow-xl">
             <ModalTitleRow
               title={title}
               onClose={onClose}
@@ -133,6 +141,7 @@ export function Modal({
               onNext={onNext}
               prevLabel={prevLabel}
               nextLabel={nextLabel}
+              headerExtra={headerExtra}
             />
             <div className="p-4">{children}</div>
           </div>
@@ -168,6 +177,7 @@ export function Modal({
           onNext={onNext}
           prevLabel={prevLabel}
           nextLabel={nextLabel}
+          headerExtra={headerExtra}
         />
         <div className="min-h-0 flex-1 overflow-y-auto p-4">{children}</div>
       </div>

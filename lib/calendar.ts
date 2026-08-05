@@ -36,6 +36,28 @@ export function getMonday(d: Date): Date {
   return addDays(x, delta);
 }
 
+/**
+ * 月曜始まりの月グリッド（常に 6 週 = 42 日）。
+ * @param year 西暦
+ * @param month 1–12
+ */
+export function buildMonthGridDays(year: number, month: number): Date[] {
+  const first = startOfDay(new Date(year, month - 1, 1));
+  const gridStart = getMonday(first);
+  return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
+}
+
+/** 月曜始まりの曜日ヘッダー（月〜日） */
+export const MONDAY_WEEKDAY_LABELS = [
+  "月",
+  "火",
+  "水",
+  "木",
+  "金",
+  "土",
+  "日",
+] as const;
+
 const WD = ["日", "月", "火", "水", "木", "金", "土"] as const;
 
 export function formatWeekdayJa(d: Date): string {

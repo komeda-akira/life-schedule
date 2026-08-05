@@ -39,12 +39,15 @@ type MonthlyWorksheetViewProps = {
   monthKey: string;
   year: number;
   month: number;
+  /** 親モーダル側に自動保存ヒントを出すとき true */
+  hideSaveHint?: boolean;
 };
 
 export function MonthlyWorksheetView({
   monthKey,
   year,
   month,
+  hideSaveHint = false,
 }: MonthlyWorksheetViewProps) {
   const { getMonthlyWorksheet, updateMonthlyWorksheet } = useAppData();
   const data = getMonthlyWorksheet(monthKey, year, month);
@@ -97,7 +100,9 @@ export function MonthlyWorksheetView({
 
   return (
     <div className="flex flex-col gap-8 font-sans text-black">
-      <p className="text-[11px] text-black/55">{MW_SAVE_HINT}</p>
+      {hideSaveHint ? null : (
+        <p className="text-[11px] text-black/55">{MW_SAVE_HINT}</p>
+      )}
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-2 border-b-2 border-zinc-800 pb-2">

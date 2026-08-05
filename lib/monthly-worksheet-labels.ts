@@ -29,3 +29,6 @@ export const MW_COL_OUTCOME = "\u9054\u6210\u306b\u3088\u308b\u6210\u679c\u306e\
 
 export const MW_SAVE_HINT =
   "\u5165\u529b\u5185\u5bb9\u306f\u81ea\u52d5\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002";
+
+export const MW_VIEW_SHEET = "\u632f\u308a\u8fd4\u308a\u30b7\u30fc\u30c8";
+export const MW_VIEW_CALENDAR = "\u30ab\u30ec\u30f3\u30c0\u30fc";

@@ -7,13 +7,13 @@ import { useCalendarCursor } from "@/components/CalendarNavigation";
 import {
   buildMonthGridDays,
   isToday,
-  MONDAY_WEEKDAY_LABELS,
   startOfDay,
-  weekdayTextClass,
+  SUNDAY_WEEKDAY_LABELS,
 } from "@/lib/calendar";
 import {
-  eventTimelineColorClass,
-  formatMinutesClock,
+  eventMonthBannerClass,
+  eventMonthDotClass,
+  formatMinutesGoogleMonth,
 } from "@/lib/day-schedule";
 import { isMultiDayEvent } from "@/lib/event-span";
 import { formatDateKey } from "@/lib/scope-keys";
@@ -33,34 +33,41 @@ type MonthCalendarGridProps = {
   month: number;
   /** 背面の週・日ペインと連動するカーソル更新 */
   onSelectDay?: (date: Date) => void;
+  /** 「今日」など、表示月も合わせて移動 */
+  onGoToDate?: (date: Date) => void;
+  onPrevMonth?: () => void;
+  onNextMonth?: () => void;
 };
 
 function sortDayEvents(events: CalendarEvent[]): CalendarEvent[] {
   return [...events].sort((a, b) => {
-    if (a.kind === "allDay" && b.kind !== "allDay") return -1;
-    if (a.kind !== "allDay" && b.kind === "allDay") return 1;
-    if (isMultiDayEvent(a) && !isMultiDayEvent(b)) return -1;
-    if (!isMultiDayEvent(a) && isMultiDayEvent(b)) return 1;
+    const aBanner = a.kind === "allDay" || isMultiDayEvent(a);
+    const bBanner = b.kind === "allDay" || isMultiDayEvent(b);
+    if (aBanner && !bBanner) return -1;
+    if (!aBanner && bBanner) return 1;
     const aStart = a.startMin ?? 0;
     const bStart = b.startMin ?? 0;
     return aStart - bStart || a.title.localeCompare(b.title, "ja");
   });
 }
 
-function chipLabel(ev: CalendarEvent): string {
-  if (ev.kind === "allDay" || isMultiDayEvent(ev)) {
-    return ev.title;
-  }
-  if (typeof ev.startMin === "number") {
-    return `${formatMinutesClock(ev.startMin)} ${ev.title}`;
-  }
-  return ev.title;
+function isBannerEvent(ev: CalendarEvent): boolean {
+  return ev.kind === "allDay" || isMultiDayEvent(ev);
+}
+
+function weekdayHeaderClass(label: string): string {
+  if (label === "日") return "text-[#d50000]";
+  if (label === "土") return "text-[#1967d2]";
+  return "text-[#70757a]";
 }
 
 export function MonthCalendarGrid({
   year,
   month,
   onSelectDay,
+  onGoToDate,
+  onPrevMonth,
+  onNextMonth,
 }: MonthCalendarGridProps) {
   const { eventsForDate } = useAppData();
   const cursor = useCalendarCursor();
@@ -115,29 +122,65 @@ export function MonthCalendarGrid({
     [selectDay],
   );
 
-  return (
-    <div className="flex flex-col gap-2 text-black">
-      <p className="text-[11px] text-black/55">
-        空き枠をクリックで終日予定を追加。予定をクリックで編集。週次・日次と連動します。
-      </p>
+  const goToday = useCallback(() => {
+    const today = startOfDay(new Date());
+    setSelectedKey(formatDateKey(today));
+    if (onGoToDate) onGoToDate(today);
+    else onSelectDay?.(today);
+  }, [onGoToDate, onSelectDay]);
 
-      <div className="overflow-hidden rounded border border-zinc-300 bg-white">
-        <div className="grid grid-cols-7 border-b border-zinc-200 bg-zinc-50">
-          {MONDAY_WEEKDAY_LABELS.map((label, i) => {
-            const sample = days[i]!;
-            return (
-              <div
-                key={label}
-                className={`px-1 py-1.5 text-center text-xs font-medium ${weekdayTextClass(sample)}`}
-              >
-                {label}
-              </div>
-            );
-          })}
+  return (
+    <div className="flex flex-col text-black">
+      {/* Google カレンダー風ツールバー */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={goToday}
+          className="rounded-full border border-[#dadce0] bg-white px-4 py-1.5 text-sm font-medium text-[#3c4043] hover:bg-[#f8f9fa]"
+        >
+          今日
+        </button>
+        {onPrevMonth || onNextMonth ? (
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={onPrevMonth}
+              disabled={!onPrevMonth}
+              aria-label="前月"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[#3c4043] hover:bg-[#f1f3f4] disabled:opacity-40"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={onNextMonth}
+              disabled={!onNextMonth}
+              aria-label="翌月"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[#3c4043] hover:bg-[#f1f3f4] disabled:opacity-40"
+            >
+              ›
+            </button>
+          </div>
+        ) : null}
+        <h3 className="text-xl font-normal tracking-tight text-[#3c4043] sm:text-2xl">
+          {year}年 {month}月
+        </h3>
+      </div>
+
+      <div className="overflow-hidden rounded-lg border border-[#dadce0] bg-white">
+        <div className="grid grid-cols-7 border-b border-[#dadce0]">
+          {SUNDAY_WEEKDAY_LABELS.map((label) => (
+            <div
+              key={label}
+              className={`py-2 text-center text-xs font-medium ${weekdayHeaderClass(label)}`}
+            >
+              {label}
+            </div>
+          ))}
         </div>
 
-        <div className="grid grid-cols-7 auto-rows-fr">
-          {days.map((d) => {
+        <div className="grid grid-cols-7">
+          {days.map((d, index) => {
             const key = formatDateKey(d);
             const inMonth = d.getMonth() === month - 1;
             const today = isToday(d);
@@ -148,38 +191,20 @@ export function MonthCalendarGrid({
               ? dayEvents
               : dayEvents.slice(0, MAX_CHIPS_COLLAPSED);
             const overflow = dayEvents.length - visible.length;
+            const isLastCol = index % 7 === 6;
+
+            let dayNumClass = "text-[#3c4043]";
+            if (!inMonth) dayNumClass = "text-[#70757a]";
+            else if (d.getDay() === 0) dayNumClass = "text-[#d50000]";
+            else if (d.getDay() === 6) dayNumClass = "text-[#1967d2]";
 
             return (
               <div
                 key={key}
-                className={`relative flex min-h-[6.5rem] flex-col border-b border-r border-zinc-200 p-1 last:border-r-0 sm:min-h-[7.5rem] ${
-                  inMonth ? "bg-white" : "bg-zinc-50/80"
-                } ${selected ? "bg-blue-50/40" : ""}`}
+                className={`relative flex min-h-[5.75rem] flex-col border-b border-[#dadce0] sm:min-h-[6.75rem] lg:min-h-[7.5rem] ${
+                  isLastCol ? "" : "border-r border-[#dadce0]"
+                } ${selected && !today ? "bg-[#e8f0fe]/50" : "bg-white"}`}
               >
-                <div className="relative z-10 mb-0.5 flex items-center justify-between gap-0.5">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      selectDay(d);
-                    }}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      selectDay(d);
-                    }}
-                    className={`flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-medium ${
-                      today
-                        ? "bg-[#1a73e8] text-white"
-                        : inMonth
-                          ? weekdayTextClass(d)
-                          : "text-black/35"
-                    } ${selected && !today ? "ring-1 ring-[#1a73e8]/40" : ""}`}
-                    aria-label={`${d.getMonth() + 1}月${d.getDate()}日`}
-                  >
-                    {d.getDate()}
-                  </button>
-                </div>
-
                 <button
                   type="button"
                   className="absolute inset-0 z-0"
@@ -187,21 +212,78 @@ export function MonthCalendarGrid({
                   onClick={() => onCellClick(d)}
                 />
 
-                <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden">
-                  {visible.map((ev) => (
-                    <button
-                      key={ev.id}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onChipClick(d, ev);
-                      }}
-                      className={`truncate rounded px-1 py-0.5 text-left text-[10px] leading-tight sm:text-[11px] ${eventTimelineColorClass(ev.id)}`}
-                      title={chipLabel(ev)}
-                    >
-                      {chipLabel(ev)}
-                    </button>
-                  ))}
+                <div className="relative z-10 flex justify-center pt-1.5 pb-0.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      selectDay(d);
+                    }}
+                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium sm:h-8 sm:w-8 sm:text-sm ${
+                      today
+                        ? "bg-[#1a73e8] text-white hover:bg-[#1765cc]"
+                        : `${dayNumClass} hover:bg-[#f1f3f4]`
+                    }`}
+                    aria-label={`${d.getMonth() + 1}月${d.getDate()}日`}
+                    aria-current={today ? "date" : undefined}
+                  >
+                    {d.getDate()}
+                  </button>
+                </div>
+
+                <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-px overflow-hidden px-0.5 pb-0.5">
+                  {visible.map((ev) => {
+                    const banner = isBannerEvent(ev);
+                    if (banner) {
+                      return (
+                        <button
+                          key={ev.id}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onChipClick(d, ev);
+                          }}
+                          className={`truncate rounded-sm px-1.5 py-0.5 text-left text-[11px] leading-snug font-medium ${eventMonthBannerClass(ev.id)}`}
+                          title={ev.title}
+                        >
+                          {ev.title}
+                        </button>
+                      );
+                    }
+                    return (
+                      <button
+                        key={ev.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onChipClick(d, ev);
+                        }}
+                        className="flex min-w-0 items-center gap-1 rounded-sm px-0.5 py-0.5 text-left hover:bg-[#f1f3f4]"
+                        title={
+                          typeof ev.startMin === "number"
+                            ? `${formatMinutesGoogleMonth(ev.startMin)} ${ev.title}`
+                            : ev.title
+                        }
+                      >
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${eventMonthDotClass(ev.id)}`}
+                          aria-hidden
+                        />
+                        <span className="min-w-0 truncate text-[11px] leading-snug text-[#3c4043]">
+                          {typeof ev.startMin === "number" ? (
+                            <>
+                              <span className="text-[#70757a]">
+                                {formatMinutesGoogleMonth(ev.startMin)}
+                              </span>{" "}
+                              {ev.title}
+                            </>
+                          ) : (
+                            ev.title
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
                   {overflow > 0 ? (
                     <button
                       type="button"
@@ -209,21 +291,9 @@ export function MonthCalendarGrid({
                         e.stopPropagation();
                         onMoreClick(d);
                       }}
-                      className="truncate px-1 py-0.5 text-left text-[10px] font-medium text-[#1a73e8] hover:underline sm:text-[11px]"
+                      className="truncate px-1 py-0.5 text-left text-[11px] font-medium text-[#3c4043] hover:bg-[#f1f3f4] hover:underline"
                     >
                       他 {overflow} 件
-                    </button>
-                  ) : null}
-                  {expanded && dayEvents.length > MAX_CHIPS_COLLAPSED ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setExpandedKey(null);
-                      }}
-                      className="truncate px-1 py-0.5 text-left text-[10px] text-black/50 hover:underline sm:text-[11px]"
-                    >
-                      閉じる
                     </button>
                   ) : null}
                 </div>

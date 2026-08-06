@@ -108,6 +108,44 @@ export function formatMinutesClock(minutes: number): string {
   return `${h}:${m.toString().padStart(2, "0")}`;
 }
 
+/** Google カレンダー月表示風（例: 午前11時 / 午後3:30） */
+export function formatMinutesGoogleMonth(minutes: number): string {
+  if (minutes >= TIMELINE_DAY_END_MIN) return "午後12時";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const period = h < 12 ? "午前" : "午後";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  if (m === 0) return `${period}${h12}時`;
+  return `${period}${h12}:${m.toString().padStart(2, "0")}`;
+}
+
+const MONTH_EVENT_PALETTE = [
+  { dot: "bg-[#d50000]", banner: "bg-[#0b8043] text-white hover:bg-[#097038]" },
+  { dot: "bg-[#e67c73]", banner: "bg-[#039be5] text-white hover:bg-[#0288d1]" },
+  { dot: "bg-[#f4511e]", banner: "bg-[#8e24aa] text-white hover:bg-[#7b1fa2]" },
+  { dot: "bg-[#33b679]", banner: "bg-[#e67c73] text-white hover:bg-[#d97066]" },
+  { dot: "bg-[#039be5]", banner: "bg-[#f4511e] text-white hover:bg-[#e64a19]" },
+  { dot: "bg-[#7986cb]", banner: "bg-[#3f51b5] text-white hover:bg-[#3949ab]" },
+] as const;
+
+function eventColorIndex(eventId: string): number {
+  let hash = 0;
+  for (let i = 0; i < eventId.length; i++) {
+    hash = (hash + eventId.charCodeAt(i)) % 997;
+  }
+  return hash % MONTH_EVENT_PALETTE.length;
+}
+
+/** 月グリッド：時刻付き予定のドット色 */
+export function eventMonthDotClass(eventId: string): string {
+  return MONTH_EVENT_PALETTE[eventColorIndex(eventId)]!.dot;
+}
+
+/** 月グリッド：終日・複数日バナー色 */
+export function eventMonthBannerClass(eventId: string): string {
+  return MONTH_EVENT_PALETTE[eventColorIndex(eventId)]!.banner;
+}
+
 export function formatMinutesRange(startMin: number, endMin: number): string {
   return `${formatMinutesClock(startMin)} – ${formatMinutesClock(endMin)}`;
 }

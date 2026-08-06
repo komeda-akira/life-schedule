@@ -36,18 +36,35 @@ export function getMonday(d: Date): Date {
   return addDays(x, delta);
 }
 
+/** 日曜始まりの週の日曜 0:00（Google カレンダー日本語 UI） */
+export function getSunday(d: Date): Date {
+  const x = startOfDay(d);
+  return addDays(x, -x.getDay());
+}
+
 /**
- * 月曜始まりの月グリッド（常に 6 週 = 42 日）。
+ * 日曜始まりの月グリッド（常に 6 週 = 42 日）。Google カレンダー月表示と同じ。
  * @param year 西暦
  * @param month 1–12
  */
 export function buildMonthGridDays(year: number, month: number): Date[] {
   const first = startOfDay(new Date(year, month - 1, 1));
-  const gridStart = getMonday(first);
+  const gridStart = getSunday(first);
   return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
 }
 
-/** 月曜始まりの曜日ヘッダー（月〜日） */
+/** 日曜始まりの曜日ヘッダー（日〜土） */
+export const SUNDAY_WEEKDAY_LABELS = [
+  "日",
+  "月",
+  "火",
+  "水",
+  "木",
+  "金",
+  "土",
+] as const;
+
+/** @deprecated 週次ペイン用。月グリッドは SUNDAY_WEEKDAY_LABELS を使う */
 export const MONDAY_WEEKDAY_LABELS = [
   "月",
   "火",

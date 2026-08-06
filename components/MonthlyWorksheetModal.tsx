@@ -23,6 +23,8 @@ type MonthlyWorksheetModalProps = {
   onNextMonth?: () => void;
   /** カレンダーで日付を選んだとき、背面の週・日ペインと連動 */
   onSelectDay?: (date: Date) => void;
+  /** 「今日」など、表示月も合わせて移動 */
+  onGoToDate?: (date: Date) => void;
 };
 
 function ViewToggle({
@@ -78,33 +80,39 @@ export function MonthlyWorksheetModal({
   onPrevMonth,
   onNextMonth,
   onSelectDay,
+  onGoToDate,
 }: MonthlyWorksheetModalProps) {
   const [view, setView] = useState<MonthlyViewMode>("sheet");
 
   return (
     <Modal
-      title={heading}
+      title={view === "calendar" ? `${year}年 ${month}月` : heading}
       onClose={onClose}
       plan
-      onPrev={onPrevMonth}
-      onNext={onNextMonth}
+      onPrev={view === "sheet" ? onPrevMonth : undefined}
+      onNext={view === "sheet" ? onNextMonth : undefined}
       prevLabel={LABEL_PREV_MONTH}
       nextLabel={LABEL_NEXT_MONTH}
       headerExtra={<ViewToggle view={view} onChange={setView} />}
     >
-      <p className="mb-3 text-[11px] text-black/55">{MW_SAVE_HINT}</p>
       {view === "sheet" ? (
-        <MonthlyWorksheetView
-          monthKey={monthKey}
-          year={year}
-          month={month}
-          hideSaveHint
-        />
+        <>
+          <p className="mb-3 text-[11px] text-black/55">{MW_SAVE_HINT}</p>
+          <MonthlyWorksheetView
+            monthKey={monthKey}
+            year={year}
+            month={month}
+            hideSaveHint
+          />
+        </>
       ) : (
         <MonthCalendarGrid
           year={year}
           month={month}
           onSelectDay={onSelectDay}
+          onGoToDate={onGoToDate}
+          onPrevMonth={onPrevMonth}
+          onNextMonth={onNextMonth}
         />
       )}
     </Modal>

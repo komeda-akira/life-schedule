@@ -927,6 +927,11 @@ export function CalendarPanes() {
           onPrevMonth={() => shiftMonthlySheet(-1)}
           onNextMonth={() => shiftMonthlySheet(1)}
           onSelectDay={(d) => setCursor(startOfDay(d))}
+          onGoToDate={(d) => {
+            const day = startOfDay(d);
+            setCursor(day);
+            openMonthlySheet(day);
+          }}
         />
       ) : null}
 
